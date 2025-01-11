@@ -170,5 +170,6 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 <div align="center">
 ⭐️ If you find this project useful, please consider giving it a star!
-Made with ❤️ by [Chan Meng](https://github.com/ChanMeng666)
+<br/>
+Made with ❤️ by Chan Meng
 </div>
