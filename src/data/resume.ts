@@ -186,6 +186,17 @@ export const resumeData: ResumeData = {
       ]
     },
     {
+      name: "CustomerInsight",
+      description: "Customer Review Analysis Platform",
+      url: "https://chanmeng666-customerinsight-app-oeiu2h.streamlit.app/",
+      highlights: [
+        "Developed a bilingual (Chinese/English) customer review analysis system using Python, Streamlit, and advanced NLP techniques.",
+        "Implemented 4 analysis tools: sentiment analysis, keyword extraction, topic modeling, and anomaly detection.",
+        "Created interactive visualizations with Plotly, processing large datasets efficiently.",
+        "Leveraged Transformers and scikit-learn for deep text insights."
+      ]
+    },
+    {
       name: "FreePeriod Website",
       description: "Sustainable menstrual care platform",
       url: "https://free-period-website.vercel.app/",
