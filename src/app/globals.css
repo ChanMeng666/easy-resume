@@ -63,90 +63,12 @@ body {
   }
 }
 
-/* 优化打印布局 */
-@media print {
-  .resume-container {
-    padding: 0;
-    max-width: 100%;
-  }
-
-  section {
-    break-inside: avoid;
-    margin-bottom: 1.75rem;
-  }
-
-  .grid {
-    gap: 2rem !important;
-  }
-
-  .space-y-8 > :not([hidden]) ~ :not([hidden]) {
-    margin-top: 2rem !important;
-  }
-
-  .space-y-6 > :not([hidden]) ~ :not([hidden]) {
-    margin-top: 1.5rem !important;
-  }
-
-  h2 {
-    margin-bottom: 1.25rem !important;
-  }
-}
-
 .dark .resume-container {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .dark .skill-tag {
   background-color: rgba(96, 165, 250, 0.1) !important;
-}
-
-/* 打印样式 */
-@media print {
-  @page {
-    margin: 1.5cm;
-    size: A4;
-  }
-
-  body {
-    background: none;
-  }
-
-  .resume-container {
-    max-width: none;
-    padding: 0;
-    margin: 0;
-    box-shadow: none;
-  }
-
-  section {
-    page-break-inside: avoid;
-    margin-bottom: 1.5rem;
-  }
-
-  /* 确保重要内容不会被分页符切断 */
-  h1, h2, h3 {
-    page-break-after: avoid;
-  }
-
-  /* 优化列表项的打印效果 */
-  ul, li {
-    page-break-inside: avoid;
-  }
-
-  /* 隐藏链接的下划线和颜色 */
-  a {
-    text-decoration: none !important;
-    color: inherit !important;
-  }
-
-  /* 优化技能标签的显示 */
-  .skill-tag {
-    border: 1px solid #666 !important;
-    background: none !important;
-    color: inherit !important;
-    padding: 0.125rem 0.75rem !important;
-    font-size: 0.75rem !important;
-  }
 }
 
 /* 优化技能标签在小屏幕上的显示 */

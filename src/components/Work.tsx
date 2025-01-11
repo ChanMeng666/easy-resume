@@ -9,7 +9,7 @@ export function Work({ work }: WorkProps) {
   return (
     <Section title="Experience">
       {work.map((job, index) => (
-        <div key={index} className="mb-6 last:mb-0">
+        <div key={index} className="mb-6 last:mb-0 work-item">
           <div className="flex flex-col sm:flex-row justify-between items-start gap-1 sm:gap-2 mb-3">
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1">

@@ -5,13 +5,12 @@ import { Work } from "@/components/Work";
 import { Projects } from "@/components/Projects";
 import { Achievements } from "@/components/Achievements";
 import { Certifications } from "@/components/Certifications";
-import { PrintButton } from "@/components/PrintButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { resumeData } from "@/data/resume";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-background py-6 sm:py-8 px-3 sm:px-4 print:p-0 print:bg-white">
+    <div className="min-h-screen bg-background py-6 sm:py-8 px-3 sm:px-4">
       <div className="resume-container max-w-[1100px] mx-auto bg-background-paper 
         shadow-sm sm:shadow-md dark:shadow-lg rounded-none sm:rounded-lg 
         transition-shadow duration-200"
@@ -23,18 +22,21 @@ export default function Home() {
             <Projects projects={resumeData.projects} />
           </div>
           <div className="space-y-8">
-            <Education education={resumeData.education} />
-            <Skills skills={resumeData.skills} />
-            <div className="space-y-8 print:break-inside-avoid">
+            <div>
+              <Education education={resumeData.education} />
+            </div>
+            <div>
+              <Skills skills={resumeData.skills} />
+            </div>
+            <div className="space-y-8">
               <Achievements achievements={resumeData.achievements} />
               <Certifications certifications={resumeData.certifications} />
             </div>
           </div>
         </div>
       </div>
-      <div className="fixed bottom-6 right-6 flex gap-3 print:hidden">
+      <div className="fixed bottom-6 right-6">
         <ThemeToggle />
-        <PrintButton />
       </div>
     </div>
   );
