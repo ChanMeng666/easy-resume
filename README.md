@@ -1,36 +1,174 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+<div align="center">
+  <h1>
+    <img src="https://cdn.simpleicons.org/nextdotjs" alt="Easy Resume Logo" width="80px"><br/>
+    Easy Resume
+  </h1>
+  <p>A modern, responsive resume builder with dark mode support</p>
+  <a href="https://easy-resume-theta.vercel.app/"><img src="https://img.shields.io/badge/demo-view%20live-blue?style=for-the-badge" alt="Live Demo" /></a>
+  <img src="https://img.shields.io/badge/next.js-15.1.4-black?style=for-the-badge&logo=next.js" />
+  <img src="https://img.shields.io/badge/typescript-5.0.0-blue?style=for-the-badge&logo=typescript" />
+  <img src="https://img.shields.io/badge/tailwindcss-3.4.1-38B2AC?style=for-the-badge&logo=tailwind-css" />
+</div>
 
-## Getting Started
+[View Demo](https://easy-resume-theta.vercel.app/) | [Documentation](https://github.com/ChanMeng666/easy-resume#readme) | [Report Bug](https://github.com/ChanMeng666/easy-resume/issues) | [Request Feature](https://github.com/ChanMeng666/easy-resume/issues)
 
-First, run the development server:
+> [!NOTE]
+> Node.js >= 18 required
 
+Create your professional resume in minutes with Easy Resume - a modern, responsive resume builder featuring dark mode support and seamless Vercel deployment.
+
+<br/>
+
+[![Explore GitHub Profile README Generator](https://gradient-svg-generator.vercel.app/?text=👉+Preview+It+Now!+👈&height=40&template=pride-rainbow)](https://easy-resume-theta.vercel.app/)
+
+<br/>
+
+## ✨ Features
+
+- 📱 **Responsive Design** - Perfect viewing on all devices
+- 🌓 **Dark/Light Mode** - Automatic theme detection with manual toggle
+- 🎨 **Customizable** - Easy to modify colors, fonts, and layout
+- 📝 **Type-Safe** - Built with TypeScript for reliable customization
+- 🚀 **One-Click Deploy** - Instant deployment to Vercel
+- ♿ **Accessible** - WCAG 2.1 compliant
+- 🎯 **SEO Optimized** - Best practices for visibility
+
+## 🚀 Quick Start
+
+### Deploy Your Own
+
+Deploy your own version of Easy Resume with Vercel:
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/ChanMeng666/easy-resume)
+
+### Local Development
+
+1. **Clone the repository**
+```bash
+git clone https://github.com/ChanMeng666/easy-resume.git
+cd easy-resume
+```
+
+2. **Install dependencies**
+```bash
+npm install
+# or
+yarn install
+```
+
+3. **Start development server**
 ```bash
 npm run dev
 # or
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+4. **Open [http://localhost:3000](http://localhost:3000)**
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🎨 Customization
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Basic Customization
 
-## Learn More
+1. **Edit Your Information**
+   - Open `src/data/resume.ts`
+   - Update the `resumeData` object with your information
+   - The TypeScript interface will guide you through available fields
 
-To learn more about Next.js, take a look at the following resources:
+```typescript
+export const resumeData: ResumeData = {
+  basics: {
+    name: "Your Name",
+    label: "Your Title",
+    email: "your.email@example.com",
+    // ... other fields
+  },
+  // ... other sections
+};
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+2. **Modify Colors**
+   - Open `globals.css`
+   - Update CSS variables to match your preferred color scheme
+   - Changes will apply to both light and dark modes
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Advanced Customization
 
-## Deploy on Vercel
+1. **Layout Modifications**
+   - Components are in `src/components/`
+   - Each section (Education, Work, etc.) can be modified independently
+   - Tailwind classes make styling changes easy
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+2. **Adding New Sections**
+   - Create a new component in `src/components/`
+   - Add the component to `page.tsx`
+   - Update the `ResumeData` interface in `resume.ts`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🌐 Deployment
+
+### Deploy to Vercel
+
+1. Fork this repository
+2. Create a new project on [Vercel](https://vercel.com)
+3. Connect your forked repository
+4. Deploy!
+
+> [!TIP]
+> Enable automatic deployments to update your resume with every push
+
+### Other Hosting Options
+
+You can also deploy to other platforms:
+
+1. **Static Export**
+```bash
+npm run build
+npm run export
+```
+
+2. **Docker**
+```bash
+docker build -t easy-resume .
+docker run -p 3000:3000 easy-resume
+```
+
+## 🛠️ Tech Stack
+
+- ![Next.js](https://cdn.simpleicons.org/nextdotjs/black) Next.js 15
+- ![TypeScript](https://cdn.simpleicons.org/typescript) TypeScript
+- ![Tailwind CSS](https://cdn.simpleicons.org/tailwindcss) Tailwind CSS
+- ![React](https://cdn.simpleicons.org/react) React 19
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📄 License
+
+Distributed under the MIT License. See `LICENSE` for more information.
+
+## 📧 Contact
+
+**Chan Meng**
+- Website: [chanmeng.live](https://chanmeng.live)
+- GitHub: [@ChanMeng666](https://github.com/ChanMeng666)
+- LinkedIn: [chanmeng666](https://www.linkedin.com/in/chanmeng666)
+
+
+## 💖 Acknowledgments
+
+- [Next.js](https://nextjs.org/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [Vercel](https://vercel.com)
+
+---
+
+<div align="center">
+⭐️ If you find this project useful, please consider giving it a star!
+Made with ❤️ by [Chan Meng](https://github.com/ChanMeng666)
+</div>
