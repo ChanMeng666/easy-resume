@@ -133,10 +133,68 @@ docker run -p 3000:3000 easy-resume
 
 ## 🛠️ Tech Stack
 
-- ![Next.js](https://cdn.simpleicons.org/nextdotjs/black) Next.js 15
-- ![TypeScript](https://cdn.simpleicons.org/typescript) TypeScript
-- ![Tailwind CSS](https://cdn.simpleicons.org/tailwindcss) Tailwind CSS
-- ![React](https://cdn.simpleicons.org/react) React 19
+<table>
+<tr>
+  <td align="center" width="120">
+    <a href="https://nextjs.org">
+      <img src="https://cdn.simpleicons.org/nextdotjs/black" width="48" height="48" alt="Next.js" />
+    </a>
+    <br>Next.js 15
+  </td>
+  <td align="center" width="120">
+    <a href="https://www.typescriptlang.org">
+      <img src="https://cdn.simpleicons.org/typescript/3178C6" width="48" height="48" alt="TypeScript" />
+    </a>
+    <br>TypeScript
+  </td>
+  <td align="center" width="120">
+    <a href="https://tailwindcss.com">
+      <img src="https://cdn.simpleicons.org/tailwindcss/06B6D4" width="48" height="48" alt="Tailwind CSS" />
+    </a>
+    <br>Tailwind CSS
+  </td>
+  <td align="center" width="120">
+    <a href="https://reactjs.org">
+      <img src="https://cdn.simpleicons.org/react/61DAFB" width="48" height="48" alt="React" />
+    </a>
+    <br>React 19
+  </td>
+</tr>
+<tr>
+  <td align="center">
+    <img src="https://img.shields.io/badge/Next.js-15.1.4-black?style=flat-square&logo=next.js" />
+  </td>
+  <td align="center">
+    <img src="https://img.shields.io/badge/TypeScript-5.0.0-blue?style=flat-square&logo=typescript" />
+  </td>
+  <td align="center">
+    <img src="https://img.shields.io/badge/Tailwind-3.4.1-38B2AC?style=flat-square&logo=tailwind-css" />
+  </td>
+  <td align="center">
+    <img src="https://img.shields.io/badge/React-19.0.0-61DAFB?style=flat-square&logo=react" />
+  </td>
+</tr>
+</table>
+
+<style>
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+td {
+  border: none !important;
+  padding: 10px;
+}
+td img:first-child {
+  transition: transform 0.2s;
+}
+td:hover img:first-child {
+  transform: scale(1.1);
+}
+td a {
+  text-decoration: none;
+}
+</style>
 
 ## 🤝 Contributing
 
