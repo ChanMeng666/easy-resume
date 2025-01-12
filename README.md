@@ -23,9 +23,9 @@ Create your professional resume in minutes with Easy Resume - a modern, responsi
 
 <br/>
 
-![screencapture-easy-resume-theta-vercel-app-2025-01-12-00_41_19](https://github.com/user-attachments/assets/9cf5d226-d19a-4870-8b7f-122fe662e0ff)
+![screencapture-easy-resume-theta-vercel-app-2025-01-12-01_11_52](https://github.com/user-attachments/assets/a16b794a-aade-4018-a09e-b61227f10fed)
 
-![screencapture-easy-resume-theta-vercel-app-2025-01-12-00_41_31](https://github.com/user-attachments/assets/99549e53-226a-4bab-90ba-2a2ec38290c0)
+![screencapture-easy-resume-theta-vercel-app-2025-01-12-01_12_07](https://github.com/user-attachments/assets/9c9e9506-286c-4264-b5b8-fca9ae708bb5)
 
 
 ## ✨ Features
