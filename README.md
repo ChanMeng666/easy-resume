@@ -1,6 +1,6 @@
 <div align="center">
   <h1>
-    <img src="https://cdn.simpleicons.org/nextdotjs" alt="Easy Resume Logo" width="80px"><br/>
+    <img src="/public/easy-resume.svg" alt="Easy Resume Logo" width="80px"><br/>
     Easy Resume
   </h1>
   <p>A modern, responsive resume builder with dark mode support</p>
