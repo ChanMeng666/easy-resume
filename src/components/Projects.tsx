@@ -16,7 +16,7 @@ export function Projects({ projects }: ProjectsProps) {
                 <h3 className="font-bold text-lg text-foreground">
                   {project.name}
                 </h3>
-                {project.url && (
+                {project.url && project.url !== '#' && (
                   <a
                     href={project.url}
                     target="_blank"
@@ -37,7 +37,13 @@ export function Projects({ projects }: ProjectsProps) {
                       />
                     </svg>
                     <span className="truncate max-w-[200px] hidden sm:inline">
-                      {new URL(project.url).hostname}
+                      {(() => {
+                        try {
+                          return new URL(project.url).hostname;
+                        } catch {
+                          return 'Link';
+                        }
+                      })()}
                     </span>
                   </a>
                 )}

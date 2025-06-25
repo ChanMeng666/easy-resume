@@ -1,4 +1,5 @@
 import { Header } from "@/components/Header";
+import { Introduction } from "@/components/Introduction";
 import { Education } from "@/components/Education";
 import { Skills } from "@/components/Skills";
 import { Work } from "@/components/Work";
@@ -10,27 +11,30 @@ import { resumeData } from "@/data/resume";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-background py-6 sm:py-8 px-3 sm:px-4">
-      <div className="resume-container max-w-[1100px] mx-auto bg-background-paper 
-        shadow-sm sm:shadow-md dark:shadow-lg rounded-none sm:rounded-lg 
+    <div className="min-h-screen bg-background py-8 sm:py-12 px-4 sm:px-6">
+      <div className="resume-container max-w-[1200px] mx-auto bg-background-paper 
+        shadow-sm sm:shadow-md dark:shadow-lg rounded-lg sm:rounded-xl 
         transition-shadow duration-200"
       >
-        <Header basics={resumeData.basics} />
-        <div className="grid grid-cols-1 lg:grid-cols-[2.5fr,1.5fr] gap-8 lg:gap-12">
-          <div className="space-y-10">
-            <Work work={resumeData.work} />
-            <Projects projects={resumeData.projects} />
+        <div className="px-8 sm:px-10 lg:px-12 py-8 sm:py-10">
+          <Header basics={resumeData.basics} />
+          
+          <div className="mb-12">
+            <Introduction summary={resumeData.basics.summary} />
           </div>
-          <div className="space-y-8">
-            <div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-[2.2fr,1.8fr] gap-12 lg:gap-16">
+            <div className="space-y-12">
+              <Work work={resumeData.work} />
+              <Projects projects={resumeData.projects} />
+            </div>
+            <div className="space-y-10">
               <Education education={resumeData.education} />
-            </div>
-            <div>
               <Skills skills={resumeData.skills} />
-            </div>
-            <div className="space-y-8">
-              <Achievements achievements={resumeData.achievements} />
-              <Certifications certifications={resumeData.certifications} />
+              <div className="space-y-10">
+                <Achievements achievements={resumeData.achievements} />
+                <Certifications certifications={resumeData.certifications} />
+              </div>
             </div>
           </div>
         </div>
