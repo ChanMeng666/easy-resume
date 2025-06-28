@@ -742,6 +742,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 [github-forks-link]: https://github.com/ChanMeng666/easy-resume/forks
 [github-release-link]: https://github.com/ChanMeng666/easy-resume/releases
 [pr-welcome-link]: https://github.com/ChanMeng666/easy-resume/pulls
+[github-license-link]: https://github.com/ChanMeng666/easy-resume/blob/master/LICENSE
 
 <!-- Shield Badges -->
 [github-release-shield]: https://img.shields.io/github/v/release/ChanMeng666/easy-resume?color=369eff&labelColor=black&logo=github&style=flat-square
