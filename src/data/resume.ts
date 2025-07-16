@@ -56,8 +56,8 @@ export const resumeData: ResumeData = {
     profiles: [
       {
         network: "Portfolio",
-        url: "https://2d-portfolio-eta.vercel.app/",
-        label: "chanmeng.live"
+        url: "https://chanmeng.org/",
+        label: "chanmeng.org"
       },
       {
         network: "LinkedIn",
