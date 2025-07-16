@@ -63,6 +63,11 @@ export const resumeData: ResumeData = {
         network: "LinkedIn",
         url: "https://www.linkedin.com/in/chanmeng666",
         label: "chanmeng666"
+      },
+      {
+        network: "GitHub",
+        url: "https://github.com/ChanMeng666",
+        label: "ChanMeng666"
       }
     ]
   },
