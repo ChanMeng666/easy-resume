@@ -67,8 +67,6 @@ src/
 ├── components/
 │   ├── A4Container.tsx       # A4容器
 │   ├── ZoomControl.tsx       # 缩放控制
-│   ├── PageIndicator.tsx     # 页面指示器
-│   ├── ContentEditor.tsx     # 编辑指南
 │   └── ExportPDFButton.tsx   # PDF导出按钮
 ├── config/
 │   ├── a4-settings.ts        # A4布局配置
@@ -137,20 +135,6 @@ export const resumeData: ResumeData = {
 - 滑块精细调节
 - 一键适配屏幕尺寸
 
-### **PageIndicator 组件**
-智能页面管理：
-- 实时内容高度监控
-- 页数计算和提示
-- 填充百分比显示
-- 优化建议提醒
-
-### **ContentEditor 组件**
-编辑辅助工具：
-- 内容长度验证
-- 优化建议生成
-- 快速编辑指南
-- 状态实时监控
-
 ---
 
 ## 📤 PDF导出配置
@@ -187,22 +171,12 @@ PDF导出使用精确A4配置：
 ### **配置文件** (`src/config/a4-settings.ts`)
 - A4尺寸常量定义
 - 字体大小标准
-- 颜色主题配置
 - 工具函数库
 
 ---
 
 ## 🔧 自定义配置
 
-### **修改主题颜色**
-编辑 `src/config/a4-settings.ts`：
-```typescript
-colors: {
-  primary: '#2563eb',     // 主色调
-  secondary: '#4b5563',   // 辅助色
-  accent: '#2563eb',      // 强调色
-  // ...
-}
 ```
 
 ### **调整字体大小**

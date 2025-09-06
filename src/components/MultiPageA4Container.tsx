@@ -8,11 +8,10 @@ interface MultiPageA4ContainerProps {
   zoom?: number;
   className?: string;
   showShadow?: boolean;
-  onPageCountChange?: (count: number) => void;
 }
 
 export const MultiPageA4Container = forwardRef<HTMLDivElement, MultiPageA4ContainerProps>(
-  ({ children, zoom = 1, className = '', showShadow = true, onPageCountChange }, ref) => {
+  ({ children, zoom = 1, className = '', showShadow = true }, ref) => {
     const [pageCount, setPageCount] = useState(1);
     const [measurerRef, setMeasurerRef] = useState<HTMLDivElement | null>(null);
 
@@ -25,7 +24,6 @@ export const MultiPageA4Container = forwardRef<HTMLDivElement, MultiPageA4Contai
             const height = entry.target.scrollHeight;
             const pages = Math.ceil(height / A4_CONFIG.content.height);
             setPageCount(Math.max(1, pages));
-            onPageCountChange?.(pages);
           }
         });
 
@@ -35,13 +33,12 @@ export const MultiPageA4Container = forwardRef<HTMLDivElement, MultiPageA4Contai
         const height = measurerRef.scrollHeight;
         const pages = Math.ceil(height / A4_CONFIG.content.height);
         setPageCount(Math.max(1, pages));
-        onPageCountChange?.(pages);
 
         return () => {
           resizeObserver.disconnect();
         };
       }
-    }, [measurerRef, onPageCountChange, children]);
+    }, [measurerRef, children]);
 
     // Generate pages with content clipping
     const pages = Array.from({ length: pageCount }, (_, index) => (
@@ -77,11 +74,6 @@ export const MultiPageA4Container = forwardRef<HTMLDivElement, MultiPageA4Contai
             >
               {children}
             </div>
-          </div>
-          
-          {/* Page number */}
-          <div className="page-number">
-            {index + 1} / {pageCount}
           </div>
         </div>
       </div>

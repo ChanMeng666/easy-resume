@@ -178,15 +178,6 @@ export default function MultiPagePDFExportPage() {
             margin: 0 4px 4px 0;
           }
           
-          /* Page number */
-          .page-number {
-            position: absolute;
-            bottom: 8mm;
-            right: 8mm;
-            font-size: 9pt;
-            color: #6b7280;
-            font-weight: 500;
-          }
         `}} />
       </head>
       <body>
@@ -196,7 +187,6 @@ export default function MultiPagePDFExportPage() {
               <div className="pdf-content-inner">
                 <A4ResumeLayout resumeData={resumeData} />
               </div>
-              <div className="page-number">1</div>
             </div>
           </div>
           

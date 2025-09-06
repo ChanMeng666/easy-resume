@@ -5,7 +5,7 @@
 # 🚀 Easy Resume<br/><h3>Modern Professional Resume Builder</h3>
 
 A modern, responsive resume builder built with Next.js 15, React 19, and TypeScript.<br/>
-Supports dark/light mode themes, print optimization, and seamless deployment.<br/>
+Supports print optimization and seamless deployment.<br/>
 Create your **FREE** professional resume in minutes.
 
 [Live Demo][demo-link] · [Documentation][docs-link] · [Report Bug][github-issues-link] · [Request Feature][github-issues-link]
@@ -36,7 +36,7 @@ Create your **FREE** professional resume in minutes.
 </div>
 
 > [!IMPORTANT]
-> This project demonstrates modern full-stack development practices with Next.js 15, React 19, and TypeScript. It combines responsive design with dark/light theme support to provide a professional resume building experience. Features include print optimization, type safety, and seamless deployment.
+> This project demonstrates modern full-stack development practices with Next.js 15, React 19, and TypeScript. It combines responsive design to provide a professional resume building experience. Features include print optimization, type safety, and seamless deployment.
 
 <details>
 <summary><kbd>📑 Table of Contents</kbd></summary>
@@ -48,12 +48,10 @@ Create your **FREE** professional resume in minutes.
   - [🌟 Introduction](#-introduction)
   - [✨ Key Features](#-key-features)
     - [`1` Responsive Design](#1-responsive-design)
-    - [`2` Dark/Light Mode](#2-darklight-mode)
     - [`*` Additional Features](#-additional-features)
   - [🛠️ Tech Stack](#️-tech-stack)
   - [🏗️ Architecture](#️-architecture)
     - [Component Structure](#component-structure)
-    - [Theme System](#theme-system)
     - [Data Flow](#data-flow)
   - [⚡️ Performance](#️-performance)
   - [🚀 Getting Started](#-getting-started)
@@ -70,7 +68,7 @@ Create your **FREE** professional resume in minutes.
     - [Adding New Sections](#adding-new-sections)
   - [🎨 Customization](#-customization)
     - [Updating Resume Data](#updating-resume-data)
-    - [Styling and Themes](#styling-and-themes)
+    - [Styling](#styling)
     - [Component Modification](#component-modification)
   - [⌨️ Development](#️-development)
     - [Local Development](#local-development)
@@ -92,7 +90,7 @@ Create your **FREE** professional resume in minutes.
 
 Easy Resume is a modern, responsive resume builder designed for professionals who want to create beautiful, printable resumes using cutting-edge web technologies. Built with Next.js 15, React 19, and TypeScript, this project demonstrates best practices in modern web development while providing a practical tool for resume creation.
 
-Whether you're a developer looking to showcase your technical skills or a professional seeking a clean, modern resume format, Easy Resume provides the perfect foundation. The project features automatic dark/light mode detection, responsive design, and print optimization to ensure your resume looks great both on screen and on paper.
+Whether you're a developer looking to showcase your technical skills or a professional seeking a clean, modern resume format, Easy Resume provides the perfect foundation. The project features responsive design and print optimization to ensure your resume looks great both on screen and on paper.
 
 > [!NOTE]
 > - Node.js >= 18.0 required
@@ -121,16 +119,6 @@ Key capabilities include:
 
 [![][back-to-top]](#readme-top)
 
-### `2` Dark/Light Mode
-
-Revolutionary theme system that automatically detects user preferences while providing manual control. Switch between beautiful light and dark themes with smooth transitions.
-
-**Available Modes:**
-- **Light Mode**: Clean, professional appearance for traditional preferences
-- **Dark Mode**: Modern, easy-on-the-eyes design for extended viewing
-- **Auto Detection**: Automatically follows system theme preferences
-
-[![][back-to-top]](#readme-top)
 
 ### `*` Additional Features
 
@@ -187,7 +175,6 @@ Beyond the core features, this project includes:
 - **UI Library**: React 19 with Hooks
 - **Language**: TypeScript for type safety
 - **Styling**: Tailwind CSS + Custom CSS Variables
-- **Theme**: Context-based theme management
 - **Icons**: Custom SVG icons with inline styling
 
 **Development Tools:**
@@ -211,8 +198,8 @@ Beyond the core features, this project includes:
 ```
 src/
 ├── app/                    # Next.js App Router
-│   ├── globals.css        # Global styles and theme variables
-│   ├── layout.tsx         # Root layout with theme provider
+│   ├── globals.css        # Global styles
+│   ├── layout.tsx         # Root layout
 │   └── page.tsx           # Main resume page
 ├── components/            # Resume section components
 │   ├── Header.tsx         # Contact information and name
@@ -224,34 +211,11 @@ src/
 │   ├── Achievements.tsx   # Notable achievements
 │   ├── Certifications.tsx # Professional certifications
 │   ├── Section.tsx        # Reusable section wrapper
-│   └── ThemeToggle.tsx    # Dark/light mode toggle
-├── contexts/              # React context providers
-│   └── ThemeContext.tsx   # Theme state management
 ├── data/                  # Resume data and types
 │   └── resume.ts          # Resume data structure and content
 └── styles/                # Additional styling
-    └── theme.ts           # Theme configuration
 ```
 
-### Theme System
-
-```mermaid
-graph TB
-    subgraph "Theme Architecture"
-        A[System Preference] --> B[ThemeContext]
-        B --> C[Theme State]
-        C --> D[CSS Variables]
-        D --> E[Component Styles]
-    end
-    
-    subgraph "User Interaction"
-        F[ThemeToggle] --> B
-        G[Manual Override] --> B
-    end
-    
-    B --> H[Local Storage]
-    H --> I[Persistence]
-```
 
 ### Data Flow
 
@@ -261,18 +225,13 @@ sequenceDiagram
     participant P as Page
     participant C as Components
     participant D as Resume Data
-    participant T as Theme Context
     
     U->>P: Loads Resume
     P->>D: Fetch Resume Data
     D->>P: Return Data Object
-    P->>T: Initialize Theme
-    T->>P: Return Theme State
     P->>C: Render Components
     C->>U: Display Resume
-    U->>T: Toggle Theme (Optional)
     T->>C: Update Styles
-    C->>U: Re-render with New Theme
 ```
 
 ## ⚡️ Performance
@@ -423,19 +382,6 @@ services:
 
 **Custom Styling:**
 
-```typescript
-// src/styles/theme.ts
-export const theme = {
-  colors: {
-    primary: {
-      main: '#2563eb',      // Your brand color
-      light: '#3b82f6',
-      dark: '#1d4ed8',
-    },
-    // ... other theme properties
-  }
-};
-```
 
 **Resume Data Structure:**
 
@@ -527,7 +473,7 @@ export const resumeData: ResumeData = {
 };
 ```
 
-### Styling and Themes
+### Styling
 
 **CSS Variables Approach:**
 
@@ -564,7 +510,7 @@ export function Header({ basics }: HeaderProps) {
       <h1 className="text-3xl sm:text-4xl font-bold mb-2 text-foreground">
         {basics.name}
       </h1>
-      <p className="text-lg sm:text-xl text-primary-main dark:text-primary-light mb-4 max-w-2xl mx-auto">
+      <p className="text-lg sm:text-xl text-primary-main mb-4 max-w-2xl mx-auto">
         {basics.label}
       </p>
       {/* ... rest of component */}
@@ -634,7 +580,6 @@ git checkout -b feature/new-resume-section
 **Manual Testing Checklist:**
 
 - ✅ Responsive design on all screen sizes
-- ✅ Dark/light mode functionality
 - ✅ Print layout optimization
 - ✅ Cross-browser compatibility
 - ✅ Accessibility with screen readers

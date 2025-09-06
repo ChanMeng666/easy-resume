@@ -16,15 +16,6 @@
   --text-secondary: #525252;
 }
 
-.dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
-  --background-paper: #1a1a1a;
-  --primary-main: #60a5fa;
-  --primary-light: #93c5fd;
-  --primary-dark: #3b82f6;
-  --text-secondary: #a3a3a3;
-}
 
 body {
   color: var(--foreground);
