@@ -11,7 +11,6 @@ interface PageIndicatorProps {
 export function PageIndicator({ contentRef, className = '' }: PageIndicatorProps) {
   const [contentHeight, setContentHeight] = useState(0);
   const [pageCount, setPageCount] = useState(1);
-  const [isOverflowing, setIsOverflowing] = useState(false);
 
   useEffect(() => {
     if (!contentRef?.current) return;
@@ -19,11 +18,9 @@ export function PageIndicator({ contentRef, className = '' }: PageIndicatorProps
     const updateMeasurements = () => {
       const height = contentRef.current?.scrollHeight || 0;
       const pages = a4Utils.calculatePages(height);
-      const overflow = !a4Utils.fitsInA4(height);
 
       setContentHeight(height);
       setPageCount(pages);
-      setIsOverflowing(overflow);
     };
 
     // 初始测量

@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import { validateResumeContent, generateOptimizationTips } from '@/utils/content-validator';
+import { ResumeData } from '@/data/resume';
 
 interface ContentEditorProps {
-  resumeData: any;
+  resumeData: ResumeData;
   className?: string;
 }
 

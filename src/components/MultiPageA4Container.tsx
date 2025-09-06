@@ -14,7 +14,6 @@ interface MultiPageA4ContainerProps {
 export const MultiPageA4Container = forwardRef<HTMLDivElement, MultiPageA4ContainerProps>(
   ({ children, zoom = 1, className = '', showShadow = true, onPageCountChange }, ref) => {
     const [pageCount, setPageCount] = useState(1);
-    const [contentHeight, setContentHeight] = useState(0);
     const [measurerRef, setMeasurerRef] = useState<HTMLDivElement | null>(null);
 
     // Calculate pages needed based on content height
@@ -25,7 +24,6 @@ export const MultiPageA4Container = forwardRef<HTMLDivElement, MultiPageA4Contai
           for (const entry of entries) {
             const height = entry.target.scrollHeight;
             const pages = Math.ceil(height / A4_CONFIG.content.height);
-            setContentHeight(height);
             setPageCount(Math.max(1, pages));
             onPageCountChange?.(pages);
           }
@@ -36,7 +34,6 @@ export const MultiPageA4Container = forwardRef<HTMLDivElement, MultiPageA4Contai
         // Initial measurement
         const height = measurerRef.scrollHeight;
         const pages = Math.ceil(height / A4_CONFIG.content.height);
-        setContentHeight(height);
         setPageCount(Math.max(1, pages));
         onPageCountChange?.(pages);
 

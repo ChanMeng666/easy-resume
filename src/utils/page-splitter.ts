@@ -6,7 +6,7 @@ export interface PageContent {
   pageNumber: number;
   sections: {
     type: 'header' | 'summary' | 'work' | 'projects' | 'education' | 'skills' | 'achievements' | 'certifications';
-    content: any;
+    content: unknown;
     startIndex?: number;
     endIndex?: number;
   }[];
@@ -33,7 +33,7 @@ export function splitContentIntoPages(resumeData: ResumeData): PageContent[] {
   const maxHeight = A4_CONFIG.content.height;
 
   // Helper function to add section to current page or create new page
-  const addSection = (sectionType: PageContent['sections'][0]['type'], content: any, height: number, extraData?: any) => {
+  const addSection = (sectionType: PageContent['sections'][0]['type'], content: unknown, height: number, extraData?: Record<string, unknown>) => {
     if (currentHeight + height > maxHeight && currentPage.sections.length > 0) {
       // Start new page
       pages.push(currentPage);
@@ -61,17 +61,13 @@ export function splitContentIntoPages(resumeData: ResumeData): PageContent[] {
     addSection('summary', resumeData.basics.summary, summaryHeight);
   }
 
-  // Determine layout strategy based on content
-  const leftColumnSections = ['work', 'projects'] as const;
-  const rightColumnSections = ['education', 'skills', 'achievements', 'certifications'] as const;
-
   // Process left column content (work, projects)
   if (resumeData.work && resumeData.work.length > 0) {
     // Add work section title
     addSection('work', { title: true }, HEIGHT_ESTIMATES.sectionTitle);
     
     // Add work items, potentially splitting across pages
-    let workBatch: any[] = [];
+    let workBatch: ResumeData['work'] = [];
     let batchHeight = 0;
     
     resumeData.work.forEach((workItem, index) => {
@@ -98,7 +94,7 @@ export function splitContentIntoPages(resumeData: ResumeData): PageContent[] {
   if (resumeData.projects && resumeData.projects.length > 0) {
     addSection('projects', { title: true }, HEIGHT_ESTIMATES.sectionTitle);
     
-    let projectBatch: any[] = [];
+    let projectBatch: ResumeData['projects'] = [];
     let batchHeight = 0;
     
     resumeData.projects.forEach((project, index) => {

@@ -1,4 +1,5 @@
 import { A4_CONFIG, a4Utils } from '@/config/a4-settings';
+import { ResumeData } from '@/data/resume';
 
 // Content validation result interface
 export interface ContentValidationResult {
@@ -34,7 +35,7 @@ export function estimateTextHeight(text: string, fontSize: number, lineHeight: n
 }
 
 // Validate resume content fits A4 pages
-export function validateResumeContent(resumeData: any): ContentValidationResult {
+export function validateResumeContent(resumeData: ResumeData): ContentValidationResult {
   let estimatedHeight = 0;
   const warnings: string[] = [];
   const suggestions: string[] = [];
@@ -66,7 +67,7 @@ export function validateResumeContent(resumeData: any): ContentValidationResult 
   if (resumeData.work?.length > 0) {
     leftColumnHeight += A4_CONFIG.fontSize.sectionTitle + A4_CONFIG.spacing.subsection;
     
-    resumeData.work.forEach((job: any, index: number) => {
+    resumeData.work.forEach((job) => {
       // Title and meta information
       leftColumnHeight += A4_CONFIG.fontSize.body * A4_CONFIG.lineHeight.normal * 3;
       
@@ -101,7 +102,7 @@ export function validateResumeContent(resumeData: any): ContentValidationResult 
   if (resumeData.projects?.length > 0) {
     leftColumnHeight += A4_CONFIG.fontSize.sectionTitle + A4_CONFIG.spacing.subsection;
     
-    resumeData.projects.forEach((project: any) => {
+    resumeData.projects.forEach((project) => {
       leftColumnHeight += A4_CONFIG.fontSize.body * A4_CONFIG.lineHeight.normal * 2;
       leftColumnHeight += estimateTextHeight(
         project.description,
@@ -149,7 +150,7 @@ export function validateResumeContent(resumeData: any): ContentValidationResult 
   if (resumeData.skills?.length > 0) {
     rightColumnHeight += A4_CONFIG.fontSize.sectionTitle + A4_CONFIG.spacing.subsection;
     
-    resumeData.skills.forEach((skillGroup: any) => {
+    resumeData.skills.forEach((skillGroup) => {
       rightColumnHeight += A4_CONFIG.fontSize.body * A4_CONFIG.lineHeight.normal;
       const skillsPerRow = Math.floor(rightColumnWidth / 80); // Estimate skills per row
       const skillRows = Math.ceil(skillGroup.keywords.length / skillsPerRow);

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import puppeteer from 'puppeteer';
+import puppeteer, { PDFOptions } from 'puppeteer';
 
 export async function POST(req: NextRequest) {
   console.log('PDF generation started...');
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     console.log('Multi-page PDF export page loaded successfully');
 
     // Set PDF page configuration - precise A4 dimensions
-    const pdfOptions: puppeteer.PDFOptions = {
+    const pdfOptions: PDFOptions = {
       format: 'A4',
       printBackground: true,
       margin: {

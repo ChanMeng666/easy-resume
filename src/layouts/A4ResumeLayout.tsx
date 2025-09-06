@@ -1,7 +1,6 @@
 'use client';
 
 import { ResumeData } from '@/data/resume';
-import { A4_CONFIG } from '@/config/a4-settings';
 
 // A4专用组件
 import { A4Header } from './A4Header';
