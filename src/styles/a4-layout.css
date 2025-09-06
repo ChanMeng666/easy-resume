@@ -1,0 +1,373 @@
+/* A4布局专用样式 */
+
+/* A4容器基础样式 */
+.a4-container {
+  width: 794px;
+  height: 1123px;
+  background: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  margin: 2rem auto;
+  position: relative;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  color: #111827;
+  overflow: hidden;
+}
+
+.a4-content {
+  width: 698px;
+  height: 1027px;
+  margin: 48px;
+  position: relative;
+}
+
+/* A4 zoom support */
+.a4-container.zoom-50 {
+  transform: scale(0.5);
+  transform-origin: top center;
+}
+
+.a4-container.zoom-75 {
+  transform: scale(0.75);
+  transform-origin: top center;
+}
+
+.a4-container.zoom-100 {
+  transform: scale(1);
+  transform-origin: top center;
+}
+
+.a4-container.zoom-125 {
+  transform: scale(1.25);
+  transform-origin: top center;
+}
+
+.a4-container.zoom-150 {
+  transform: scale(1.5);
+  transform-origin: top center;
+}
+
+/* Multi-page A4 support */
+.multi-page-a4-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  padding: 2rem 1rem;
+  background: #f3f4f6;
+}
+
+.multi-page-container {
+  position: relative;
+}
+
+.content-measurer {
+  position: absolute;
+  visibility: hidden;
+  width: 698px;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.pages-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+}
+
+.a4-page {
+  position: relative;
+}
+
+/* Page number */
+.page-number {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  font-size: 9pt;
+  color: #6b7280;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid #e5e7eb;
+}
+
+/* A4 responsive wrapper */
+.a4-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  padding: 2rem 1rem;
+  background: #f3f4f6;
+}
+
+/* A4 layout grid */
+.a4-grid {
+  display: grid;
+  grid-template-columns: 60% 38%;
+  grid-gap: 2%;
+  height: 100%;
+  align-content: start;
+}
+
+.a4-left-column {
+  grid-column: 1;
+}
+
+.a4-right-column {
+  grid-column: 2;
+}
+
+/* A4 header styles */
+.a4-header {
+  grid-column: 1 / -1;
+  text-align: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.a4-name {
+  font-size: 18pt;
+  font-weight: 700;
+  color: #1f2937;
+  line-height: 1.2;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.025em;
+}
+
+.a4-position {
+  font-size: 14pt;
+  font-weight: 500;
+  color: #2563eb;
+  line-height: 1.2;
+  margin: 0 0 12px 0;
+}
+
+.a4-contact {
+  font-size: 10pt;
+  color: #6b7280;
+  line-height: 1.4;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.a4-contact-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.a4-contact-icon {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+/* A4 section titles */
+.a4-section {
+  margin-bottom: 24px;
+  break-inside: avoid;
+}
+
+.a4-section-title {
+  font-size: 12pt;
+  font-weight: 700;
+  color: #1f2937;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  margin: 0 0 12px 0;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #2563eb;
+  line-height: 1.2;
+}
+
+/* A4 content styles */
+.a4-section-content {
+  font-size: 11pt;
+  line-height: 1.4;
+  color: #111827;
+}
+
+.a4-item {
+  margin-bottom: 16px;
+  break-inside: avoid;
+}
+
+.a4-item:last-child {
+  margin-bottom: 0;
+}
+
+.a4-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 4px;
+  gap: 12px;
+}
+
+.a4-item-title {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 11pt;
+  line-height: 1.2;
+  flex: 1;
+}
+
+.a4-item-meta {
+  font-size: 10pt;
+  color: #6b7280;
+  text-align: right;
+  flex-shrink: 0;
+  line-height: 1.2;
+}
+
+.a4-item-subtitle {
+  font-size: 10pt;
+  color: #2563eb;
+  font-weight: 500;
+  margin-bottom: 8px;
+  line-height: 1.2;
+}
+
+.a4-item-description {
+  font-size: 11pt;
+  line-height: 1.4;
+  color: #4b5563;
+  margin-bottom: 8px;
+}
+
+/* A4 list styles */
+.a4-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.a4-list-item {
+  position: relative;
+  padding-left: 12px;
+  margin-bottom: 4px;
+  font-size: 11pt;
+  line-height: 1.4;
+  color: #4b5563;
+}
+
+.a4-list-item::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: #2563eb;
+  font-weight: bold;
+}
+
+/* A4 skill tags */
+.a4-skills-grid {
+  margin-bottom: 16px;
+}
+
+.a4-skill-category {
+  font-weight: 600;
+  font-size: 10pt;
+  color: #1f2937;
+  margin-bottom: 6px;
+  line-height: 1.2;
+}
+
+.a4-skill-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.a4-skill-tag {
+  font-size: 9pt;
+  padding: 2px 6px;
+  background: #f3f4f6;
+  color: #4b5563;
+  border: 1px solid #e5e7eb;
+  border-radius: 3px;
+  line-height: 1.2;
+  display: inline-block;
+}
+
+/* A4 summary section */
+.a4-summary {
+  grid-column: 1 / -1;
+  font-size: 11pt;
+  line-height: 1.4;
+  color: #4b5563;
+  text-align: justify;
+  margin-bottom: 24px;
+  text-justify: inter-word;
+}
+
+/* Page break styles */
+.a4-page-break {
+  page-break-before: always;
+  break-before: page;
+}
+
+.a4-no-break {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+/* Small screen adaptation */
+@media (max-width: 768px) {
+  .a4-wrapper {
+    padding: 1rem 0.5rem;
+  }
+  
+  .a4-container {
+    transform: scale(0.6);
+    transform-origin: top center;
+    margin: 1rem auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .a4-container {
+    transform: scale(0.45);
+    margin: 0.5rem auto;
+  }
+  
+  .a4-wrapper {
+    padding: 0.5rem 0.25rem;
+  }
+}
+
+/* Precise print styles */
+@media print {
+  .a4-wrapper {
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  
+  .a4-container {
+    box-shadow: none !important;
+    margin: 0 !important;
+    transform: none !important;
+    width: 210mm !important;
+    height: 297mm !important;
+  }
+  
+  .a4-content {
+    width: calc(210mm - 25.4mm) !important;
+    height: calc(297mm - 25.4mm) !important;
+    margin: 12.7mm !important;
+  }
+  
+  * {
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+}

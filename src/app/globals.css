@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+/* 导入PDF和A4专用样式 */
+@import url('../styles/pdf.css');
+@import url('../styles/a4-layout.css');
+
 :root {
   --background: #f5f5f5;
   --foreground: #171717;
@@ -141,21 +145,54 @@ h1, h2, h3 {
   }
 }
 
-/* 打印样式优化 */
+/* 增强的打印样式优化 */
 @media print {
+  /* 隐藏浮动按钮 */
+  .fixed {
+    display: none !important;
+  }
+
+  /* 页面基础设置 */
+  * {
+    -webkit-print-color-adjust: exact;
+    color-adjust: exact;
+  }
+
   .resume-container {
-    box-shadow: none;
-    max-width: none;
-    margin: 0;
-    padding: 1rem;
+    box-shadow: none !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0.5rem !important;
+    background: white !important;
+    border-radius: 0 !important;
   }
   
   .resume-container::before {
-    display: none;
+    display: none !important;
   }
   
   body {
-    background: white;
-    color: black;
+    background: white !important;
+    color: black !important;
+    font-size: 12pt;
+    line-height: 1.4;
+  }
+
+  /* 优化标题层级 */
+  h1 { font-size: 18pt !important; }
+  h2 { font-size: 14pt !important; }
+  h3 { font-size: 12pt !important; }
+
+  /* 防止分页断裂 */
+  h1, h2, h3 {
+    page-break-after: avoid;
+  }
+
+  .work-item,
+  .project-item,
+  .education-item,
+  section {
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
 }

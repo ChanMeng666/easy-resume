@@ -1,0 +1,191 @@
+/* PDF导出专用样式 */
+
+/* PDF页面配置 */
+@page {
+  size: A4;
+  margin: 0.5in;
+}
+
+/* PDF根容器样式 */
+@media print {
+  * {
+    box-shadow: none !important;
+  }
+
+  html {
+    font-size: 14px; /* 适合PDF的基础字体大小 */
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', sans-serif;
+    line-height: 1.4; /* 减少行高以节省空间 */
+    -webkit-print-color-adjust: exact;
+    color-adjust: exact;
+  }
+
+  /* 隐藏不需要打印的元素 */
+  .fixed,
+  button,
+  [role="button"] {
+    display: none !important;
+  }
+
+  /* 简历容器优化 */
+  .resume-container {
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  .resume-container::before {
+    display: none !important;
+  }
+
+  /* 头部样式 */
+  h1 {
+    font-size: 1.8rem !important;
+    margin-bottom: 0.5rem !important;
+    page-break-after: avoid;
+  }
+
+  h2 {
+    font-size: 1.2rem !important;
+    margin-top: 1rem !important;
+    margin-bottom: 0.5rem !important;
+    page-break-after: avoid;
+    border-bottom: 1px solid #ccc !important;
+    padding-bottom: 0.25rem !important;
+  }
+
+  h3 {
+    font-size: 1rem !important;
+    margin-top: 0.5rem !important;
+    margin-bottom: 0.25rem !important;
+    page-break-after: avoid;
+  }
+
+  /* 段落和文本 */
+  p {
+    margin-bottom: 0.5rem !important;
+    line-height: 1.4 !important;
+  }
+
+  /* 列表样式 */
+  ul, ol {
+    margin-top: 0.25rem !important;
+    margin-bottom: 0.5rem !important;
+    padding-left: 1rem !important;
+  }
+
+  li {
+    margin-bottom: 0.2rem !important;
+    line-height: 1.3 !important;
+    page-break-inside: avoid;
+  }
+
+  /* 防止分页问题 */
+  .work-item,
+  .project-item,
+  .education-item {
+    page-break-inside: avoid;
+    margin-bottom: 0.8rem !important;
+  }
+
+  /* 网格布局在PDF中的优化 */
+  .grid {
+    display: block !important;
+  }
+
+  .grid > div {
+    width: 100% !important;
+    margin-bottom: 1rem !important;
+  }
+
+  /* 技能标签样式 */
+  .skill-tag {
+    background-color: #f3f4f6 !important;
+    color: #374151 !important;
+    border: 1px solid #d1d5db !important;
+    padding: 0.125rem 0.375rem !important;
+    margin: 0.125rem !important;
+    display: inline-block !important;
+    border-radius: 0.25rem !important;
+    font-size: 0.75rem !important;
+  }
+
+  /* 链接样式 */
+  a {
+    color: #1f2937 !important;
+    text-decoration: underline !important;
+  }
+
+  /* 联系信息样式 */
+  .contact-info {
+    font-size: 0.875rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  /* 日期和位置信息 */
+  .date-range,
+  .location {
+    font-size: 0.75rem !important;
+    color: #6b7280 !important;
+  }
+
+  /* 确保内容不会被截断 */
+  .space-y-12 > * {
+    margin-top: 0.8rem !important;
+    margin-bottom: 0.8rem !important;
+  }
+
+  .space-y-10 > * {
+    margin-top: 0.6rem !important;
+    margin-bottom: 0.6rem !important;
+  }
+
+  .space-y-5 > * {
+    margin-top: 0.4rem !important;
+    margin-bottom: 0.4rem !important;
+  }
+
+  /* 响应式调整 */
+  @media print and (max-width: 8.5in) {
+    html {
+      font-size: 12px;
+    }
+    
+    h1 {
+      font-size: 1.6rem !important;
+    }
+    
+    h2 {
+      font-size: 1.1rem !important;
+    }
+  }
+}
+
+/* PDF预览模式样式（可选） */
+.pdf-preview {
+  background: white;
+  color: black;
+  max-width: 8.27in; /* A4宽度 */
+  min-height: 11.69in; /* A4高度 */
+  margin: 0 auto;
+  padding: 0.5in;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+.pdf-preview * {
+  box-shadow: none !important;
+}
+
+.pdf-preview .skill-tag {
+  background-color: #f3f4f6 !important;
+  color: #374151 !important;
+  border: 1px solid #d1d5db !important;
+}
