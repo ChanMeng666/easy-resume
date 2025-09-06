@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, forwardRef, useState, useEffect } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { A4_CONFIG } from '@/config/a4-settings';
 
 interface MultiPageA4ContainerProps {
@@ -10,8 +10,7 @@ interface MultiPageA4ContainerProps {
   showShadow?: boolean;
 }
 
-export const MultiPageA4Container = forwardRef<HTMLDivElement, MultiPageA4ContainerProps>(
-  ({ children, zoom = 1, className = '', showShadow = true }, ref) => {
+export const MultiPageA4Container = ({ children, zoom = 1, className = '', showShadow = true }: MultiPageA4ContainerProps) => {
     const [pageCount, setPageCount] = useState(1);
     const [measurerRef, setMeasurerRef] = useState<HTMLDivElement | null>(null);
 
@@ -81,7 +80,7 @@ export const MultiPageA4Container = forwardRef<HTMLDivElement, MultiPageA4Contai
 
     return (
       <div className="multi-page-a4-wrapper">
-        <div ref={ref} className={`multi-page-container ${className}`}>
+        <div className={`multi-page-container ${className}`}>
           {/* Hidden content measurer */}
           <div 
             ref={setMeasurerRef}
@@ -105,7 +104,4 @@ export const MultiPageA4Container = forwardRef<HTMLDivElement, MultiPageA4Contai
         </div>
       </div>
     );
-  }
-);
-
-MultiPageA4Container.displayName = 'MultiPageA4Container';
+};

@@ -16,7 +16,6 @@ import { ExportPDFButton } from "@/components/ExportPDFButton";
 export default function Home() {
   const [isA4Mode, setIsA4Mode] = useState(false);
   const [zoom, setZoom] = useState(1);
-  const [a4ContentRef, setA4ContentRef] = useState<HTMLDivElement | null>(null);
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${
@@ -83,7 +82,6 @@ export default function Home() {
             <MultiPageA4Container 
               zoom={zoom} 
               showShadow={true}
-              ref={setA4ContentRef}
             >
               <A4ResumeLayout resumeData={resumeData} />
             </MultiPageA4Container>
