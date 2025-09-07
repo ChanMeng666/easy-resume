@@ -20,9 +20,14 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             
-            {/* Left: Title */}
+            {/* Left: Logo and Title */}
             <div className="flex items-center gap-3">
-              <span className="text-sm font-medium text-gray-700">A4 Resume Editor</span>
+              <img 
+                src="/easy-resume.svg" 
+                alt="Easy Resume" 
+                className="w-8 h-8"
+              />
+              <span className="text-sm font-medium text-gray-700">Easy Resume</span>
             </div>
             
             {/* Center: Zoom control */}

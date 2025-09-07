@@ -13,8 +13,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Resume Builder",
+  title: "Easy Resume",
   description: "Professional resume builder application",
+  icons: {
+    icon: '/easy-resume.svg',
+    shortcut: '/easy-resume.svg',
+    apple: '/easy-resume.svg',
+  },
 };
 
 export default function RootLayout({
