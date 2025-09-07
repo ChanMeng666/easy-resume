@@ -105,6 +105,23 @@ Whether you're a developer looking to showcase your technical skills or a profes
 
 [![][image-star]][github-stars-link]
 
+## 📸 Screenshots
+
+<div align="center">
+  <table>
+    <tr>
+      <td align="center">
+        <img src="./public/screenshots/屏幕截图 2025-09-07 155124.png" alt="Easy Resume Preview 1" width="400"/>
+        <br><em>Resume Preview - Desktop View</em>
+      </td>
+      <td align="center">
+        <img src="./public/screenshots/屏幕截图 2025-09-07 155140.png" alt="Easy Resume Preview 2" width="400"/>
+        <br><em>Resume Preview - Mobile View</em>
+      </td>
+    </tr>
+  </table>
+</div>
+
 ## ✨ Key Features
 
 ### `1` Responsive Design
