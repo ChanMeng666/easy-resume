@@ -10,7 +10,7 @@
   position: relative;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   color: #111827;
-  overflow: hidden;
+  /* 移除 overflow: hidden，允许内容在调试时可见 */
 }
 
 .a4-content {
@@ -99,6 +99,14 @@
   grid-gap: 2%;
   height: 100%;
   align-content: start;
+  overflow: visible; /* 确保内容可见 */
+}
+
+/* 确保栏目容器不会溢出 */
+.a4-left-column, .a4-right-column {
+  overflow: visible;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .a4-left-column {
@@ -161,8 +169,57 @@
 .a4-section {
   margin-bottom: 24px;
   break-inside: avoid;
+  page-break-inside: avoid;
 }
 
+/* 智能分页样式 */
+.smart-pagination .smart-page-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: visible; /* 确保调试时内容可见 */
+}
+
+.smart-pagination .a4-section-container {
+  break-inside: avoid;
+  page-break-inside: avoid;
+  margin-bottom: 16px;
+  overflow: visible; /* 防止内容被截断 */
+}
+
+.smart-pagination .a4-section-container:last-child {
+  margin-bottom: 0;
+}
+
+/* 调试模式样式 */
+.smart-pagination[data-debug="true"] .a4-section-container {
+  position: relative;
+  border: 1px dotted rgba(255, 152, 0, 0.3);
+}
+
+.smart-pagination[data-debug="true"] .a4-section-container::before {
+  content: attr(data-section-type);
+  position: absolute;
+  top: -15px;
+  left: 0;
+  background: rgba(255, 152, 0, 0.8);
+  color: white;
+  padding: 2px 6px;
+  font-size: 9px;
+  border-radius: 3px;
+  z-index: 100;
+}
+
+/* 确保内容单元完整性 */
+.a4-item {
+  margin-bottom: 16px;
+  break-inside: avoid;
+  page-break-inside: avoid;
+  orphans: 2;
+  widows: 2;
+}
+
+/* 避免section标题孤立 */
 .a4-section-title {
   font-size: 12pt;
   font-weight: 700;
@@ -173,6 +230,56 @@
   padding-bottom: 4px;
   border-bottom: 1px solid #2563eb;
   line-height: 1.2;
+  break-after: avoid;
+  page-break-after: avoid;
+  orphans: 2;
+}
+
+/* 保持工作经历项目完整性 */
+.a4-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 4px;
+  gap: 12px;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+/* 确保列表项完整性 */
+.a4-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.a4-list-item {
+  position: relative;
+  padding-left: 12px;
+  margin-bottom: 4px;
+  font-size: 11pt;
+  line-height: 1.4;
+  color: #4b5563;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+/* 技能标签组保持完整 */
+.a4-skills-grid {
+  margin-bottom: 16px;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.a4-skill-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 12px;
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 /* A4 content styles */
@@ -182,22 +289,13 @@
   color: #111827;
 }
 
-.a4-item {
-  margin-bottom: 16px;
-  break-inside: avoid;
-}
+/* .a4-item already updated above with enhanced break properties */
 
 .a4-item:last-child {
   margin-bottom: 0;
 }
 
-.a4-item-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 4px;
-  gap: 12px;
-}
+/* .a4-item-header already updated above with enhanced break properties */
 
 .a4-item-title {
   font-weight: 600;
@@ -231,20 +329,7 @@
 }
 
 /* A4 list styles */
-.a4-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.a4-list-item {
-  position: relative;
-  padding-left: 12px;
-  margin-bottom: 4px;
-  font-size: 11pt;
-  line-height: 1.4;
-  color: #4b5563;
-}
+/* .a4-list and .a4-list-item already updated above with enhanced break properties */
 
 .a4-list-item::before {
   content: '•';
@@ -254,10 +339,7 @@
   font-weight: bold;
 }
 
-/* A4 skill tags */
-.a4-skills-grid {
-  margin-bottom: 16px;
-}
+/* A4 skill tags - .a4-skills-grid already updated above with enhanced break properties */
 
 .a4-skill-category {
   font-weight: 600;
@@ -267,12 +349,7 @@
   line-height: 1.2;
 }
 
-.a4-skill-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-bottom: 12px;
-}
+/* .a4-skill-tags already updated above with enhanced break properties */
 
 .a4-skill-tag {
   font-size: 9pt;
@@ -283,6 +360,12 @@
   border-radius: 3px;
   line-height: 1.2;
   display: inline-block;
+  margin: 0 4px 4px 0;
+  white-space: nowrap; /* 防止标签内文字换行 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%; /* 确保标签不会超出容器宽度 */
+  box-sizing: border-box;
 }
 
 /* A4 summary section */

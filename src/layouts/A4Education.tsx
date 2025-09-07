@@ -2,14 +2,15 @@ import { ResumeData } from '@/data/resume';
 
 interface A4EducationProps {
   education: ResumeData['education'];
+  hideTitle?: boolean;
 }
 
-export function A4Education({ education }: A4EducationProps) {
+export function A4Education({ education, hideTitle = false }: A4EducationProps) {
   if (education.length === 0) return null;
 
   return (
     <section className="a4-section">
-      <h2 className="a4-section-title">Education</h2>
+      {!hideTitle && <h2 className="a4-section-title">Education</h2>}
       
       <div className="a4-section-content">
         {education.map((edu, index) => (

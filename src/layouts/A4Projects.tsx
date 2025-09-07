@@ -2,14 +2,15 @@ import { ResumeData } from '@/data/resume';
 
 interface A4ProjectsProps {
   projects: ResumeData['projects'];
+  hideTitle?: boolean; // 隐藏标题（用于continuation页面）
 }
 
-export function A4Projects({ projects }: A4ProjectsProps) {
+export function A4Projects({ projects, hideTitle = false }: A4ProjectsProps) {
   if (projects.length === 0) return null;
 
   return (
     <section className="a4-section">
-      <h2 className="a4-section-title">Projects</h2>
+      {!hideTitle && <h2 className="a4-section-title">Projects</h2>}
       
       <div className="a4-section-content">
         {projects.map((project, index) => (

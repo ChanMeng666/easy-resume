@@ -60,9 +60,10 @@ export default function Home() {
           <MultiPageA4Container 
             zoom={zoom} 
             showShadow={true}
-          >
-            <A4ResumeLayout resumeData={resumeData} />
-          </MultiPageA4Container>
+            resumeData={resumeData}
+            useFineGrainedPagination={true}
+            debugMode={process.env.NODE_ENV === 'development'}
+          />
         </div>
       </main>
 
