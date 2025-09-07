@@ -10,6 +10,7 @@ import { A4ResumeLayout } from '@/layouts/A4ResumeLayout';
 import { MultiPageA4Container } from '@/components/MultiPageA4Container';
 import { ZoomControl } from '@/components/ZoomControl';
 import { ExportPDFButton } from "@/components/ExportPDFButton";
+import { Footer } from '@/components/Footer';
 
 export default function Home() {
   const [zoom, setZoom] = useState(1);
@@ -75,6 +76,8 @@ export default function Home() {
         />
       </div>
 
+      {/* Footer */}
+      <Footer />
 
     </div>
   );
