@@ -1,7 +1,6 @@
 'use client';
 
 import { PageContent } from '@/utils/page-splitter';
-import { ResumeData } from '@/data/resume';
 
 // 导入布局组件
 import { A4Header } from '@/layouts/A4Header';
@@ -9,11 +8,10 @@ import { A4Summary } from '@/layouts/A4Summary';
 
 interface FineGrainedPageRendererProps {
   pageContent: PageContent;
-  resumeData: ResumeData;
   debugMode?: boolean;
 }
 
-export const FineGrainedPageRenderer = ({ pageContent, resumeData, debugMode = false }: FineGrainedPageRendererProps) => {
+export const FineGrainedPageRenderer = ({ pageContent, debugMode = false }: FineGrainedPageRendererProps) => {
   const { header, summary, leftColumn, rightColumn } = pageContent;
   
   // 检查是否有左栏或右栏内容

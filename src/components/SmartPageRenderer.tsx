@@ -1,7 +1,6 @@
 'use client';
 
 import { PageContent } from '@/utils/page-splitter';
-import { ResumeData } from '@/data/resume';
 
 // 导入布局组件
 import { A4Header } from '@/layouts/A4Header';
@@ -15,11 +14,10 @@ import { A4Certifications } from '@/layouts/A4Certifications';
 
 interface SmartPageRendererProps {
   pageContent: PageContent;
-  resumeData: ResumeData;
   debugMode?: boolean;
 }
 
-export const SmartPageRenderer = ({ pageContent, resumeData, debugMode = false }: SmartPageRendererProps) => {
+export const SmartPageRenderer = ({ pageContent, debugMode = false }: SmartPageRendererProps) => {
   const { header, summary, leftColumn, rightColumn } = pageContent;
   
   // 检查是否有左栏或右栏内容

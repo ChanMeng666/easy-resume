@@ -3,9 +3,6 @@
 import { useState } from 'react';
 import { resumeData } from "@/data/resume";
 
-// 布局组件
-import { A4ResumeLayout } from '@/layouts/A4ResumeLayout';
-
 // UI控制组件
 import { MultiPageA4Container } from '@/components/MultiPageA4Container';
 import { ZoomControl } from '@/components/ZoomControl';

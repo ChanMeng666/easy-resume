@@ -31,7 +31,7 @@ export const MultiPageA4Container = ({
   showShadow = true 
 }: MultiPageA4ContainerProps) => {
   // 智能分页逻辑
-  const smartPages = useMemo(() => {
+  const smartPages: PageContent[] = useMemo(() => {
     if ((!useSmartPagination && !useFineGrainedPagination) || !resumeData) return [];
     const rawPages = splitContentIntoPages(resumeData);
     return optimizePageBreaks(rawPages);
@@ -72,13 +72,11 @@ export const MultiPageA4Container = ({
                     {useFineGrainedPagination ? (
                       <FineGrainedPageRenderer 
                         pageContent={pageContent} 
-                        resumeData={resumeData}
                         debugMode={debugMode}
                       />
                     ) : (
                       <SmartPageRenderer 
                         pageContent={pageContent} 
-                        resumeData={resumeData}
                         debugMode={debugMode}
                       />
                     )}
@@ -125,19 +123,22 @@ export const MultiPageA4Container = ({
 
   // 回退到传统的基于高度的分页（为了向后兼容）
   return <LegacyMultiPageContainer 
-    children={children} 
     zoom={zoom} 
     className={className} 
     showShadow={showShadow} 
-  />;
+    debugMode={debugMode}
+  >
+    {children}
+  </LegacyMultiPageContainer>;
 };
 
 // 传统的分页组件（保持向后兼容）
-const LegacyMultiPageContainer = ({ children, zoom = 1, className = '', showShadow = true }: {
+const LegacyMultiPageContainer = ({ children, zoom = 1, className = '', showShadow = true, debugMode = false }: {
   children?: ReactNode;
   zoom?: number;
   className?: string;
   showShadow?: boolean;
+  debugMode?: boolean;
 }) => {
   // 这里保留原有的逻辑作为回退方案，但添加了改进的CSS来减少内容切断
   return (

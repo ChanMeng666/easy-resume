@@ -28,7 +28,7 @@ export interface PageContent {
 export interface ContentUnit {
   type: 'header' | 'summary' | 'work-item' | 'project-item' | 'section-title' | 'education-section' | 'skills-section' | 'achievements-section' | 'certifications-section';
   height: number;
-  data: any;
+  data: unknown;
   breakable: boolean; // 是否可以被分割
   priority: number; // 优先级，用于决定分页策略
 }
@@ -113,19 +113,19 @@ export const HEIGHT_ESTIMATES = {
 function intelligentContentSplit(resumeData: ResumeData, firstPageAvailableHeight: number, otherPageAvailableHeight: number): PageContent[] {
   
   // 更细粒度的内容单元定义
-  interface ContentUnit {
+  interface IntelligentContentUnit {
     id: string;
     type: 'section-title' | 'work-header' | 'work-highlight' | 'project-header' | 'project-highlight' | 
           'education-item' | 'skill-group' | 'achievement-item' | 'certification-item';
     sectionType: 'work' | 'project' | 'education' | 'skills' | 'achievements' | 'certifications';
-    data: any;
+    data: unknown;
     height: number;
     column: 'left' | 'right';
     breakable: boolean; // 是否可以被分页打断
     parentId?: string; // 父级内容ID，用于关联
   }
   
-  const contentUnits: ContentUnit[] = [];
+  const contentUnits: IntelligentContentUnit[] = [];
   let unitIdCounter = 0;
   
   // 生成唯一ID
@@ -346,11 +346,11 @@ function intelligentContentSplit(resumeData: ResumeData, firstPageAvailableHeigh
   }
   
   // 全新的真正独立双栏分页算法
-  let leftColumnQueue = contentUnits.filter(unit => unit.column === 'left');
-  let rightColumnQueue = contentUnits.filter(unit => unit.column === 'right');
+  const leftColumnQueue = contentUnits.filter(unit => unit.column === 'left');
+  const rightColumnQueue = contentUnits.filter(unit => unit.column === 'right');
   
   // 全局跟踪已显示的section标题 
-  let globalSectionStates = new Map<string, boolean>();
+  const globalSectionStates = new Map<string, boolean>();
   
   // 独立的左右栏页面索引
   let leftPageIndex = 0;
@@ -451,7 +451,7 @@ function intelligentContentSplit(resumeData: ResumeData, firstPageAvailableHeigh
               lastWork.highlights = [];
             }
             if (lastWork) {
-              lastWork.highlights.push(unit.data.highlight);
+              lastWork.highlights.push((unit.data as { highlight: string }).highlight);
             }
             leftColumnHeight += unit.height;
             if (process.env.NODE_ENV === 'development') {
@@ -488,7 +488,7 @@ function intelligentContentSplit(resumeData: ResumeData, firstPageAvailableHeigh
               lastProject.highlights = [];
             }
             if (lastProject) {
-              lastProject.highlights.push(unit.data.highlight);
+              lastProject.highlights.push((unit.data as { highlight: string }).highlight);
             }
             leftColumnHeight += unit.height;
             if (process.env.NODE_ENV === 'development') {
@@ -582,7 +582,7 @@ function intelligentContentSplit(resumeData: ResumeData, firstPageAvailableHeigh
             if (!page.rightColumn.education) {
               page.rightColumn.education = [];
             }
-            page.rightColumn.education.push(unit.data);
+            page.rightColumn.education.push(unit.data as ResumeData['education'][0]);
             
             // 检查education continuation
             if (globalSectionStates.has('education') && page.rightColumn.education.length === 1 && currentPage > 0) {
@@ -608,7 +608,7 @@ function intelligentContentSplit(resumeData: ResumeData, firstPageAvailableHeigh
             if (!page.rightColumn.skills) {
               page.rightColumn.skills = [];
             }
-            page.rightColumn.skills.push(unit.data);
+            page.rightColumn.skills.push(unit.data as ResumeData['skills'][0]);
             
             // 检查skills continuation
             if (globalSectionStates.has('skills') && page.rightColumn.skills.length === 1 && currentPage > 0) {
@@ -634,7 +634,7 @@ function intelligentContentSplit(resumeData: ResumeData, firstPageAvailableHeigh
             if (!page.rightColumn.achievements) {
               page.rightColumn.achievements = [];
             }
-            page.rightColumn.achievements.push(unit.data.achievement);
+            page.rightColumn.achievements.push((unit.data as { achievement: string }).achievement);
             
             // 检查achievements continuation
             if (globalSectionStates.has('achievements') && page.rightColumn.achievements.length === 1 && currentPage > 0) {
@@ -660,7 +660,7 @@ function intelligentContentSplit(resumeData: ResumeData, firstPageAvailableHeigh
             if (!page.rightColumn.certifications) {
               page.rightColumn.certifications = [];
             }
-            page.rightColumn.certifications.push(unit.data.certification);
+            page.rightColumn.certifications.push((unit.data as { certification: string }).certification);
             
             // 检查certifications continuation
             if (globalSectionStates.has('certifications') && page.rightColumn.certifications.length === 1 && currentPage > 0) {
@@ -707,7 +707,7 @@ function intelligentContentSplit(resumeData: ResumeData, firstPageAvailableHeigh
   // 将Map转换为数组并排序
   const pages = Array.from(allPages.entries())
     .sort(([a], [b]) => a - b)
-    .map(([_, page]) => page);
+    .map(([, page]) => page);
   
   if (process.env.NODE_ENV === 'development') {
     console.log(`双栏独立分页完成，共生成 ${pages.length} 页`);
@@ -729,9 +729,9 @@ function intelligentContentSplit(resumeData: ResumeData, firstPageAvailableHeigh
   return pages;
 }
 
-// 重构工作项目 - 预览即将添加的highlights
-function reconstructWorkItem(workData: any, queue: any[], workId: string): any {
-  const workItem = { ...workData, highlights: [] };
+// 重构工作项目 - 预览即将添加的highlights  
+function reconstructWorkItem(workData: unknown, queue: { type: string; parentId?: string; data: unknown }[], workId: string): ResumeData['work'][0] {
+  const workItem = { ...(workData as ResumeData['work'][0]), highlights: [] };
   
   // 查找属于这个工作的highlights但不移除（让主循环处理）
   const workHighlights = queue.filter(unit => 
@@ -747,8 +747,8 @@ function reconstructWorkItem(workData: any, queue: any[], workId: string): any {
 }
 
 // 重构项目 - 预览即将添加的highlights
-function reconstructProjectItem(projectData: any, queue: any[], projectId: string): any {
-  const projectItem = { ...projectData, highlights: [] };
+function reconstructProjectItem(projectData: unknown, queue: { type: string; parentId?: string; data: unknown }[], projectId: string): ResumeData['projects'][0] {
+  const projectItem = { ...(projectData as ResumeData['projects'][0]), highlights: [] };
   
   const projectHighlights = queue.filter(unit => 
     unit.type === 'project-highlight' && unit.parentId === projectId
