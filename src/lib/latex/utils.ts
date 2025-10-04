@@ -114,6 +114,24 @@ export function cleanURL(url: string): string {
 }
 
 /**
+ * Escape URL for use in LaTeX \href command
+ * Special handling for characters that can break \href
+ * @param url - URL string
+ * @returns Escaped URL safe for \href
+ */
+export function escapeURL(url: string): string {
+  if (!url) return '';
+
+  // In \href{}{}, the URL (first argument) needs special escaping
+  // Escape LaTeX special characters that can break the command
+  return url
+    .replace(/%/g, '\\%')   // Percent signs
+    .replace(/#/g, '\\#')    // Hash symbols
+    .replace(/&/g, '\\&')    // Ampersands
+    .replace(/_/g, '\\_');   // Underscores
+}
+
+/**
  * Join multiple text pieces with LaTeX line breaks
  * @param pieces - Array of text pieces
  * @returns Joined text with \\ separators

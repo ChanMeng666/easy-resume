@@ -9,6 +9,7 @@ import {
   formatDateRange,
   arrayToCompactItemize,
   cleanURL,
+  escapeURL,
 } from './utils';
 
 /**
@@ -263,15 +264,22 @@ function generateProjectsSection(projects: ResumeData['projects']): string {
   if (!projects || projects.length === 0) return '';
 
   const entries = projects.map((project, index) => {
-    const urlPart = project.url ? `\\\\{\\small\\url{${project.url}}}` : '';
+    // Project name as regular text (not clickable)
+    const projectTitle = `\\textbf{\\color{TextColor}${escapeLaTeX(project.name)}}`;
+
+    // Add a clear "LINK" after description if URL is available
+    const linkPart = project.url
+      ? ` [\\href{${escapeURL(project.url)}}{\\color{AccentColor}\\textbf{LINK}}]`
+      : '';
+
     const highlights = project.highlights && project.highlights.length > 0
       ? '\n' + arrayToCompactItemize(project.highlights)
       : '';
 
     const divider = index < projects.length - 1 ? '\n\\cvdivider' : '';
 
-    return `\\textbf{\\color{TextColor}${escapeLaTeX(project.name)}}\\\\
-{\\color{PrimaryColor}\\textit{${escapeLaTeX(project.description)}}}${urlPart}${highlights}${divider}`;
+    return `${projectTitle}\\\\
+{\\color{PrimaryColor}\\textit{${escapeLaTeX(project.description)}}}${linkPart}${highlights}${divider}`;
   });
 
   return `\\section{Recent Projects / Open-Source}
