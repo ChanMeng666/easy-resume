@@ -2,11 +2,11 @@
 
 [![Project Banner](./public/easy-resume.svg)](#)
 
-# 🚀 Easy Resume<br/><h3>Modern Professional Resume Builder</h3>
+# 🚀 Easy Resume<br/><h3>Professional LaTeX Resume Generator</h3>
 
-A modern, responsive resume builder built with Next.js 15, React 19, and TypeScript.<br/>
-Supports print optimization and seamless deployment.<br/>
-Create your **FREE** professional resume in minutes.
+A modern, browser-based LaTeX resume generator with visual editing and real-time preview.<br/>
+Built with Next.js 15, React 19, and TypeScript.<br/>
+Create your **FREE** professional LaTeX resume in minutes.
 
 [Live Demo][demo-link] · [Documentation][docs-link] · [Report Bug][github-issues-link] · [Request Feature][github-issues-link]
 
@@ -31,12 +31,12 @@ Create your **FREE** professional resume in minutes.
 [![][share-linkedin-shield]][share-linkedin-link]
 [![][share-reddit-shield]][share-reddit-link]
 
-<sup>🌟 Building professional resumes with modern technology. Designed for developers and professionals worldwide.</sup>
+<sup>🌟 Generate professional LaTeX resumes with modern web technology. Designed for developers and professionals worldwide.</sup>
 
 </div>
 
 > [!IMPORTANT]
-> This project demonstrates modern full-stack development practices with Next.js 15, React 19, and TypeScript. It combines responsive design to provide a professional resume building experience. Features include print optimization, type safety, and seamless deployment.
+> This project is a **LaTeX resume generator** that creates professional resume code using the `moderncv` template. It features a visual editor, real-time LaTeX preview, and seamless Overleaf integration for PDF compilation.
 
 <details>
 <summary><kbd>📑 Table of Contents</kbd></summary>
@@ -47,7 +47,9 @@ Create your **FREE** professional resume in minutes.
       - [TOC](#toc)
   - [🌟 Introduction](#-introduction)
   - [✨ Key Features](#-key-features)
-    - [`1` Responsive Design](#1-responsive-design)
+    - [`1` Visual Resume Editor](#1-visual-resume-editor)
+    - [`2` LaTeX Code Generation](#2-latex-code-generation)
+    - [`3` Overleaf Integration](#3-overleaf-integration)
     - [`*` Additional Features](#-additional-features)
   - [🛠️ Tech Stack](#️-tech-stack)
   - [🏗️ Architecture](#️-architecture)
@@ -57,23 +59,22 @@ Create your **FREE** professional resume in minutes.
   - [🚀 Getting Started](#-getting-started)
     - [Prerequisites](#prerequisites)
     - [Quick Installation](#quick-installation)
-    - [Environment Setup](#environment-setup)
     - [Development Mode](#development-mode)
   - [🛳 Deployment](#-deployment)
     - [`A` Cloud Deployment](#a-cloud-deployment)
     - [`B` Docker Deployment](#b-docker-deployment)
   - [📖 Usage Guide](#-usage-guide)
-    - [Basic Customization](#basic-customization)
-    - [Advanced Configuration](#advanced-configuration)
-    - [Adding New Sections](#adding-new-sections)
+    - [Visual Editor](#visual-editor)
+    - [Export Options](#export-options)
+    - [Data Management](#data-management)
   - [🎨 Customization](#-customization)
-    - [Updating Resume Data](#updating-resume-data)
+    - [LaTeX Template](#latex-template)
     - [Styling](#styling)
-    - [Component Modification](#component-modification)
+    - [Adding New Sections](#adding-new-sections)
   - [⌨️ Development](#️-development)
     - [Local Development](#local-development)
+    - [Project Structure](#project-structure)
     - [Adding Features](#adding-features)
-    - [Testing](#testing)
   - [🤝 Contributing](#-contributing)
     - [Development Process](#development-process)
     - [Contribution Guidelines](#contribution-guidelines)
@@ -88,16 +89,16 @@ Create your **FREE** professional resume in minutes.
 
 ## 🌟 Introduction
 
-Easy Resume is a modern, responsive resume builder designed for professionals who want to create beautiful, printable resumes using cutting-edge web technologies. Built with Next.js 15, React 19, and TypeScript, this project demonstrates best practices in modern web development while providing a practical tool for resume creation.
+Easy Resume is a modern, browser-based LaTeX resume generator designed for professionals who want to create beautiful, professional resumes using the power of LaTeX. Built with Next.js 15, React 19, and TypeScript, this application provides a seamless visual editing experience with real-time LaTeX code generation and one-click Overleaf integration.
 
-Whether you're a developer looking to showcase your technical skills or a professional seeking a clean, modern resume format, Easy Resume provides the perfect foundation. The project features responsive design and print optimization to ensure your resume looks great both on screen and on paper.
+**No LaTeX knowledge required!** Edit your resume using an intuitive visual editor, and the application automatically generates professional LaTeX code using the industry-standard `moderncv` template. Export to Overleaf for instant PDF compilation, or download the .tex file for local compilation.
 
 > [!NOTE]
-> - Node.js >= 18.0 required
-> - Modern browser with CSS Grid support
-> - TypeScript knowledge helpful for customization
+> - Node.js >= 18.0 required for development
+> - Free Overleaf account recommended for PDF compilation
+> - All data stored locally in your browser
 
-| [![][demo-shield-badge]][demo-link]   | No installation required! Visit our live demo to see the resume in action.                           |
+| [![][demo-shield-badge]][demo-link]   | No installation required! Visit our live demo to create your resume now.                           |
 | :------------------------------------ | :--------------------------------------------------------------------------------------------- |
 
 > [!TIP]
@@ -112,11 +113,11 @@ Whether you're a developer looking to showcase your technical skills or a profes
     <tr>
       <td align="center">
         <img src="./public/screenshots/屏幕截图 2025-09-07 155124.png" alt="Easy Resume Preview 1" width="400"/>
-        <br><em>Resume Preview - Desktop View</em>
+        <br><em>Visual Editor - Edit Resume Data</em>
       </td>
       <td align="center">
         <img src="./public/screenshots/屏幕截图 2025-09-07 155140.png" alt="Easy Resume Preview 2" width="400"/>
-        <br><em>Resume Preview - Mobile View</em>
+        <br><em>LaTeX Preview - Real-time Code Generation</em>
       </td>
     </tr>
   </table>
@@ -124,33 +125,59 @@ Whether you're a developer looking to showcase your technical skills or a profes
 
 ## ✨ Key Features
 
-### `1` Responsive Design
+### `1` Visual Resume Editor
 
-Experience next-generation responsive design that looks perfect on all devices. Our mobile-first approach ensures your resume is accessible and readable on smartphones, tablets, and desktop computers.
+Experience a modern, form-based resume editor that eliminates the need to edit code files directly. Our intuitive interface makes resume creation accessible to everyone.
 
 Key capabilities include:
-- 📱 **Mobile Optimized**: Perfect viewing on all screen sizes
-- 🖥️ **Desktop Enhanced**: Takes advantage of larger screens
-- 📄 **Print Ready**: Optimized styles for paper printing
-- 🎯 **Cross-Browser**: Compatible with all modern browsers
+- 📝 **No Code Editing**: Form-based visual editor for all sections
+- 🔄 **Real-time Updates**: See LaTeX code update as you type
+- 💾 **Auto-save**: Automatic localStorage persistence
+- 🎯 **Dynamic Fields**: Add/remove entries for work, education, projects
+- ✨ **Validation**: Built-in form validation with Zod schemas
 
 [![][back-to-top]](#readme-top)
 
+### `2` LaTeX Code Generation
+
+Automatic LaTeX code generation using the professional `moderncv` template. No LaTeX knowledge required!
+
+Features:
+- 📄 **moderncv Template**: Industry-standard LaTeX resume template
+- 🎨 **Professional Styling**: Banking style with blue color scheme
+- 🔤 **Smart Formatting**: Automatic date formatting and list generation
+- 🛡️ **Special Character Escaping**: Safe handling of LaTeX special characters
+- 📊 **All Sections Supported**: Personal info, education, work, projects, skills, achievements, certifications
+
+[![][back-to-top]](#readme-top)
+
+### `3` Overleaf Integration
+
+Seamless integration with Overleaf for instant PDF compilation. Three export methods available:
+
+- 🚀 **One-Click Overleaf**: Open directly in Overleaf for PDF compilation
+- 📋 **Copy to Clipboard**: Copy LaTeX code for manual pasting
+- 💾 **Download .tex File**: Save LaTeX file for local compilation
+
+> ✨ The Overleaf integration uses POST form submission to avoid URL length limitations, supporting resumes of any size.
+
+[![][back-to-top]](#readme-top)
 
 ### `*` Additional Features
 
 Beyond the core features, this project includes:
 
-- [x] 🎨 **Modern UI/UX**: Beautiful design with smooth transitions and hover effects
-- [x] 🔧 **Type-Safe**: Built with TypeScript for reliable development and customization
+- [x] 🎨 **Modern UI/UX**: Beautiful design with shadcn/ui components
+- [x] 🔧 **Type-Safe**: Built with TypeScript and Zod validation
 - [x] ⚡ **Performance Optimized**: Next.js 15 with automatic optimizations
-- [x] 🌐 **SEO Ready**: Optimized meta tags and semantic HTML structure
-- [x] ♿ **Accessible**: WCAG guidelines compliant with proper ARIA labels
-- [x] 🎯 **Component-Based**: Modular architecture for easy customization
-- [x] 📝 **Data-Driven**: Centralized resume data management
+- [x] 📱 **Responsive Design**: Works perfectly on all devices
+- [x] 🌐 **SEO Ready**: Optimized meta tags and semantic HTML
+- [x] 🎯 **Syntax Highlighting**: Prism.js for beautiful code preview
+- [x] 💾 **Data Import/Export**: Backup and restore resume data as JSON
+- [x] 🔄 **Reset to Example**: Quick reset to default example resume
 - [x] 🚀 **One-Click Deploy**: Instant deployment to Vercel or other platforms
 
-> ✨ The project serves as an excellent example of modern React/Next.js development practices.
+> ✨ The project demonstrates modern React/Next.js development practices with LaTeX integration.
 
 <div align="right">
 
@@ -191,8 +218,10 @@ Beyond the core features, this project includes:
 - **Framework**: Next.js 15 with App Router
 - **UI Library**: React 19 with Hooks
 - **Language**: TypeScript for type safety
-- **Styling**: Tailwind CSS + Custom CSS Variables
-- **Icons**: Custom SVG icons with inline styling
+- **Styling**: Tailwind CSS + shadcn/ui components
+- **Forms**: React Hook Form + Zod validation
+- **Syntax Highlighting**: Prism.js for LaTeX code
+- **Icons**: Lucide React icon library
 
 **Development Tools:**
 - **Linting**: ESLint with Next.js configuration
@@ -202,7 +231,7 @@ Beyond the core features, this project includes:
 
 **Deployment & Hosting:**
 - **Platform**: Vercel (recommended) / Netlify / Any static host
-- **Build**: Static export capability
+- **Build**: Optimized production builds
 - **Performance**: Automatic optimization and caching
 
 > [!TIP]
@@ -214,41 +243,57 @@ Beyond the core features, this project includes:
 
 ```
 src/
-├── app/                    # Next.js App Router
-│   ├── globals.css        # Global styles
-│   ├── layout.tsx         # Root layout
-│   └── page.tsx           # Main resume page
-├── components/            # Resume section components
-│   ├── Header.tsx         # Contact information and name
-│   ├── Introduction.tsx   # Professional summary
-│   ├── Work.tsx           # Work experience section
-│   ├── Education.tsx      # Education background
-│   ├── Skills.tsx         # Technical and professional skills
-│   ├── Projects.tsx       # Project portfolio
-│   ├── Achievements.tsx   # Notable achievements
-│   ├── Certifications.tsx # Professional certifications
-│   ├── Section.tsx        # Reusable section wrapper
-├── data/                  # Resume data and types
-│   └── resume.ts          # Resume data structure and content
-└── styles/                # Additional styling
+├── app/
+│   ├── globals.css           # Global styles and Prism.js theme
+│   ├── layout.tsx            # Root layout with metadata
+│   └── page.tsx              # Main application page
+├── components/
+│   ├── editor/               # Visual resume editor components
+│   │   ├── ResumeEditor.tsx  # Main editor container
+│   │   └── sections/         # Section-specific editors
+│   │       ├── BasicsEditor.tsx
+│   │       ├── EducationEditor.tsx
+│   │       ├── WorkEditor.tsx
+│   │       ├── ProjectsEditor.tsx
+│   │       ├── SkillsEditor.tsx
+│   │       └── ListEditor.tsx
+│   ├── preview/              # LaTeX preview components
+│   │   ├── LatexPreview.tsx  # Syntax-highlighted code preview
+│   │   └── ExportButtons.tsx # Export action buttons
+│   └── ui/                   # shadcn/ui components
+├── lib/
+│   ├── latex/
+│   │   ├── generator.ts      # LaTeX code generation engine
+│   │   └── utils.ts          # LaTeX utility functions
+│   ├── overleaf/
+│   │   └── api.ts            # Overleaf integration (POST method)
+│   ├── validation/
+│   │   └── schema.ts         # Zod validation schemas
+│   └── utils.ts              # General utilities
+├── hooks/
+│   └── useResumeData.ts      # Resume data state management
+├── data/
+│   └── resume.ts             # Default resume data
+└── config/
+    └── content-config.ts     # Content configuration
 ```
-
 
 ### Data Flow
 
 ```mermaid
 sequenceDiagram
     participant U as User
-    participant P as Page
-    participant C as Components
-    participant D as Resume Data
-    
-    U->>P: Loads Resume
-    P->>D: Fetch Resume Data
-    D->>P: Return Data Object
-    P->>C: Render Components
-    C->>U: Display Resume
-    T->>C: Update Styles
+    participant E as Visual Editor
+    participant S as State (localStorage)
+    participant G as LaTeX Generator
+    participant O as Overleaf
+
+    U->>E: Edit Resume Data
+    E->>S: Save to localStorage
+    S->>G: Trigger Code Generation
+    G->>U: Display LaTeX Preview
+    U->>O: Click "Open in Overleaf"
+    O->>U: Open PDF in New Tab
 ```
 
 ## ⚡️ Performance
@@ -258,13 +303,14 @@ sequenceDiagram
 - 🚀 **< 500ms** First Contentful Paint
 - 💨 **< 1s** Largest Contentful Paint
 - 📊 **0ms** Cumulative Layout Shift
+- 🔄 **Instant** LaTeX code generation
 
 **Performance Optimizations:**
-- 🎯 **Next.js Optimizations**: Automatic code splitting and image optimization
-- 📦 **Tree Shaking**: Unused code elimination
-- 🔄 **Static Generation**: Pre-rendered HTML for instant loading
-- 🖼️ **CSS Optimization**: Minimal CSS bundle with Tailwind purging
-- 📱 **Mobile Performance**: Optimized for mobile devices
+- 🎯 **React useMemo**: Optimized LaTeX generation
+- 📦 **Code Splitting**: Automatic by Next.js
+- 🔄 **localStorage**: Fast local data persistence
+- 🖼️ **CSS Optimization**: Minimal CSS with Tailwind purging
+- 📱 **Mobile Performance**: Optimized for all devices
 
 > [!NOTE]
 > Performance metrics are measured using Lighthouse and continuously optimized for the best user experience.
@@ -308,11 +354,7 @@ pnpm install
 npm run dev
 ```
 
-🎉 **Success!** Open [http://localhost:3000](http://localhost:3000) to view your resume.
-
-### Environment Setup
-
-The project works out of the box without any environment variables. All configuration is done through the data files and can be customized directly in the code.
+🎉 **Success!** Open [http://localhost:3000](http://localhost:3000) to start creating your resume.
 
 ### Development Mode
 
@@ -386,154 +428,148 @@ services:
 
 ## 📖 Usage Guide
 
-### Basic Customization
+### Visual Editor
 
 **Getting Started:**
 
-1. **Clone the Repository** and install dependencies
-2. **Update Resume Data** in `src/data/resume.ts`
-3. **Customize Styling** in `src/app/globals.css` (optional)
-4. **Deploy** to your preferred platform
+1. **Open the Application** in your browser
+2. **Use the Visual Editor** on the left to edit your resume
+3. **See Real-time Preview** of LaTeX code on the right
+4. **Export to Overleaf** or download .tex file
 
-### Advanced Configuration
+**Editor Features:**
 
-**Custom Styling:**
+- **Personal Information**: Name, title, contact details, social profiles
+- **Education**: Schools, degrees, GPA, honors
+- **Work Experience**: Companies, positions, dates, achievements
+- **Projects**: Project names, URLs, descriptions, highlights
+- **Skills**: Categorized technical and professional skills
+- **Achievements**: Awards and recognitions
+- **Certifications**: Professional certifications and licenses
 
+### Export Options
 
-**Resume Data Structure:**
+**Three ways to get your PDF resume:**
 
-```typescript
-// src/data/resume.ts
-export const resumeData: ResumeData = {
-  basics: {
-    name: "Your Name",
-    label: "Your Professional Title",
-    email: "your.email@example.com",
-    phone: "Your Phone Number",
-    location: "Your Location",
-    summary: "Your professional summary...",
-    profiles: [
-      {
-        network: "LinkedIn",
-        url: "https://linkedin.com/in/yourprofile",
-        label: "yourprofile"
-      }
-    ]
-  },
-  // ... other sections
-};
-```
+1. **Open in Overleaf** (Recommended)
+   - Click "Open in Overleaf" button
+   - Free Overleaf account required
+   - Instant PDF compilation
+   - Edit LaTeX directly if needed
 
-### Adding New Sections
+2. **Copy to Clipboard**
+   - Click "Copy Code" button
+   - Paste into any LaTeX editor
+   - Compile locally or online
 
-**1. Create Component:**
+3. **Download .tex File**
+   - Click "Download .tex" button
+   - Compile with LaTeX locally
+   - Full control over compilation
 
-```typescript
-// src/components/NewSection.tsx
-interface NewSectionProps {
-  data: YourDataType[];
-}
+### Data Management
 
-export function NewSection({ data }: NewSectionProps) {
-  return (
-    <Section title="New Section">
-      {/* Your section content */}
-    </Section>
-  );
-}
-```
-
-**2. Update Data Structure:**
+**Backup and Restore:**
 
 ```typescript
-// src/data/resume.ts
-export interface ResumeData {
-  // ... existing properties
-  newSection: YourDataType[];
-}
+// Export resume data as JSON
+Click "Export JSON" button → Save backup file
+
+// Import resume data from JSON
+Click "Import JSON" button → Select backup file
+
+// Reset to example data
+Click "Reset to Example" button → Restore default resume
+
+// Clear all data
+Click "Clear Data" button → Remove all stored data
 ```
 
-**3. Add to Main Page:**
-
-```typescript
-// src/app/page.tsx
-import { NewSection } from "@/components/NewSection";
-
-// Add to your page component
-<NewSection data={resumeData.newSection} />
-```
+> [!TIP]
+> Export your resume data regularly to avoid losing your work!
 
 ## 🎨 Customization
 
-### Updating Resume Data
+### LaTeX Template
 
-The resume content is managed through a single TypeScript file:
+The application uses the `moderncv` LaTeX template. Current configuration:
 
-```17:35:src/data/resume.ts
-export const resumeData: ResumeData = {
-  basics: {
-    name: "Chan Meng",
-    label: "Web/Mobile App & AI/ML Infrastructure Engineer",
-    email: "chanmeng.career@gmail.com",
-    phone: "(+64) 028 8523 5858",
-    location: "59 Spring Street, Onehunga, Auckland 1061",
-    summary: "Full-stack developer with specialized expertise...",
-    profiles: [
-      {
-        network: "Portfolio",
-        url: "https://2d-portfolio-eta.vercel.app/",
-        label: "chanmeng.live"
-      }
-    ]
-  },
-  // ... other sections
-};
+```latex
+\documentclass[11pt,a4paper,sans]{moderncv}
+\moderncvstyle{banking}
+\moderncvcolor{blue}
+\usepackage[scale=0.85]{geometry}
 ```
+
+**To customize the template:**
+
+1. Edit `src/lib/latex/generator.ts`
+2. Modify document class options
+3. Change style (`casual`, `classic`, `banking`, `oldstyle`, `fancy`)
+4. Update color scheme (`blue`, `orange`, `green`, `red`, `purple`, `grey`, `black`)
 
 ### Styling
 
 **CSS Variables Approach:**
 
-```1:25:src/app/globals.css
+```css
 :root {
   --background: #f5f5f5;
   --foreground: #171717;
-  --background-paper: #ffffff;
   --primary-main: #2563eb;
   --primary-light: #3b82f6;
   --primary-dark: #1d4ed8;
-  --text-secondary: #525252;
-}
-
-.dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
-  --background-paper: #1a1a1a;
-  --primary-main: #60a5fa;
-  --primary-light: #93c5fd;
-  --primary-dark: #3b82f6;
-  --text-secondary: #a3a3a3;
 }
 ```
 
-### Component Modification
+**shadcn/ui Theming:**
 
-Each resume section is a separate component that can be customized independently:
+```bash
+# Add new components
+npx shadcn add <component-name>
 
-```8:25:src/components/Header.tsx
-export function Header({ basics }: HeaderProps) {
-  return (
-    <header className="mb-8 sm:mb-10 text-center">
-      <h1 className="text-3xl sm:text-4xl font-bold mb-2 text-foreground">
-        {basics.name}
-      </h1>
-      <p className="text-lg sm:text-xl text-primary-main mb-4 max-w-2xl mx-auto">
-        {basics.label}
-      </p>
-      {/* ... rest of component */}
-    </header>
-  );
+# Customize in components/ui/
+# Modify Tailwind config in tailwind.config.ts
+```
+
+### Adding New Sections
+
+**1. Update Zod Schema:**
+
+```typescript
+// src/lib/validation/schema.ts
+export const ResumeDataSchema = z.object({
+  // ... existing fields
+  newSection: z.array(YourNewSectionSchema),
+});
+```
+
+**2. Create Editor Component:**
+
+```typescript
+// src/components/editor/sections/NewSectionEditor.tsx
+export function NewSectionEditor({ data, onChange }: Props) {
+  // Your editor implementation
 }
+```
+
+**3. Update LaTeX Generator:**
+
+```typescript
+// src/lib/latex/generator.ts
+function generateNewSection(data: NewSection[]): string {
+  // Generate LaTeX code for new section
+}
+```
+
+**4. Add to Main Editor:**
+
+```typescript
+// src/components/editor/ResumeEditor.tsx
+import { NewSectionEditor } from './sections/NewSectionEditor';
+
+// Add to accordion items
+<NewSectionEditor data={data.newSection} onChange={handleChange} />
 ```
 
 ## ⌨️ Development
@@ -564,6 +600,17 @@ npm run start        # Start production server
 npm run lint         # Run ESLint
 ```
 
+### Project Structure
+
+**Key Files and Directories:**
+
+- `src/app/page.tsx` - Main application page with editor and preview
+- `src/lib/latex/generator.ts` - LaTeX code generation engine
+- `src/lib/overleaf/api.ts` - Overleaf integration with POST method
+- `src/hooks/useResumeData.ts` - Resume data state management
+- `src/components/editor/` - Visual editor components
+- `src/components/preview/` - LaTeX preview and export
+
 ### Adding Features
 
 **Feature Development Workflow:**
@@ -571,36 +618,22 @@ npm run lint         # Run ESLint
 ```mermaid
 flowchart TD
     A[Identify Feature Need] --> B[Create Feature Branch]
-    B --> C[Develop Component]
-    C --> D[Update Types]
-    D --> E[Test Changes]
-    E --> F[Update Documentation]
-    F --> G[Create Pull Request]
-    G --> H[Review & Merge]
+    B --> C[Update Schema if Needed]
+    C --> D[Develop Components]
+    D --> E[Update LaTeX Generator]
+    E --> F[Test Changes]
+    F --> G[Update Documentation]
+    G --> H[Create Pull Request]
+    H --> I[Review & Merge]
 ```
 
-**1. Create Feature Branch:**
-
-```bash
-git checkout -b feature/new-resume-section
-```
-
-**2. Component Development:**
+**Best Practices:**
 
 - Follow TypeScript best practices
-- Use existing design patterns
+- Use Zod for data validation
 - Maintain responsive design
 - Add proper accessibility attributes
-
-### Testing
-
-**Manual Testing Checklist:**
-
-- ✅ Responsive design on all screen sizes
-- ✅ Print layout optimization
-- ✅ Cross-browser compatibility
-- ✅ Accessibility with screen readers
-- ✅ Performance on slow connections
+- Update documentation
 
 ## 🤝 Contributing
 
@@ -672,9 +705,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 <div align="center">
-<strong>🚀 Building Professional Resumes with Modern Technology 🌟</strong>
+<strong>🚀 Generate Professional LaTeX Resumes with Modern Technology 🌟</strong>
 <br/>
-<em>Empowering professionals with beautiful, responsive resume design</em>
+<em>Empowering professionals with beautiful LaTeX resume generation</em>
 <br/><br/>
 
 ⭐ **Star us on GitHub** • 📖 **Read the Documentation** • 🐛 **Report Issues** • 💡 **Request Features** • 🤝 **Contribute**
@@ -720,9 +753,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 [vercel-link]: https://easy-resume-theta.vercel.app/
 
 <!-- Social Share Links -->
-[share-x-link]: https://x.com/intent/tweet?hashtags=resume,nextjs,typescript&text=Check%20out%20this%20amazing%20resume%20builder&url=https%3A%2F%2Fgithub.com%2FChanMeng666%2Feasy-resume
+[share-x-link]: https://x.com/intent/tweet?hashtags=resume,latex,nextjs,typescript&text=Check%20out%20this%20amazing%20LaTeX%20resume%20generator&url=https%3A%2F%2Fgithub.com%2FChanMeng666%2Feasy-resume
 [share-linkedin-link]: https://linkedin.com/sharing/share-offsite/?url=https://github.com/ChanMeng666/easy-resume
-[share-reddit-link]: https://www.reddit.com/submit?title=Modern%20Resume%20Builder%20with%20Next.js&url=https%3A%2F%2Fgithub.com%2FChanMeng666%2Feasy-resume
+[share-reddit-link]: https://www.reddit.com/submit?title=Modern%20LaTeX%20Resume%20Generator%20with%20Next.js&url=https%3A%2F%2Fgithub.com%2FChanMeng666%2Feasy-resume
 
 [share-x-shield]: https://img.shields.io/badge/-share%20on%20x-black?labelColor=black&logo=x&logoColor=white&style=flat-square
 [share-linkedin-shield]: https://img.shields.io/badge/-share%20on%20linkedin-black?labelColor=black&logo=linkedin&logoColor=white&style=flat-square
