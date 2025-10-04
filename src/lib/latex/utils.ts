@@ -1,0 +1,123 @@
+/**
+ * LaTeX utility functions for escaping special characters and formatting
+ */
+
+/**
+ * Escape special LaTeX characters
+ * @param text - Text to escape
+ * @returns Escaped text safe for LaTeX
+ */
+export function escapeLaTeX(text: string): string {
+  if (!text) return '';
+
+  const replacements: Record<string, string> = {
+    '\\': '\\textbackslash{}',
+    '&': '\\&',
+    '%': '\\%',
+    '$': '\\$',
+    '#': '\\#',
+    '_': '\\_',
+    '{': '\\{',
+    '}': '\\}',
+    '~': '\\textasciitilde{}',
+    '^': '\\textasciicircum{}',
+  };
+
+  // First pass: replace backslash
+  let escaped = text.replace(/\\/g, replacements['\\']);
+
+  // Second pass: replace other special characters
+  escaped = escaped.replace(/[&%$#_{}~^]/g, (char) => replacements[char] || char);
+
+  return escaped;
+}
+
+/**
+ * Format date for LaTeX CV (e.g., "Nov 2023--Dec 2024")
+ * @param startDate - Start date string
+ * @param endDate - End date string (can be "PRESENT")
+ * @returns Formatted date range
+ */
+export function formatDateRange(startDate: string, endDate: string): string {
+  const formattedEnd = endDate.toUpperCase() === 'PRESENT' ? 'Present' : endDate;
+  return `${startDate}--${formattedEnd}`;
+}
+
+/**
+ * Convert array of strings to LaTeX itemize environment
+ * @param items - Array of item strings
+ * @param indent - Indentation level
+ * @returns LaTeX itemize block
+ */
+export function arrayToLatexItemize(items: string[], indent: string = ''): string {
+  if (!items || items.length === 0) return '';
+
+  const itemLines = items.map(item => `${indent}\\item ${escapeLaTeX(item)}`);
+
+  return `${indent}\\begin{itemize}\n${itemLines.join('\n')}\n${indent}\\end{itemize}`;
+}
+
+/**
+ * Format location (for education/work)
+ * @param location - Location string
+ * @returns Formatted location
+ */
+export function formatLocation(location: string): string {
+  return escapeLaTeX(location);
+}
+
+/**
+ * Split full name into first and last name
+ * @param fullName - Full name string
+ * @returns Object with firstName and lastName
+ */
+export function splitName(fullName: string): { firstName: string; lastName: string } {
+  const parts = fullName.trim().split(' ');
+
+  if (parts.length === 1) {
+    return { firstName: parts[0], lastName: '' };
+  }
+
+  return {
+    firstName: parts[0],
+    lastName: parts.slice(1).join(' '),
+  };
+}
+
+/**
+ * Convert network name to moderncv social command
+ * @param network - Network name (e.g., "LinkedIn", "GitHub")
+ * @returns moderncv social identifier
+ */
+export function networkToSocialType(network: string): string {
+  const networkMap: Record<string, string> = {
+    'linkedin': 'linkedin',
+    'github': 'github',
+    'twitter': 'twitter',
+    'gitlab': 'gitlab',
+    'stackoverflow': 'stackoverflow',
+    'portfolio': 'homepage',
+    'website': 'homepage',
+  };
+
+  return networkMap[network.toLowerCase()] || 'homepage';
+}
+
+/**
+ * Clean URL for LaTeX (remove protocol if needed)
+ * @param url - Full URL
+ * @returns Cleaned URL
+ */
+export function cleanURL(url: string): string {
+  // For moderncv, we usually want the domain or clean URL
+  return url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+}
+
+/**
+ * Join multiple text pieces with LaTeX line breaks
+ * @param pieces - Array of text pieces
+ * @returns Joined text with \\ separators
+ */
+export function joinWithLineBreaks(pieces: string[]): string {
+  return pieces.filter(Boolean).join(' \\\\ ');
+}
