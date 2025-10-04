@@ -266,15 +266,14 @@ ${entries.join('\n\n')}`;
 
 /**
  * Generate projects section (for LEFT column)
+ * 2x2 grid layout for projects
  */
 function generateProjectsSection(projects: ResumeData['projects']): string {
   if (!projects || projects.length === 0) return '';
 
-  const entries = projects.map((project, index) => {
-    // Project name as regular text (not clickable)
+  // Generate individual project cells
+  const generateProjectCell = (project: ResumeData['projects'][0]) => {
     const projectTitle = `\\textbf{\\color{TextColor}${escapeLaTeX(project.name)}}`;
-
-    // Add a clear "LINK" after description if URL is available
     const linkPart = project.url
       ? ` [\\href{${escapeURL(project.url)}}{\\color{AccentColor}\\textbf{LINK}}]`
       : '';
@@ -283,15 +282,35 @@ function generateProjectsSection(projects: ResumeData['projects']): string {
       ? '\n' + arrayToCompactItemize(project.highlights)
       : '';
 
-    const divider = index < projects.length - 1 ? '\n\\cvdivider' : '';
-
     return `${projectTitle}\\\\
-{\\color{PrimaryColor}\\textit{${escapeLaTeX(project.description)}}}${linkPart}${highlights}${divider}`;
-  });
+{\\color{PrimaryColor}\\textit{${escapeLaTeX(project.description)}}}${linkPart}${highlights}`;
+  };
+
+  // Create 2x2 grid using minipage
+  const gridRows: string[] = [];
+
+  for (let i = 0; i < projects.length; i += 2) {
+    const leftProject = projects[i];
+    const rightProject = projects[i + 1];
+
+    const leftCell = `\\begin{minipage}[t]{0.48\\linewidth}
+${generateProjectCell(leftProject)}
+\\end{minipage}`;
+
+    const rightCell = rightProject
+      ? `\\begin{minipage}[t]{0.48\\linewidth}
+${generateProjectCell(rightProject)}
+\\end{minipage}`
+      : '';
+
+    gridRows.push(`${leftCell}%
+\\hfill
+${rightCell}`);
+  }
 
   return `\\section{Recent Projects / Open-Source}
 
-${entries.join('\n\n')}`;
+${gridRows.join('\n\n\\vspace{1em}\n\n')}`;
 }
 
 /**
