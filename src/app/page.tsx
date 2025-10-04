@@ -2,13 +2,22 @@
 
 import { useMemo } from 'react';
 import Image from 'next/image';
-import { resumeData } from '@/data/resume';
 import { generateLatexCode } from '@/lib/latex/generator';
 import { LatexPreview } from '@/components/preview/LatexPreview';
 import { ExportButtons } from '@/components/preview/ExportButtons';
+import { ResumeEditor } from '@/components/editor/ResumeEditor';
+import { useResumeData } from '@/hooks/useResumeData';
 
 export default function Home() {
-  const currentData = resumeData;
+  const {
+    data: currentData,
+    isLoaded,
+    updateData,
+    resetToDefault,
+    exportData,
+    importData,
+    clearData,
+  } = useResumeData();
 
   // Generate LaTeX code when data changes
   const latexCode = useMemo(() => {
@@ -54,47 +63,31 @@ export default function Home() {
             Welcome to Easy Resume LaTeX! 🚀
           </h2>
           <p className="text-sm text-blue-800 dark:text-blue-200">
-            This tool helps you create professional LaTeX resumes. The current version shows a preview
-            based on the sample data. Click <strong>&quot;Open in Overleaf&quot;</strong> to compile your resume
-            to PDF, or download the .tex file for local editing.
+            Edit your resume information on the left, and the LaTeX code will be generated automatically.
+            Click <strong>&quot;Open in Overleaf&quot;</strong> to compile your resume to PDF, or download the .tex file.
           </p>
         </div>
 
         {/* Two Column Layout */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-          {/* Left Column - Editor (Placeholder for now) */}
+          {/* Left Column - Editor */}
           <div className="lg:col-span-2">
             <div className="rounded-lg border bg-white p-6 shadow-sm dark:bg-gray-900">
-              <h2 className="mb-4 text-lg font-semibold">Resume Information</h2>
-              <div className="space-y-4">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Name</p>
-                  <p className="text-lg">{currentData.basics.name}</p>
+              <h2 className="mb-4 text-lg font-semibold">Edit Resume</h2>
+              {isLoaded ? (
+                <ResumeEditor
+                  data={currentData}
+                  onDataChange={updateData}
+                  onReset={resetToDefault}
+                  onExport={exportData}
+                  onImport={importData}
+                  onClear={clearData}
+                />
+              ) : (
+                <div className="flex items-center justify-center py-8">
+                  <p className="text-muted-foreground">Loading...</p>
                 </div>
-
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Title</p>
-                  <p>{currentData.basics.label}</p>
-                </div>
-
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Contact</p>
-                  <p className="text-sm">{currentData.basics.email}</p>
-                  <p className="text-sm">{currentData.basics.phone}</p>
-                </div>
-
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Location</p>
-                  <p className="text-sm">{currentData.basics.location}</p>
-                </div>
-
-                <div className="mt-6 rounded-lg bg-amber-50 p-4 dark:bg-amber-950/20">
-                  <p className="text-sm text-amber-800 dark:text-amber-200">
-                    <strong>Note:</strong> The visual editor is under development. For now, you can
-                    edit your resume data in <code className="rounded bg-amber-100 px-1 dark:bg-amber-900">src/data/resume.ts</code>
-                  </p>
-                </div>
-              </div>
+              )}
             </div>
           </div>
 
@@ -119,7 +112,7 @@ export default function Home() {
                 1
               </span>
               <span>
-                <strong>Edit your data:</strong> Modify <code className="rounded bg-muted px-1">src/data/resume.ts</code> with your information
+                <strong>Edit directly in the browser:</strong> Use the visual editor on the left to update your resume information
               </span>
             </li>
             <li className="flex gap-3">
@@ -127,7 +120,7 @@ export default function Home() {
                 2
               </span>
               <span>
-                <strong>Preview LaTeX:</strong> See the generated LaTeX code in real-time on the right
+                <strong>Real-time preview:</strong> See the generated LaTeX code update automatically on the right
               </span>
             </li>
             <li className="flex gap-3">
@@ -143,7 +136,7 @@ export default function Home() {
                 4
               </span>
               <span>
-                <strong>Download or Copy:</strong> Alternatively, download the .tex file or copy the code for local compilation
+                <strong>Backup your data:</strong> Export your resume as JSON to save or share it. Import JSON to restore previous data.
               </span>
             </li>
           </ol>

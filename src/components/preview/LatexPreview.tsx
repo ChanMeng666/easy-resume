@@ -28,8 +28,8 @@ export function LatexPreview({ code }: LatexPreviewProps) {
       </div>
 
       <div className="relative">
-        <pre className="max-h-[calc(100vh-16rem)] overflow-auto p-4 text-sm">
-          <code ref={codeRef} className="language-latex">
+        <pre className="max-h-[calc(100vh-16rem)] overflow-auto p-4 text-sm" suppressHydrationWarning>
+          <code ref={codeRef} className="language-latex" suppressHydrationWarning>
             {code}
           </code>
         </pre>

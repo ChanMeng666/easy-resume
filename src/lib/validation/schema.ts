@@ -15,7 +15,7 @@ export const basicsSchema = z.object({
   phone: z.string().min(1, 'Phone number is required'),
   location: z.string().min(1, 'Location is required'),
   summary: z.string().optional(),
-  profiles: z.array(profileSchema).default([]),
+  profiles: z.array(profileSchema),
 });
 
 // Education schema
@@ -38,14 +38,14 @@ export const workSchema = z.object({
   endDate: z.string().min(1, 'End date is required'),
   location: z.string().min(1, 'Location is required'),
   type: z.string().min(1, 'Employment type is required'),
-  highlights: z.array(z.string()).default([]),
+  highlights: z.array(z.string()),
 });
 
 // Project schema
 export const projectSchema = z.object({
   name: z.string().min(1, 'Project name is required'),
   description: z.string().min(1, 'Description is required'),
-  highlights: z.array(z.string()).default([]),
+  highlights: z.array(z.string()),
   url: z.string().url('Must be a valid URL').optional().or(z.literal('')),
 });
 
@@ -58,12 +58,12 @@ export const skillSchema = z.object({
 // Complete resume data schema
 export const resumeDataSchema = z.object({
   basics: basicsSchema,
-  education: z.array(educationSchema).default([]),
-  skills: z.array(skillSchema).default([]),
-  work: z.array(workSchema).default([]),
-  projects: z.array(projectSchema).default([]),
-  achievements: z.array(z.string()).default([]),
-  certifications: z.array(z.string()).default([]),
+  education: z.array(educationSchema),
+  skills: z.array(skillSchema),
+  work: z.array(workSchema),
+  projects: z.array(projectSchema),
+  achievements: z.array(z.string()),
+  certifications: z.array(z.string()),
 });
 
 // Type inference from Zod schema
