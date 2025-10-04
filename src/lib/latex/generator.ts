@@ -150,15 +150,20 @@ function generatePreamble(): string {
 
 /**
  * Generate header with personal information
+ * Two-column layout: left (name & title), right (contact info)
  */
 function generateHeader(basics: ResumeData['basics']): string {
-  const lines: string[] = [
-    '% Header',
-    `\\cvname{${escapeLaTeX(basics.name)}}`,
-    `\\cvtitle{${escapeLaTeX(basics.label)}}`,
-    '',
-    '\\cvcontact{',
-  ];
+  const lines: string[] = ['% Header'];
+
+  // Start two-column header layout using minipage
+  lines.push('\\begin{minipage}[t]{0.55\\textwidth}');
+  lines.push(`\\cvname{${escapeLaTeX(basics.name)}}`);
+  lines.push(`\\cvtitle{${escapeLaTeX(basics.label)}}`);
+  lines.push('\\end{minipage}%');
+  lines.push('\\hfill');
+  lines.push('\\begin{minipage}[t]{0.4\\textwidth}');
+  lines.push('\\raggedright');
+  lines.push('\\cvcontact{');
 
   const contactParts: string[] = [];
 
@@ -188,8 +193,10 @@ function generateHeader(basics: ResumeData['basics']): string {
     }
   });
 
-  lines.push(contactParts.join(' \\textbar\\ \n'));
+  // Stack contact info vertically with line breaks
+  lines.push(contactParts.join('\\\\\n'));
   lines.push('}');
+  lines.push('\\end{minipage}');
   lines.push('');
   lines.push('\\vspace{1em}');
   lines.push('{\\color{AccentColor}\\hrule height 2pt}');
