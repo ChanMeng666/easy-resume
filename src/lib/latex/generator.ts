@@ -220,9 +220,9 @@ function generateEducationSection(education: ResumeData['education']): string {
 
     const details: string[] = [];
     if (edu.note) details.push(edu.note);
-    if (edu.gpa) details.push(`GPA: ${edu.gpa}`);
+    if (edu.gpa) details.push(edu.gpa);
 
-    const detailsStr = details.length > 0 ? `\n{\\small ${details.join(', ')}}` : '';
+    const detailsStr = details.length > 0 ? `\n{\\small ${details.join(' | ')}}` : '';
 
     const divider = index < education.length - 1 ? '\n\\cvdivider' : '';
 
@@ -358,14 +358,14 @@ ${frameworkCerts.map(c => `\\cvtag{${escapeLaTeX(c)}}`).join('')}
   }
 
   if (databaseCerts.length > 0) {
-    sections.push(`\\cvsubsection{Databases \\& API}
+    sections.push(`\\cvsubsection{Database \\& API}
 \\noindent\\raggedright
 ${databaseCerts.map(c => `\\cvtag{${escapeLaTeX(c)}}`).join('')}
 \\par`);
   }
 
   if (toolsCerts.length > 0) {
-    sections.push(`\\cvsubsection{Developer Tools \\& Practices}
+    sections.push(`\\cvsubsection{Development Tools \\& Practices}
 \\noindent\\raggedright
 ${toolsCerts.map(c => `\\cvtag{${escapeLaTeX(c)}}`).join('')}
 \\par`);

@@ -3,11 +3,11 @@ import { ResumeData } from '@/lib/validation/schema';
 export const resumeData: ResumeData = {
   basics: {
     name: "Chan Meng",
-    label: "Web/Mobile App & AI/ML Infrastructure Engineer",
+    label: "AI/ML Infrastructure Engineer | Full-Stack Developer",
     email: "chanmeng.career@gmail.com",
     phone: "(+64) 028 8523 5858",
-    location: "Auckland, New Zealand",
-    summary: "Full-stack developer with specialized expertise in women's health technology, combining React/Next.js, TypeScript, Python, and cloud infrastructure to build impactful web applications. Currently driving technical innovation as CTO at FreePeriod and AI/ML Infrastructure Engineer at Sanicle, delivering enterprise-grade solutions for workplace health management with AI integration.\n\nDistinguished speaker at the UN CSW 69 Beyond Beijing 30 Conference, showcasing how AI technology effectively addresses workplace gender inequities. Passionate mentor dedicated to supporting women in STEM through the Forward with Her program, with proven impact across a diverse network of mentees from prestigious universities. Master's graduate with Distinction from Lincoln University, bringing academic excellence and practical implementation skills to every project.\n\nCombines technical leadership with minimalist design principles to create elegant, efficient solutions while fostering inclusive development environments that empower teams to deliver exceptional results.",
+    location: "59 Spring Street, Onehunga, Auckland 1061",
+    summary: "Full-stack developer and AI/ML specialist with proven expertise in building enterprise-grade solutions using React, Next.js, TypeScript, Python, and AWS cloud infrastructure. Currently driving innovation as Senior AI/ML Infrastructure Engineer at Sanicle and Full Stack Developer at She Sharp, delivering scalable AI-powered applications for workplace health management and STEM education.\n\nDistinguished UN CSW 69 speaker and AWS She Builds Mentorship Program 2025 mentee, showcasing continuous learning leadership. Host of 4 Spotify podcasts including \"Decoding the Future\" and \"Future Turing\", sharing insights on AI innovation. Active She Sharp Ambassador and passionate mentor supporting 800+ women through Forward with Her and AI Forum NZ programs.\n\nCombines technical leadership with minimalist design principles to create elegant, efficient solutions while fostering inclusive development environments that empower teams to deliver exceptional results.",
     photo: "example-photo.jpg", // Optional: Add photo filename (must be in same directory as .tex file when compiling)
     profiles: [
       {
@@ -19,11 +19,6 @@ export const resumeData: ResumeData = {
         network: "LinkedIn",
         url: "https://www.linkedin.com/in/chanmeng666",
         label: "chanmeng666"
-      },
-      {
-        network: "GitHub",
-        url: "https://github.com/ChanMeng666",
-        label: "ChanMeng666"
       }
     ]
   },
@@ -35,8 +30,8 @@ export const resumeData: ResumeData = {
       startDate: "Nov 2023",
       endDate: "Dec 2024",
       location: "New Zealand",
-      gpa: "above 80%",
-      note: "with Distinction"
+      gpa: "GPA above 80%",
+      note: "Dean's List Honoree (top 5%) | with Distinction"
     },
     {
       institution: "Jiangsu Normal University",
@@ -45,7 +40,7 @@ export const resumeData: ResumeData = {
       startDate: "Sep 2012",
       endDate: "Jun 2016",
       location: "China",
-      gpa: "above 80%",
+      gpa: "GPA above 80%",
       note: "with Distinction"
     }
   ],
@@ -55,27 +50,24 @@ export const resumeData: ResumeData = {
       keywords: ["TypeScript", "JavaScript", "Python", "Java", "Go", "HTML", "CSS", "SQL", "R"]
     },
     {
+      name: "AI/ML & Cloud",
+      keywords: ["Generative AI", "LLM Integration", "NLP", "Prompt Engineering", "RAG Architecture", "AWS (Amazon Lightsail, Bedrock, ECS)", "IBM Cloud watsonx", "Agentic AI Systems"]
+    },
+    {
       name: "Frontend",
       keywords: ["React", "Next.js", "Angular", "Tailwind CSS", "Redux", "Framer Motion", "Three.js"]
     },
     {
       name: "Backend",
-      keywords: ["Node.js", "Express", "REST API", "Flask", "FastAPI", "WebSocket", "Authentication", "Real-time Data Processing"]
+      keywords: ["Node.js", "Express", "Spring Boot", "REST API", "Flask", "FastAPI", "WebSocket", "Microservices"]
     },
     {
       name: "Databases",
-      keywords: ["PostgreSQL", "MongoDB", "MySQL", "SQLite", "Database Design", "Query Optimization"]
+      keywords: ["PostgreSQL", "MongoDB", "MySQL", "SQLite", "Redis", "Database Design", "Query Optimization"]
     },
     {
-      name: "Additional Expertise",
-      keywords: [
-        "System Architecture",
-        "API Design",
-        "Performance Optimization",
-        "Technical Documentation",
-        "Test-Driven Development",
-        "Agile Methodologies"
-      ]
+      name: "DevOps & Tools",
+      keywords: ["Docker", "Kubernetes", "Git", "CI/CD", "System Architecture", "API Design", "Performance Optimization"]
     }
   ],
   work: [
@@ -88,9 +80,9 @@ export const resumeData: ResumeData = {
       type: "Full-time",
       highlights: [
         "Led the development of two key products that helped Sanicle achieve IBM Silver Partner certification through close collaboration with the IBM team. Currently representing Sanicle in strategic discussions with Google to secure investment funding and startup resources.",
-        "Designed and developed Sanicle's corporate website using Next.js 15 and React 19, integrating IBM Cloud Watson AI as an interactive customer service assistant that engages visitors through conversational support to better understand our offerings",
-        "Engineered Sanicle.Cloud, a comprehensive SaaS platform for workplace women's health management (menstrual and menopause wellness), featuring role-based dashboards for employees and HR departments with predictive decision alerts",
-        "Implemented IBM Cloud Watson AI within the Sanicle.Cloud employee dashboard, enabling AI-powered health consultations and automated leave requests, significantly enhancing user experience for corporate clients",
+        "Designed and developed Sanicle's corporate website using Next.js 15 and React 19, integrating IBM Cloud watsonx AI as an interactive customer service assistant that engages visitors through conversational interface to better understand Sanicle's offerings",
+        "Engineered Sanicle.Cloud, a comprehensive SaaS platform for workplace women's health management (menstrual and menopause wellness), featuring role-based dashboards for employees and HR departments with predictive absenteeism alerts",
+        "Implemented IBM Cloud watsonx AI within the Sanicle.Cloud employee dashboard, enabling AI-powered health consultations and automated leave requests, significantly enhancing user experience for corporate clients",
         "Built secure multi-tenant architecture with end-to-end encryption and GDPR compliance using PostgreSQL and Drizzle ORM, ensuring complete data isolation between organizations while maintaining system scalability"
       ]
     },
@@ -98,7 +90,7 @@ export const resumeData: ResumeData = {
       company: "FreePeriod",
       position: "Full-Stack Developer & CTO",
       startDate: "Nov 2024",
-      endDate: "PRESENT",
+      endDate: "Jun 2025",
       location: "Remote",
       type: "Full-time",
       highlights: [
@@ -113,7 +105,7 @@ export const resumeData: ResumeData = {
       company: "ByteDance",
       position: "Backend Developer",
       startDate: "Nov 2024",
-      endDate: "Feb 2025",
+      endDate: "Mar 2025",
       location: "Remote",
       type: "Full-time",
       highlights: [
@@ -179,11 +171,11 @@ export const resumeData: ResumeData = {
   achievements: [
     "United Nations CSW 69 Speaker — Beyond Beijing 30 Conference, New York, Mar 2025",
     "Outstanding Performer — UN Women FemTech Hackathon, Mar 2025",
-    "Most Popular Mentor — Forward with Her Program, supported by UN Women, Feb 2025",
+    "She Sharp Ambassador — Career Development Events, Auckland, Jul 2025 - Present",
+    "AI Forum NZ Mentor — AI Hackathon Festival, Auckland, Aug 2025",
+    "Most Popular Mentor — Forward with Her Program, Feb 2025",
     "Excellence Award Winner — FemTech China Women's Health Technology Challenge, Dec 2024",
-    "5-Star Deep Contributor Award — GitHub for Sustained Code Contributions in GitHub 2024",
-    "5-Rank Multilingual Developer — GitHub Trophy 2024",
-    "Founder — TechRosie GitHub Organization, promoting diversity in tech"
+    "SS-Rank Deep Contributor — Award for Sustained Code Contributions in GitHub 2024"
   ],
   certifications: [
     "Software Engineer - HackerRank",
@@ -197,12 +189,9 @@ export const resumeData: ResumeData = {
     "SQL (Advanced) - HackerRank",
     "Rest API (Intermediate) - HackerRank",
     "Data Analysis - Microsoft",
-    "GitHub Professional - GitHub",
     "Docker Professional - Docker Foundation",
     "Ubuntu Linux Professional - Canonical",
     "Agile Project Management - Atlassian",
-    "System Administration - Microsoft",
-    "Project Management - Microsoft",
     "Cybersecurity - Microsoft"
   ]
 }; 
