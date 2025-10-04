@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Easy Resume is a LaTeX-based resume generator built with Next.js 15, React 19, and TypeScript. The application generates professional LaTeX code from structured resume data and integrates with Overleaf for PDF compilation. It uses the `moderncv` LaTeX template for professional resume formatting.
+Easy Resume is a LaTeX-based resume generator built with Next.js 15, React 19, and TypeScript. The application generates professional LaTeX code from structured resume data and integrates with Overleaf for PDF compilation. It uses a **custom two-column layout** built with standard LaTeX packages for maximum compatibility.
 
-**Key Architecture Decision**: This project recently migrated from an HTML/CSS A4 resume builder to a LaTeX code generator. The focus is now on generating LaTeX source code rather than rendering resumes in the browser.
+**Key Architecture Decision**: This project migrated from an HTML/CSS A4 resume builder to a LaTeX code generator. It uses the article document class with custom commands to create a professional two-column layout (60% left / 40% right) that works on all LaTeX platforms including Overleaf without requiring additional template files.
 
 ## Common Commands
 
@@ -30,32 +30,40 @@ npx shadcn add <component>  # Add shadcn/ui components
 - **Schema types**: `ResumeData`, `Basics`, `Education`, `Work`, `Project`, `Skill`, `Profile`
 
 ### Key Data Sections
-- `basics`: Personal info, contact details, social profiles
+- `basics`: Personal info, contact details, social profiles, optional photo
 - `education`: Academic background with GPA and notes
 - `work`: Employment history with date ranges and highlights
 - `projects`: Portfolio projects with URLs and achievements
 - `skills`: Categorized technical skills with keywords
 - `achievements`: Notable awards and recognitions
-- `certifications`: Professional certifications
+- `certifications`: Professional certifications (automatically categorized)
 
 ## LaTeX Generation System
 
 ### Core Generator (`src/lib/latex/generator.ts`)
 - **Main function**: `generateLatexCode(data: ResumeData): string`
-- **Template**: Uses `moderncv` document class with `banking` style
-- **Sections generated**: Personal info, summary, education, experience, projects, skills, achievements, certifications
+- **Document class**: Uses standard `article` class with custom formatting
+- **Layout structure**:
+  - Left column (60%): Introduction, Experience, Projects
+  - Right column (40%): Education, Skills, Achievements, Certifications
+  - Uses `paracol` package with `\columnratio{0.6}` for asymmetric columns
+- **Sections generated**: Personal info with icons, summary, education, experience, projects, skills, achievements, certifications
+- **Custom commands**: `\cvname`, `\cvtitle`, `\cvcontact`, `\cvevent`, `\cvdivider`, `\cvtag`, `\cvsubsection`
 - **Special handling**:
-  - Name splitting for LaTeX `\name{firstName}{lastName}` command
-  - Social profile mapping (LinkedIn, GitHub, Portfolio → moderncv social types)
+  - FontAwesome icons for contact info and social profiles
+  - Blue color scheme (PrimaryColor: #0E5484, AccentColor: #2E86AB)
   - Date formatting from resume data to human-readable ranges
   - Array-to-itemize conversion for bullet points
+  - Skill tags displayed as colored boxes
+  - Automatic certification categorization by keywords
 
 ### LaTeX Utilities (`src/lib/latex/utils.ts`)
 - `escapeLaTeX()`: Critical function to escape special LaTeX characters (`&`, `%`, `$`, `#`, `_`, `{`, `}`, `~`, `^`, `\`)
 - `formatDateRange()`: Converts start/end dates to display format
 - `splitName()`: Handles name parsing for LaTeX formatting
-- `networkToSocialType()`: Maps social network names to moderncv social icons
 - `arrayToLatexItemize()`: Converts string arrays to LaTeX itemize environments
+- `arrayToCompactItemize()`: Creates compact bullet lists with custom spacing
+- `cleanURL()`: Removes protocol from URLs for cleaner display
 
 ## Overleaf Integration
 
@@ -119,25 +127,55 @@ Always use `escapeLaTeX()` from `src/lib/latex/utils.ts` when inserting user dat
 Work and education entries use string dates (`"Mar 2025"`, `"PRESENT"`) rather than ISO format. The `formatDateRange()` function handles the display formatting.
 
 ### Social Profile Mapping
-The `networkToSocialType()` function maps common network names to moderncv social types:
-- `"LinkedIn"` → `"linkedin"`
-- `"GitHub"` → `"github"`
-- `"Portfolio"` / other → `"homepage"`
+The generator maps common network names to FontAwesome icons:
+- `"LinkedIn"` → `\faLinkedin`
+- `"GitHub"` → `\faGithub`
+- `"Portfolio"` / other → `\faGlobe`
 
-### moderncv Template Customization
-- Document class: `\documentclass[11pt,a4paper,sans]{moderncv}`
-- Style: `\moderncvstyle{banking}`
-- Color scheme: `\moderncvcolor{blue}`
-- Margins: `\usepackage[scale=0.85]{geometry}`
+### LaTeX Template Customization
+- Document class: `\documentclass[10pt,a4paper]{article}`
+- Layout: Two-column with `\columnratio{0.6}` (60/40 split) using `paracol` package
+- Fonts: Latin Modern (lmodern package)
+- Color scheme: Custom blue colors (PrimaryColor: #0E5484, AccentColor: #2E86AB)
+- Margins: `left=1.25cm, right=1.25cm, top=1.5cm, bottom=1.5cm`
+- Icons: FontAwesome 5 for social profiles and contact info
+- Section formatting: Custom `titlesec` settings with colored headers and horizontal rules
+
+### Key Packages Used
+- `geometry`: Page margins and layout
+- `xcolor`: Color definitions and usage
+- `fontawesome5`: Icons for contact info and social profiles
+- `hyperref`: Clickable links
+- `paracol`: Two-column layout with asymmetric widths
+- `enumitem`: Customized list formatting
+- `titlesec`: Custom section header styling
+
+### Custom Commands Defined
+- `\cvname{name}`: Large bold name in header
+- `\cvtitle{title}`: Professional title below name
+- `\cvcontact{info}`: Contact information line with icons
+- `\cvevent{title}{subtitle}{date}{location}`: Work/education entries
+- `\cvdivider`: Horizontal line separator between entries
+- `\cvtag{keyword}`: Colored box for skill tags
+- `\cvsubsection{heading}`: Uppercase subsection headers
 
 ## Migration Context
 
-This project underwent a major architectural transformation (commit e6d3802):
-- **Removed**: ~3,800 lines of A4 layout/pagination code, Puppeteer PDF export, HTML/CSS rendering
-- **Added**: LaTeX generation system, Overleaf integration, Prism.js syntax highlighting
-- **Legacy reference**: `A4_RESUME_USAGE.md` documents the previous HTML/CSS approach (not currently used)
+This project underwent multiple architectural transformations:
 
-The migration fixed the 414 Request-URI Too Large error by switching from GET URL parameters to POST form submission for Overleaf integration.
+1. **HTML/CSS to LaTeX (commit e6d3802)**:
+   - **Removed**: ~3,800 lines of A4 layout/pagination code, Puppeteer PDF export, HTML/CSS rendering
+   - **Added**: LaTeX generation system, Overleaf integration, Prism.js syntax highlighting
+   - Fixed 414 Request-URI Too Large error by switching from GET to POST form submission
+
+2. **moderncv to Custom Two-Column Layout (current)**:
+   - **Removed**: Single-column moderncv template, dependency on altacv.cls
+   - **Added**: Custom two-column layout using article class and standard packages
+   - **Benefits**: Works on all LaTeX platforms without additional files, full customization control
+   - **Layout**: Left column (intro, experience, projects), Right column (education, skills, achievements, certifications)
+   - **Packages**: Uses only standard packages (paracol, geometry, xcolor, fontawesome5, hyperref, enumitem, titlesec)
+
+**Legacy reference**: `A4_RESUME_USAGE.md` documents the original HTML/CSS approach (not currently used)
 
 ## Type System
 

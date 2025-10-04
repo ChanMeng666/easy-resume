@@ -15,6 +15,7 @@ export const basicsSchema = z.object({
   phone: z.string().min(1, 'Phone number is required'),
   location: z.string().min(1, 'Location is required'),
   summary: z.string().optional(),
+  photo: z.string().optional(), // Optional photo filename or URL
   profiles: z.array(profileSchema),
 });
 

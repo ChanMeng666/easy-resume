@@ -8,6 +8,7 @@ export const resumeData: ResumeData = {
     phone: "(+64) 028 8523 5858",
     location: "Auckland, New Zealand",
     summary: "Full-stack developer with specialized expertise in women's health technology, combining React/Next.js, TypeScript, Python, and cloud infrastructure to build impactful web applications. Currently driving technical innovation as CTO at FreePeriod and AI/ML Infrastructure Engineer at Sanicle, delivering enterprise-grade solutions for workplace health management with AI integration.\n\nDistinguished speaker at the UN CSW 69 Beyond Beijing 30 Conference, showcasing how AI technology effectively addresses workplace gender inequities. Passionate mentor dedicated to supporting women in STEM through the Forward with Her program, with proven impact across a diverse network of mentees from prestigious universities. Master's graduate with Distinction from Lincoln University, bringing academic excellence and practical implementation skills to every project.\n\nCombines technical leadership with minimalist design principles to create elegant, efficient solutions while fostering inclusive development environments that empower teams to deliver exceptional results.",
+    photo: "example-photo.jpg", // Optional: Add photo filename (must be in same directory as .tex file when compiling)
     profiles: [
       {
         network: "Portfolio",

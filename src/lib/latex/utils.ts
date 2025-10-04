@@ -121,3 +121,26 @@ export function cleanURL(url: string): string {
 export function joinWithLineBreaks(pieces: string[]): string {
   return pieces.filter(Boolean).join(' \\\\ ');
 }
+
+/**
+ * Convert array of keywords to altacv cvtag commands
+ * @param keywords - Array of skill keywords
+ * @returns LaTeX cvtag commands
+ */
+export function arrayToCvTags(keywords: string[]): string {
+  if (!keywords || keywords.length === 0) return '';
+  return keywords.map(keyword => `\\cvtag{${escapeLaTeX(keyword)}}`).join('\n');
+}
+
+/**
+ * Convert array of strings to compact bullet list for altacv
+ * @param items - Array of item strings
+ * @returns LaTeX itemize block with compact spacing
+ */
+export function arrayToCompactItemize(items: string[]): string {
+  if (!items || items.length === 0) return '';
+
+  const itemLines = items.map(item => `  \\item ${escapeLaTeX(item)}`);
+
+  return `\\begin{itemize}[leftmargin=*]\n${itemLines.join('\n')}\n\\end{itemize}`;
+}
