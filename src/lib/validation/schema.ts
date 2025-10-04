@@ -65,6 +65,7 @@ export const resumeDataSchema = z.object({
   projects: z.array(projectSchema),
   achievements: z.array(z.string()),
   certifications: z.array(z.string()),
+  references: z.string().optional(),
 });
 
 // Type inference from Zod schema

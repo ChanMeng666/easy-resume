@@ -39,6 +39,7 @@ export function generateLatexCode(data: ResumeData): string {
     generateSkillsSection(data.skills),
     generateAchievementsSection(data.achievements),
     generateCertificationsSection(data.certifications),
+    generateReferencesSection(data.references),
     '',
     '\\end{paracol}',
     '\\end{document}',
@@ -226,11 +227,7 @@ function generateEducationSection(education: ResumeData['education']): string {
     const dateRange = formatDateRange(edu.startDate, edu.endDate);
     const degree = `${edu.studyType} of ${edu.area}`;
 
-    const details: string[] = [];
-    if (edu.note) details.push(edu.note);
-    if (edu.gpa) details.push(edu.gpa);
-
-    const detailsStr = details.length > 0 ? `\n{\\small ${details.join(' | ')}}` : '';
+    const detailsStr = edu.note ? `\n{\\small ${escapeLaTeX(edu.note)}}` : '';
 
     const divider = index < education.length - 1 ? '\n\\cvdivider' : '';
 
@@ -250,13 +247,20 @@ function generateExperienceSection(work: ResumeData['work']): string {
 
   const entries = work.map((job, index) => {
     const dateRange = formatDateRange(job.startDate, job.endDate);
-    const highlights = job.highlights && job.highlights.length > 0
-      ? '\n' + arrayToCompactItemize(job.highlights)
-      : '';
+
+    // First highlight is description paragraph, rest are bullet points
+    let content = '';
+    if (job.highlights && job.highlights.length > 0) {
+      const [description, ...bulletPoints] = job.highlights;
+      content = '\n' + escapeLaTeX(description);
+      if (bulletPoints.length > 0) {
+        content += '\n' + arrayToCompactItemize(bulletPoints);
+      }
+    }
 
     const divider = index < work.length - 1 ? '\n\\cvdivider' : '';
 
-    return `\\cvevent{${escapeLaTeX(job.position)}}{${escapeLaTeX(job.company)} — ${escapeLaTeX(job.type)}}{${dateRange}}{${escapeLaTeX(job.location)}}${highlights}${divider}`;
+    return `\\cvevent{${escapeLaTeX(job.position)}}{${escapeLaTeX(job.company)} — ${escapeLaTeX(job.type)}}{${dateRange}}{${escapeLaTeX(job.location)}}${content}${divider}`;
   });
 
   return `\\section{Experience}
@@ -273,17 +277,14 @@ function generateProjectsSection(projects: ResumeData['projects']): string {
 
   // Generate individual project cells
   const generateProjectCell = (project: ResumeData['projects'][0]) => {
-    const projectTitle = `\\textbf{\\color{TextColor}${escapeLaTeX(project.name)}}`;
-    const linkPart = project.url
-      ? ` [\\href{${escapeURL(project.url)}}{\\color{AccentColor}\\textbf{LINK}}]`
-      : '';
+    const projectTitle = `\\textbf{\\color{TextColor}${escapeLaTeX(project.name)} — ${escapeLaTeX(project.description)}}`;
 
+    // Display highlights as paragraph text without bullet points
     const highlights = project.highlights && project.highlights.length > 0
-      ? '\n' + arrayToCompactItemize(project.highlights)
+      ? '\n\n' + project.highlights.map(h => escapeLaTeX(h)).join(' ')
       : '';
 
-    return `${projectTitle}\\\\
-{\\color{PrimaryColor}\\textit{${escapeLaTeX(project.description)}}}${linkPart}${highlights}`;
+    return `${projectTitle}${highlights}`;
   };
 
   // Create 2x2 grid using minipage
@@ -310,7 +311,11 @@ ${rightCell}`);
 
   return `\\section{Recent Projects / Open-Source}
 
-${gridRows.join('\n\n\\vspace{1em}\n\n')}`;
+${gridRows.join('\n\n\\vspace{1em}\n\n')}
+
+\\vspace{1em}
+
+{\\small\\textit{Explore 50+ additional open-source projects on \\href{https://github.com/ChanMeng666}{my GitHub}.}}`;
 }
 
 /**
@@ -379,39 +384,50 @@ function generateCertificationsSection(certifications: string[]): string {
 
   if (coreDevCerts.length > 0) {
     sections.push(`\\cvsubsection{Core Development}
-\\noindent\\raggedright
-${coreDevCerts.map(c => `\\cvtag{${escapeLaTeX(c)}}`).join('')}
-\\par`);
+\\begin{itemize}
+${coreDevCerts.map(c => `  \\item ${escapeLaTeX(c)}`).join('\n')}
+\\end{itemize}`);
   }
 
   if (frameworkCerts.length > 0) {
     sections.push(`\\cvsubsection{Frameworks \\& Languages}
-\\noindent\\raggedright
-${frameworkCerts.map(c => `\\cvtag{${escapeLaTeX(c)}}`).join('')}
-\\par`);
+\\begin{itemize}
+${frameworkCerts.map(c => `  \\item ${escapeLaTeX(c)}`).join('\n')}
+\\end{itemize}`);
   }
 
   if (databaseCerts.length > 0) {
     sections.push(`\\cvsubsection{Database \\& API}
-\\noindent\\raggedright
-${databaseCerts.map(c => `\\cvtag{${escapeLaTeX(c)}}`).join('')}
-\\par`);
+\\begin{itemize}
+${databaseCerts.map(c => `  \\item ${escapeLaTeX(c)}`).join('\n')}
+\\end{itemize}`);
   }
 
   if (toolsCerts.length > 0) {
     sections.push(`\\cvsubsection{Development Tools \\& Practices}
-\\noindent\\raggedright
-${toolsCerts.map(c => `\\cvtag{${escapeLaTeX(c)}}`).join('')}
-\\par`);
+\\begin{itemize}
+${toolsCerts.map(c => `  \\item ${escapeLaTeX(c)}`).join('\n')}
+\\end{itemize}`);
   }
 
   if (otherCerts.length > 0) {
-    sections.push(`\\noindent\\raggedright
-${otherCerts.map(c => `\\cvtag{${escapeLaTeX(c)}}`).join('')}
-\\par`);
+    sections.push(`\\begin{itemize}
+${otherCerts.map(c => `  \\item ${escapeLaTeX(c)}`).join('\n')}
+\\end{itemize}`);
   }
 
   return `\\section{Certifications}
 
 ${sections.join('\n\n')}`;
+}
+
+/**
+ * Generate references section (for RIGHT column)
+ */
+function generateReferencesSection(references?: string): string {
+  if (!references) return '';
+
+  return `\\section{References}
+
+${escapeLaTeX(references)}`;
 }

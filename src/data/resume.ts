@@ -6,19 +6,24 @@ export const resumeData: ResumeData = {
     label: "AI/ML Infrastructure Engineer | Full-Stack Developer",
     email: "chanmeng.career@gmail.com",
     phone: "(+64) 028 8523 5858",
-    location: "59 Spring Street, Onehunga, Auckland 1061",
+    location: "Onehunga, Auckland 1061",
     summary: "Full-stack developer and AI/ML specialist with proven expertise in building enterprise-grade solutions using React, Next.js, TypeScript, Python, and AWS cloud infrastructure. Currently driving innovation as Senior AI/ML Infrastructure Engineer at Sanicle and Full Stack Developer at She Sharp, delivering scalable AI-powered applications for workplace health management and STEM education.\n\nDistinguished UN CSW 69 speaker and AWS She Builds Mentorship Program 2025 mentee, showcasing continuous learning leadership. Host of 4 Spotify podcasts including \"Decoding the Future\" and \"Future Turing\", sharing insights on AI innovation. Active She Sharp Ambassador and passionate mentor supporting 800+ women through Forward with Her and AI Forum NZ programs.\n\nCombines technical leadership with minimalist design principles to create elegant, efficient solutions while fostering inclusive development environments that empower teams to deliver exceptional results.",
     photo: "example-photo.jpg", // Optional: Add photo filename (must be in same directory as .tex file when compiling)
     profiles: [
       {
-        network: "Portfolio",
-        url: "https://chanmeng.org/",
-        label: "chanmeng.org"
-      },
-      {
         network: "LinkedIn",
         url: "https://www.linkedin.com/in/chanmeng666",
         label: "chanmeng666"
+      },
+      {
+        network: "GitHub",
+        url: "https://github.com/ChanMeng666",
+        label: "ChanMeng666"
+      },
+      {
+        network: "Portfolio",
+        url: "https://chanmeng.org/",
+        label: "chanmeng.org"
       }
     ]
   },
@@ -30,8 +35,7 @@ export const resumeData: ResumeData = {
       startDate: "Nov 2023",
       endDate: "Dec 2024",
       location: "New Zealand",
-      gpa: "GPA above 80%",
-      note: "Dean's List Honoree (top 5%) | with Distinction"
+      note: "Dean's List Honoree (top 5%) | with Distinction (GPA above 80%)"
     },
     {
       institution: "Jiangsu Normal University",
@@ -40,8 +44,7 @@ export const resumeData: ResumeData = {
       startDate: "Sep 2012",
       endDate: "Jun 2016",
       location: "China",
-      gpa: "GPA above 80%",
-      note: "with Distinction"
+      note: "with Distinction (GPA above 80%)"
     }
   ],
   skills: [
@@ -134,34 +137,32 @@ export const resumeData: ResumeData = {
   ],
   projects: [
     {
-      name: "FriendScope — Full-Stack Web Application",
-      description: "Scientific friendship assessment tool",
+      name: "FriendScope",
+      description: "Full-Stack Web Application",
       url: "https://friendscope.vercel.app/",
       highlights: [
-        "Independently developed a privacy-focused relationship assessment platform featuring comprehensive analysis and visualization tools, gaining significant user traction with consistently positive feedback.",
-        "Built interactive data visualization system featuring real-time analytics and comparative historical tracking.",
-        "Implemented privacy-first architecture with local storage and anonymous assessment, achieving 100% data security."
+        "Independently developed a privacy-focused relationship assessment platform featuring comprehensive analysis and visualization tools, gaining significant user traction with consistently positive feedback."
       ]
     },
     {
-      name: "Gradient SVG Generator — Dynamic SVG Generation Suite",
-      description: "Open-source platform for generating animated gradient SVGs",
+      name: "Gradient SVG Generator",
+      description: "Dynamic SVG Generation Suite",
       url: "https://gradient-svg-generator.vercel.app/",
       highlights: [
         "Developed an open-source platform for generating animated gradient SVGs through a web interface and API, garnering recognition from Reddit's r/lgbt community for its inclusive design templates."
       ]
     },
     {
-      name: "Google News MCP Server — Model Context Protocol Integration",
-      description: "AI assistant integration for real-time news",
+      name: "Google News MCP Server",
+      description: "Model Context Protocol Integration",
       url: "https://glama.ai/mcp/servers/@ChanMeng666/server-google-news",
       highlights: [
         "Pioneered an early MCP implementation enabling AI assistants to access real-time news. Successfully published to multiple MCP platforms and as an npm package, demonstrating proficiency with next-generation AI interaction protocols."
       ]
     },
     {
-      name: "Tencent Meeting Video Downloader — Chrome Browser Extension",
-      description: "Browser extension for video downloads",
+      name: "Tencent Meeting Video Downloader",
+      description: "Chrome Browser Extension",
       url: "https://chromewebstore.google.com/detail/%E8%85%BE%E8%AE%AF%E4%BC%9A%E8%AE%AE%E5%BD%95%E5%B1%8F%E4%B8%8B%E8%BD%BD%E5%8A%A9%E6%89%8B/gdajdfngeonjmcclghkmeoacopnnfpnc?hl=zh-CN&utm_source=ext_sidebar",
       highlights: [
         "Developed a browser extension that automates video downloads from Tencent Meeting with URL detection and custom save options. Published on Chrome Web Store with positive ratings and zero data collection."
@@ -193,5 +194,6 @@ export const resumeData: ResumeData = {
     "Ubuntu Linux Professional - Canonical",
     "Agile Project Management - Atlassian",
     "Cybersecurity - Microsoft"
-  ]
+  ],
+  references: "Professional references available upon request."
 }; 
