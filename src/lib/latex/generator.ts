@@ -9,7 +9,6 @@ import {
   formatDateRange,
   arrayToCompactItemize,
   cleanURL,
-  escapeURL,
 } from './utils';
 
 /**
