@@ -8,7 +8,6 @@ import {
   escapeLaTeX,
   formatDateRange,
   arrayToCompactItemize,
-  splitName,
   cleanURL,
 } from './utils';
 
