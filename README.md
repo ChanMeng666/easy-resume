@@ -36,7 +36,7 @@ Create your **FREE** professional LaTeX resume in minutes.
 </div>
 
 > [!IMPORTANT]
-> This project is a **LaTeX resume generator** that creates professional resume code using the `moderncv` template. It features a visual editor, real-time LaTeX preview, and seamless Overleaf integration for PDF compilation.
+> This project is a **LaTeX resume generator** with a multi-page architecture featuring a marketing homepage, template gallery, and visual editor. It generates professional LaTeX code using **custom two-column layouts** and standard packages for maximum compatibility across all LaTeX platforms including Overleaf.
 
 <details>
 <summary><kbd>📑 Table of Contents</kbd></summary>
@@ -89,9 +89,9 @@ Create your **FREE** professional LaTeX resume in minutes.
 
 ## 🌟 Introduction
 
-Easy Resume is a modern, browser-based LaTeX resume generator designed for professionals who want to create beautiful, professional resumes using the power of LaTeX. Built with Next.js 15, React 19, and TypeScript, this application provides a seamless visual editing experience with real-time LaTeX code generation and one-click Overleaf integration.
+Easy Resume is a modern, browser-based LaTeX resume generator designed for professionals who want to create beautiful, professional resumes using the power of LaTeX. Built with Next.js 15, React 19, and TypeScript, this multi-page application features a marketing homepage, template gallery, and visual editor with real-time LaTeX code generation and one-click Overleaf integration.
 
-**No LaTeX knowledge required!** Edit your resume using an intuitive visual editor, and the application automatically generates professional LaTeX code using the industry-standard `moderncv` template. Export to Overleaf for instant PDF compilation, or download the .tex file for local compilation.
+**No LaTeX knowledge required!** Edit your resume using an intuitive visual editor, choose from multiple professional templates, and the application automatically generates LaTeX code using **custom two-column layouts** built with standard packages. Export to Overleaf for instant PDF compilation, or download the .tex file for local compilation.
 
 > [!NOTE]
 > - Node.js >= 18.0 required for development
@@ -140,14 +140,15 @@ Key capabilities include:
 
 ### `2` LaTeX Code Generation
 
-Automatic LaTeX code generation using the professional `moderncv` template. No LaTeX knowledge required!
+Automatic LaTeX code generation using **custom two-column layouts** built with standard packages. No LaTeX knowledge required!
 
 Features:
-- 📄 **moderncv Template**: Industry-standard LaTeX resume template
-- 🎨 **Professional Styling**: Banking style with blue color scheme
+- 📄 **Custom Two-Column Layout**: Professional asymmetric layout (60% left / 40% right) using `paracol` package
+- 🎨 **Professional Styling**: Custom commands with blue color scheme (PrimaryColor: #0E5484, AccentColor: #2E86AB)
 - 🔤 **Smart Formatting**: Automatic date formatting and list generation
 - 🛡️ **Special Character Escaping**: Safe handling of LaTeX special characters
 - 📊 **All Sections Supported**: Personal info, education, work, projects, skills, achievements, certifications
+- 🔧 **Maximum Compatibility**: Uses only standard packages - works on all LaTeX platforms without additional template files
 
 [![][back-to-top]](#readme-top)
 
@@ -167,17 +168,19 @@ Seamless integration with Overleaf for instant PDF compilation. Three export met
 
 Beyond the core features, this project includes:
 
+- [x] 🏠 **Multi-Page Architecture**: Marketing homepage (`/`), template gallery (`/templates`), and editor (`/editor`)
+- [x] 🎭 **Template System**: Extensible template registry with multiple professional LaTeX templates
 - [x] 🎨 **Modern UI/UX**: Beautiful design with shadcn/ui components
 - [x] 🔧 **Type-Safe**: Built with TypeScript and Zod validation
-- [x] ⚡ **Performance Optimized**: Next.js 15 with automatic optimizations
+- [x] ⚡ **Performance Optimized**: Next.js 15 with automatic optimizations and code splitting
 - [x] 📱 **Responsive Design**: Works perfectly on all devices
 - [x] 🌐 **SEO Ready**: Optimized meta tags and semantic HTML
 - [x] 🎯 **Syntax Highlighting**: Prism.js for beautiful code preview
 - [x] 💾 **Data Import/Export**: Backup and restore resume data as JSON
-- [x] 🔄 **Reset to Example**: Quick reset to default example resume
+- [x] 🔄 **Template Switching**: Real-time template switching with URL parameter support
 - [x] 🚀 **One-Click Deploy**: Instant deployment to Vercel or other platforms
 
-> ✨ The project demonstrates modern React/Next.js development practices with LaTeX integration.
+> ✨ The project demonstrates modern React/Next.js development practices with LaTeX integration and extensible template architecture.
 
 <div align="right">
 
@@ -246,10 +249,26 @@ src/
 ├── app/
 │   ├── globals.css           # Global styles and Prism.js theme
 │   ├── layout.tsx            # Root layout with metadata
-│   └── page.tsx              # Main application page
+│   ├── page.tsx              # Marketing homepage
+│   ├── editor/
+│   │   ├── page.tsx          # Editor main page
+│   │   └── EditorContent.tsx # Editor content component
+│   └── templates/
+│       └── page.tsx          # Template gallery page
+├── templates/                # Template system (NEW)
+│   ├── types.ts              # Template type definitions
+│   ├── registry.ts           # Template registry
+│   ├── two-column/           # Custom two-column template
+│   ├── modern-cv/            # Modern CV template
+│   ├── classic/              # Classic academic template
+│   └── awesome-cv/           # Awesome CV template
 ├── components/
+│   ├── shared/               # Shared components
+│   │   ├── Navbar.tsx        # Navigation bar
+│   │   └── Footer.tsx        # Footer component
 │   ├── editor/               # Visual resume editor components
 │   │   ├── ResumeEditor.tsx  # Main editor container
+│   │   ├── TemplateSelector.tsx  # Template selector (NEW)
 │   │   └── sections/         # Section-specific editors
 │   │       ├── BasicsEditor.tsx
 │   │       ├── EducationEditor.tsx
@@ -283,15 +302,24 @@ src/
 ```mermaid
 sequenceDiagram
     participant U as User
+    participant H as Homepage
+    participant T as Template Gallery
     participant E as Visual Editor
+    participant R as Template Registry
     participant S as State (localStorage)
     participant G as LaTeX Generator
     participant O as Overleaf
 
+    U->>H: Visit Homepage
+    H->>T: Browse Templates
+    U->>T: Select Template
+    T->>E: Navigate to Editor (?template=xxx)
     U->>E: Edit Resume Data
     E->>S: Save to localStorage
-    S->>G: Trigger Code Generation
-    G->>U: Display LaTeX Preview
+    U->>E: Switch Template (Optional)
+    E->>R: Get Template by ID
+    R->>G: Call Template Generator
+    G->>E: Display LaTeX Preview
     U->>O: Click "Open in Overleaf"
     O->>U: Open PDF in New Tab
 ```
@@ -492,21 +520,26 @@ Click "Clear Data" button → Remove all stored data
 
 ### LaTeX Template
 
-The application uses the `moderncv` LaTeX template. Current configuration:
+The application uses **custom two-column layouts** built with standard LaTeX packages. Default template configuration:
 
 ```latex
-\documentclass[11pt,a4paper,sans]{moderncv}
-\moderncvstyle{banking}
-\moderncvcolor{blue}
-\usepackage[scale=0.85]{geometry}
+\documentclass[10pt,a4paper]{article}
+\usepackage[left=1.25cm,right=1.25cm,top=1.5cm,bottom=1.5cm]{geometry}
+\usepackage{paracol}
+\columnratio{0.6}  % 60% left column, 40% right column
+
+% Custom colors
+\definecolor{PrimaryColor}{HTML}{0E5484}
+\definecolor{AccentColor}{HTML}{2E86AB}
 ```
 
-**To customize the template:**
+**To customize templates:**
 
-1. Edit `src/lib/latex/generator.ts`
-2. Modify document class options
-3. Change style (`casual`, `classic`, `banking`, `oldstyle`, `fancy`)
-4. Update color scheme (`blue`, `orange`, `green`, `red`, `purple`, `grey`, `black`)
+1. **Choose a Template**: Browse available templates at `/templates` or select in editor
+2. **Modify Existing Template**: Edit files in `src/templates/{template-name}/generator.ts`
+3. **Create New Template**: Follow the template system architecture (see below)
+4. **Customize Colors**: Update color definitions in template preamble
+5. **Adjust Layout**: Modify `\columnratio` or switch to single-column layout
 
 ### Styling
 
@@ -532,45 +565,74 @@ npx shadcn add <component-name>
 # Modify Tailwind config in tailwind.config.ts
 ```
 
-### Adding New Sections
+### Adding New Templates
 
-**1. Update Zod Schema:**
+The application uses an extensible template registry system. Adding a new template requires 4 files:
 
-```typescript
-// src/lib/validation/schema.ts
-export const ResumeDataSchema = z.object({
-  // ... existing fields
-  newSection: z.array(YourNewSectionSchema),
-});
+**1. Create Template Directory:**
+
+```bash
+mkdir -p src/templates/your-template
 ```
 
-**2. Create Editor Component:**
+**2. Define Template Metadata** (`metadata.ts`):
 
 ```typescript
-// src/components/editor/sections/NewSectionEditor.tsx
-export function NewSectionEditor({ data, onChange }: Props) {
-  // Your editor implementation
+import { TemplateMetadata } from '../types';
+
+export const yourTemplateMetadata: TemplateMetadata = {
+  id: 'your-template',
+  name: 'Your Template Name',
+  description: 'Template description',
+  category: 'tech', // 'tech' | 'academic' | 'business' | 'creative'
+  tags: ['modern', 'professional'],
+  isPremium: false,
+  previewImage: '/templates/your-template-preview.png',
+};
+```
+
+**3. Create LaTeX Generator** (`generator.ts`):
+
+```typescript
+import { ResumeData } from '@/lib/validation/schema';
+import { escapeLaTeX } from '@/lib/latex/utils';
+
+export function generateYourTemplate(data: ResumeData): string {
+  // Implement LaTeX code generation logic
+  return `
+    \\documentclass[11pt,a4paper]{article}
+    % Your custom LaTeX code
+  `;
 }
 ```
 
-**3. Update LaTeX Generator:**
+**4. Create Template Entry Point** (`index.ts`):
 
 ```typescript
-// src/lib/latex/generator.ts
-function generateNewSection(data: NewSection[]): string {
-  // Generate LaTeX code for new section
+import { Template } from '../types';
+import { yourTemplateMetadata } from './metadata';
+import { generateYourTemplate } from './generator';
+
+const yourTemplate: Template = {
+  metadata: yourTemplateMetadata,
+  generator: generateYourTemplate,
+};
+
+export default yourTemplate;
+```
+
+**5. Register Template** (in `src/templates/registry.ts`):
+
+```typescript
+import yourTemplate from './your-template';
+
+constructor() {
+  // ... existing templates
+  this.register(yourTemplate);
 }
 ```
 
-**4. Add to Main Editor:**
-
-```typescript
-// src/components/editor/ResumeEditor.tsx
-import { NewSectionEditor } from './sections/NewSectionEditor';
-
-// Add to accordion items
-<NewSectionEditor data={data.newSection} onChange={handleChange} />
-```
+✅ Done! Your template will automatically appear in the template gallery and editor selector.
 
 ## ⌨️ Development
 
@@ -604,10 +666,14 @@ npm run lint         # Run ESLint
 
 **Key Files and Directories:**
 
-- `src/app/page.tsx` - Main application page with editor and preview
-- `src/lib/latex/generator.ts` - LaTeX code generation engine
+- `src/app/page.tsx` - Marketing homepage
+- `src/app/editor/page.tsx` - Editor page with template selector
+- `src/app/templates/page.tsx` - Template gallery page
+- `src/templates/` - Template system (registry, types, and all templates)
+- `src/lib/latex/generator.ts` - Core LaTeX utilities (moved to templates)
 - `src/lib/overleaf/api.ts` - Overleaf integration with POST method
 - `src/hooks/useResumeData.ts` - Resume data state management
+- `src/components/shared/` - Shared components (Navbar, Footer)
 - `src/components/editor/` - Visual editor components
 - `src/components/preview/` - LaTeX preview and export
 
