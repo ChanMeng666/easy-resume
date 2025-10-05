@@ -9,6 +9,7 @@ import { LatexPreview } from './LatexPreview';
 interface PreviewTabsProps {
   templateId?: string;
   latexCode: string;
+  filename?: string;
 }
 
 /**
@@ -22,7 +23,7 @@ function getPdfPath(templateId: string = 'two-column'): string {
  * PreviewTabs component
  * Tabbed interface for template preview and LaTeX code
  */
-export function PreviewTabs({ templateId = 'two-column', latexCode }: PreviewTabsProps) {
+export function PreviewTabs({ templateId = 'two-column', latexCode, filename = 'resume' }: PreviewTabsProps) {
   const pdfPath = getPdfPath(templateId);
 
   const handleOpenInNewTab = () => {
@@ -103,7 +104,7 @@ export function PreviewTabs({ templateId = 'two-column', latexCode }: PreviewTab
 
         {/* LaTeX Code Tab */}
         <TabsContent value="latex" className="mt-4">
-          <LatexPreview code={latexCode} />
+          <LatexPreview code={latexCode} filename={filename} />
         </TabsContent>
       </Tabs>
     </Card>

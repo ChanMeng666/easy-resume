@@ -108,6 +108,7 @@ export function EditorContent({
             <PreviewTabs
               templateId={selectedTemplateId}
               latexCode={latexCode}
+              filename={currentData.basics.name.replace(/\s+/g, '_')}
             />
           </div>
         </div>
