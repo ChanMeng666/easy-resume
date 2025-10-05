@@ -6,6 +6,7 @@ import { generateLatexCode } from '@/lib/latex/generator';
 import { LatexPreview } from '@/components/preview/LatexPreview';
 import { ExportButtons } from '@/components/preview/ExportButtons';
 import { ResumeEditor } from '@/components/editor/ResumeEditor';
+import { PdfPreview } from '@/components/template/PdfPreview';
 import { useResumeData } from '@/hooks/useResumeData';
 
 export default function Home() {
@@ -91,9 +92,12 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Right Column - LaTeX Preview & Export */}
+          {/* Right Column - PDF Preview, LaTeX Preview & Export */}
           <div className="lg:col-span-3">
             <div className="space-y-4">
+              {/* PDF Preview */}
+              <PdfPreview />
+
               {/* Export Buttons */}
               <ExportButtons latexCode={latexCode} resumeName={currentData.basics.name.replace(/\s+/g, '_')} />
 
