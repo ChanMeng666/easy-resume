@@ -9,6 +9,7 @@ import {
   formatDateRange,
   arrayToCompactItemize,
   cleanURL,
+  escapeURL,
 } from '@/lib/latex/utils';
 
 /**
@@ -191,7 +192,7 @@ function generatePublicationsSection(projects: ResumeData['projects']): string {
       let entry = `${index + 1}. `;
 
       if (project.url) {
-        entry += `\\textbf{${escapeLaTeX(project.name)}} \\href{${project.url}}{[Link]}`;
+        entry += `\\textbf{${escapeLaTeX(project.name)}} \\href{${escapeURL(project.url)}}{[Link]}`;
       } else {
         entry += `\\textbf{${escapeLaTeX(project.name)}}`;
       }

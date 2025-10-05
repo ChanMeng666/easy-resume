@@ -10,6 +10,7 @@ import {
   formatDateRange,
   arrayToCompactItemize,
   cleanURL,
+  escapeURL,
 } from '@/lib/latex/utils';
 
 /**
@@ -273,11 +274,11 @@ function generateHeader(basics: ResumeData['basics']): string {
     const label = profile.label || cleanURL(profile.url);
 
     if (profile.network.toLowerCase() === 'github') {
-      socialParts.push(`\\faGithub\\ \\href{${profile.url}}{${escapeLaTeX(label)}}`);
+      socialParts.push(`\\faGithub\\ \\href{${escapeURL(profile.url)}}{${escapeLaTeX(label)}}`);
     } else if (profile.network.toLowerCase() === 'linkedin') {
-      socialParts.push(`\\faLinkedin\\ \\href{${profile.url}}{${escapeLaTeX(label)}}`);
+      socialParts.push(`\\faLinkedin\\ \\href{${escapeURL(profile.url)}}{${escapeLaTeX(label)}}`);
     } else {
-      socialParts.push(`\\faGlobe\\ \\href{${profile.url}}{${escapeLaTeX(label)}}`);
+      socialParts.push(`\\faGlobe\\ \\href{${escapeURL(profile.url)}}{${escapeLaTeX(label)}}`);
     }
   });
 
@@ -347,7 +348,7 @@ function generateProjectsSection(projects: ResumeData['projects']): string {
     let content = `${projectTitle} — ${projectDesc}`;
 
     if (project.url) {
-      content += ` \\textcolor{awesome}{[\\href{${project.url}}{Link}]}`;
+      content += ` \\textcolor{awesome}{[\\href{${escapeURL(project.url)}}{Link}]}`;
     }
 
     // Add highlights

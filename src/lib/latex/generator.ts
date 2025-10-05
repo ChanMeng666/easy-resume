@@ -9,6 +9,7 @@ import {
   formatDateRange,
   arrayToCompactItemize,
   cleanURL,
+  escapeURL,
 } from './utils';
 
 /**
@@ -185,11 +186,11 @@ function generateHeader(basics: ResumeData['basics']): string {
     const label = profile.label || cleanUrl;
 
     if (profile.network.toLowerCase() === 'linkedin') {
-      contactParts.push(`  \\faLinkedin\\ \\href{${profile.url}}{${escapeLaTeX(label)}}`);
+      contactParts.push(`  \\faLinkedin\\ \\href{${escapeURL(profile.url)}}{${escapeLaTeX(label)}}`);
     } else if (profile.network.toLowerCase() === 'github') {
-      contactParts.push(`  \\faGithub\\ \\href{${profile.url}}{${escapeLaTeX(label)}}`);
+      contactParts.push(`  \\faGithub\\ \\href{${escapeURL(profile.url)}}{${escapeLaTeX(label)}}`);
     } else {
-      contactParts.push(`  \\faGlobe\\ \\href{${profile.url}}{${escapeLaTeX(label)}}`);
+      contactParts.push(`  \\faGlobe\\ \\href{${escapeURL(profile.url)}}{${escapeLaTeX(label)}}`);
     }
   });
 

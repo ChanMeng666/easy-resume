@@ -9,6 +9,7 @@ import {
   formatDateRange,
   arrayToCompactItemize,
   cleanURL,
+  escapeURL,
 } from '@/lib/latex/utils';
 
 /**
@@ -114,7 +115,7 @@ function generateHeader(basics: ResumeData['basics']): string {
   basics.profiles?.forEach((profile) => {
     const icon = getProfileIcon(profile.network);
     const displayUrl = cleanURL(profile.url);
-    contactParts.push(`${icon}\\ \\href{${profile.url}}{${escapeLaTeX(displayUrl)}}`);
+    contactParts.push(`${icon}\\ \\href{${escapeURL(profile.url)}}{${escapeLaTeX(displayUrl)}}`);
   });
 
   const contactLine = contactParts.join(' ~ ');
@@ -195,7 +196,7 @@ function generateProjectsSection(projects: ResumeData['projects']): string {
   const projectEntries = projects
     .map((project) => {
       const projectHeader = project.url
-        ? `\\textbf{\\href{${project.url}}{${escapeLaTeX(project.name)}}}`
+        ? `\\textbf{\\href{${escapeURL(project.url)}}{${escapeLaTeX(project.name)}}}`
         : `\\textbf{${escapeLaTeX(project.name)}}`;
 
       const description = escapeLaTeX(project.description);
