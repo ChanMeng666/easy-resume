@@ -2,6 +2,7 @@ import { Template, TemplateCategory, TemplateRegistry } from './types';
 import twoColumnTemplate from './two-column';
 import modernCvTemplate from './modern-cv';
 import classicTemplate from './classic';
+import awesomeCvTemplate from './awesome-cv';
 
 /**
  * Template registry - central place to register all templates
@@ -14,6 +15,7 @@ class TemplateRegistryImpl implements TemplateRegistry {
     this.register(twoColumnTemplate);
     this.register(modernCvTemplate);
     this.register(classicTemplate);
+    this.register(awesomeCvTemplate);
   }
 
   /**
