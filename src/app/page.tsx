@@ -1,22 +1,40 @@
+'use client';
+
 import Link from 'next/link';
+import { useEffect } from 'react';
 import { ArrowRight, FileText, Eye, Palette, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Navbar } from '@/components/shared/Navbar';
 import { Footer } from '@/components/shared/Footer';
 import { getAllTemplates } from '@/templates/registry';
 
-export const metadata = {
-  title: 'Easy Resume - Free LaTeX Resume Generator',
-  description: 'Create professional LaTeX resumes in 3 minutes. Export to Overleaf, no registration required, completely free',
-  keywords: 'LaTeX resume, resume generator, Overleaf, free resume templates',
-};
-
 export default function HomePage() {
   const templates = getAllTemplates();
+
+  useEffect(() => {
+    const initGradient = async () => {
+      // Dynamically import Gradient to avoid SSR issues
+      const { Gradient } = await import('@/lib/gradient/Gradient');
+      const gradient = new Gradient();
+      gradient.initGradient('#gradient-canvas');
+    };
+
+    initGradient();
+  }, []);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-      {/* Navigation */}
-      <Navbar currentPath="/" />
+    <div className="relative min-h-screen overflow-hidden">
+      {/* Animated Gradient Background */}
+      <canvas
+        id="gradient-canvas"
+        data-transition-in
+        className="gradient-canvas"
+      />
+
+      {/* Content Overlay */}
+      <div className="relative z-10">
+        {/* Navigation */}
+        <Navbar currentPath="/" />
 
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-20 md:py-32">
@@ -187,8 +205,9 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <Footer />
+        {/* Footer */}
+        <Footer />
+      </div>
     </div>
   );
 }

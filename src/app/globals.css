@@ -6,6 +6,20 @@
 @import url('../styles/pdf.css');
 @import url('../styles/a4-layout.css');
 
+/* Gradient Canvas Background */
+.gradient-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  --gradient-color-1: #53DF83;
+  --gradient-color-2: #47D2E9;
+  --gradient-color-3: #3F3F3F;
+  --gradient-color-4: #EEEEEE;
+}
+
 :root {
   --background-paper: #ffffff;
   --primary-main: #2563eb;
