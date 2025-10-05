@@ -7,7 +7,7 @@ export const modernCvMetadata: TemplateMetadata = {
   category: 'tech',
   tags: ['Minimalist', 'Modern', 'Single-Column', 'Clean'],
   isPremium: false,
-  previewImage: '/templates/modern-cv-preview.png',
+  previewImage: '/template/modern-cv-preview.pdf',
   author: 'Easy Resume Team',
   createdAt: '2025-01-05',
 };

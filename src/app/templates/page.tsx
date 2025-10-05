@@ -3,6 +3,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Navbar } from '@/components/shared/Navbar';
 import { Footer } from '@/components/shared/Footer';
+import { TemplateCard } from '@/components/template/TemplateCard';
 import { getAllTemplates } from '@/templates/registry';
 
 export const metadata = {
@@ -65,50 +66,7 @@ export default function TemplatesPage() {
       <section className="container mx-auto px-4 py-12">
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
           {templates.map((template) => (
-            <div
-              key={template.metadata.id}
-              className="group overflow-hidden rounded-lg border bg-white shadow-sm transition-shadow hover:shadow-md dark:bg-gray-900"
-            >
-              {/* Preview Image Placeholder */}
-              <div className="relative aspect-[3/4] bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700">
-                {template.metadata.isPremium && (
-                  <div className="absolute right-2 top-2 rounded-full bg-yellow-500 px-3 py-1 text-xs font-semibold text-white">
-                    Premium
-                  </div>
-                )}
-              </div>
-
-              {/* Template Info */}
-              <div className="p-4">
-                <h3 className="mb-2 text-lg font-semibold">{template.metadata.name}</h3>
-                <p className="mb-3 text-sm text-muted-foreground">
-                  {template.metadata.description}
-                </p>
-
-                {/* Tags */}
-                <div className="mb-4 flex flex-wrap gap-1">
-                  {template.metadata.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-700 dark:bg-blue-900 dark:text-blue-300"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-
-                {/* Action Button */}
-                {template.metadata.isPremium ? (
-                  <Button className="w-full" variant="outline" disabled>
-                    Coming Soon
-                  </Button>
-                ) : (
-                  <Link href={`/editor?template=${template.metadata.id}`}>
-                    <Button className="w-full">Use This Template</Button>
-                  </Link>
-                )}
-              </div>
-            </div>
+            <TemplateCard key={template.metadata.id} metadata={template.metadata} />
           ))}
         </div>
       </section>

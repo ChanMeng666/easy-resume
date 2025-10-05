@@ -7,7 +7,7 @@ export const twoColumnMetadata: TemplateMetadata = {
   category: 'tech',
   tags: ['Tech', 'Two-Column', 'Modern', 'Professional'],
   isPremium: false,
-  previewImage: '/templates/two-column-preview.png',
+  previewImage: '/template/two-column-preview.pdf',
   author: 'Easy Resume Team',
   createdAt: '2025-01-01',
 };

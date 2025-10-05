@@ -7,7 +7,7 @@ export const classicMetadata: TemplateMetadata = {
   category: 'academic',
   tags: ['Academic', 'Classic', 'Formal', 'Traditional'],
   isPremium: false,
-  previewImage: '/templates/classic-preview.png',
+  previewImage: '/template/classic-preview.pdf',
   author: 'Easy Resume Team',
   createdAt: '2025-01-05',
 };

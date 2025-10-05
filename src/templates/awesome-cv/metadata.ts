@@ -7,7 +7,7 @@ export const awesomeCvMetadata: TemplateMetadata = {
   category: 'tech',
   tags: ['Tech', 'Modern', 'Professional', 'Single-Column', 'Clean'],
   isPremium: false,
-  previewImage: '/templates/awesome-cv-preview.png',
+  previewImage: '/template/awesome-cv-preview.pdf',
   author: 'Inspired by posquit0/Awesome-CV',
   createdAt: '2025-10-05',
 };
