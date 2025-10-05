@@ -38,7 +38,11 @@ export function escapeLaTeX(text: string): string {
  * @param endDate - End date string (can be "PRESENT")
  * @returns Formatted date range
  */
-export function formatDateRange(startDate: string, endDate: string): string {
+export function formatDateRange(startDate?: string, endDate?: string): string {
+  if (!startDate && !endDate) return '';
+  if (!startDate) return endDate || '';
+  if (!endDate) return startDate;
+
   const formattedEnd = endDate.toUpperCase() === 'PRESENT' ? 'Present' : endDate;
   return `${startDate}--${formattedEnd}`;
 }
