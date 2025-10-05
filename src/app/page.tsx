@@ -37,7 +37,7 @@ export default function HomePage() {
         <Navbar currentPath="/" />
 
       {/* Hero Section */}
-      <section className="container mx-auto px-4 py-20 md:py-32">
+      <section className="container mx-auto px-4 pt-32 pb-20 md:pt-40 md:pb-32">
         <div className="mx-auto max-w-4xl text-center">
           <h1 className="mb-6 text-4xl font-bold tracking-tight sm:text-6xl">
             Create Professional

@@ -77,7 +77,7 @@ export function TopToolbar({
   };
 
   return (
-    <div className="sticky top-0 z-30 border-b bg-white dark:bg-gray-900">
+    <div className="sticky top-20 z-30 border-b bg-white dark:bg-gray-900">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between gap-4">
           {/* Left: Template Selector */}

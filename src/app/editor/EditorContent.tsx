@@ -74,7 +74,7 @@ export function EditorContent({
         onImportJSON={importData}
       />
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 pt-24 pb-8">
         {/* Welcome Guide for first-time users */}
         <WelcomeGuide />
 

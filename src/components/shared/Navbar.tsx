@@ -1,7 +1,10 @@
+'use client';
+
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { ReactNode } from 'react';
+import { useScrollDirection } from '@/lib/hooks/useScrollDirection';
 
 interface NavbarProps {
   currentPath?: string;
@@ -9,9 +12,17 @@ interface NavbarProps {
   rightContent?: ReactNode;
 }
 
+/**
+ * Navigation bar component with auto-hide on scroll down functionality
+ * Shows navbar when scrolling up, hides when scrolling down
+ */
 export function Navbar({ currentPath = '/', subtitle, rightContent }: NavbarProps) {
+  const scrollDirection = useScrollDirection();
+
   return (
-    <nav className="border-b bg-white/80 backdrop-blur-sm dark:bg-gray-900/80">
+    <nav className={`fixed top-0 left-0 right-0 z-50 border-b bg-white/80 backdrop-blur-sm dark:bg-gray-900/80 transition-transform duration-300 ${
+      scrollDirection === 'down' ? '-translate-y-full' : 'translate-y-0'
+    }`}>
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}

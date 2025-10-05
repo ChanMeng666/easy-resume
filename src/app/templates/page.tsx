@@ -29,7 +29,7 @@ export default function TemplatesPage() {
       <Navbar currentPath="/templates" />
 
       {/* Header */}
-      <section className="border-b bg-white/50 dark:bg-gray-900/50">
+      <section className="border-b bg-white/50 dark:bg-gray-900/50 pt-20">
         <div className="container mx-auto px-4 py-12">
           <Link
             href="/"
