@@ -2,11 +2,10 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { LatexPreview } from '@/components/preview/LatexPreview';
-import { ExportButtons } from '@/components/preview/ExportButtons';
 import { ResumeEditor } from '@/components/editor/ResumeEditor';
-import { PdfPreview } from '@/components/template/PdfPreview';
-import { TemplateSelector } from '@/components/editor/TemplateSelector';
+import { TopToolbar } from '@/components/editor/TopToolbar';
+import { PreviewTabs } from '@/components/preview/PreviewTabs';
+import { WelcomeGuide } from '@/components/editor/WelcomeGuide';
 import { getTemplateById, DEFAULT_TEMPLATE_ID } from '@/templates/registry';
 import { ResumeData } from '@/lib/validation/schema';
 
@@ -54,33 +53,38 @@ export function EditorContent({
     return template.generator(currentData);
   }, [currentData, selectedTemplateId]);
 
+  // Track last saved time
+  const [lastSaved, setLastSaved] = useState<Date>(new Date());
+
+  useEffect(() => {
+    setLastSaved(new Date());
+  }, [currentData]);
+
   return (
-    <main className="container mx-auto px-4 py-8">
-        {/* Info Banner */}
-        <div className="mb-6 rounded-lg border bg-blue-50 p-4 dark:bg-blue-950/20">
-          <h2 className="mb-2 font-semibold text-blue-900 dark:text-blue-100">
-            Welcome to Easy Resume LaTeX! 🚀
-          </h2>
-          <p className="text-sm text-blue-800 dark:text-blue-200">
-            Edit your resume information on the left, and the LaTeX code will be generated automatically.
-            Click <strong>&quot;Open in Overleaf&quot;</strong> to compile your resume to PDF, or download the .tex file.
-          </p>
-        </div>
+    <>
+      {/* Top Toolbar */}
+      <TopToolbar
+        currentTemplateId={selectedTemplateId}
+        onTemplateChange={setSelectedTemplateId}
+        latexCode={latexCode}
+        resumeName={currentData.basics.name.replace(/\s+/g, '_')}
+        lastSaved={lastSaved}
+        isSaving={false}
+        onExportJSON={exportData}
+        onImportJSON={importData}
+      />
+
+      <main className="container mx-auto px-4 py-8">
+        {/* Welcome Guide for first-time users */}
+        <WelcomeGuide />
 
         {/* Two Column Layout */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
           {/* Left Column - Editor */}
           <div className="lg:col-span-2">
             <div className="rounded-lg border bg-white p-6 shadow-sm dark:bg-gray-900">
-              <div className="mb-4 flex items-center justify-between">
+              <div className="mb-4">
                 <h2 className="text-lg font-semibold">Edit Resume</h2>
-                {/* Mobile Template Selector */}
-                <div className="w-48 md:hidden">
-                  <TemplateSelector
-                    currentTemplateId={selectedTemplateId}
-                    onTemplateChange={setSelectedTemplateId}
-                  />
-                </div>
               </div>
               {isLoaded ? (
                 <ResumeEditor
@@ -99,21 +103,12 @@ export function EditorContent({
             </div>
           </div>
 
-          {/* Right Column - PDF Preview, LaTeX Preview & Export */}
+          {/* Right Column - Preview Tabs */}
           <div className="lg:col-span-3">
-            <div className="space-y-4">
-              {/* PDF Preview */}
-              <PdfPreview templateId={selectedTemplateId} />
-
-              {/* Export Buttons */}
-              <ExportButtons
-                latexCode={latexCode}
-                resumeName={currentData.basics.name.replace(/\s+/g, '_')}
-              />
-
-              {/* LaTeX Code Preview */}
-              <LatexPreview code={latexCode} />
-            </div>
+            <PreviewTabs
+              templateId={selectedTemplateId}
+              latexCode={latexCode}
+            />
           </div>
         </div>
 
@@ -156,5 +151,6 @@ export function EditorContent({
           </ol>
         </div>
       </main>
+    </>
   );
 }

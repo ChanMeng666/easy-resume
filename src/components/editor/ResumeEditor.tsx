@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ResumeData, resumeDataSchema } from '@/lib/validation/schema';
@@ -17,20 +17,23 @@ import { WorkEditor } from './sections/WorkEditor';
 import { ProjectsEditor } from './sections/ProjectsEditor';
 import { SkillsEditor } from './sections/SkillsEditor';
 import { ListEditor } from './sections/ListEditor';
+import { ProgressIndicator } from './ProgressIndicator';
+import { calculateSectionCompletions } from '@/lib/utils/completeness';
 import {
-  Download,
-  Upload,
   RotateCcw,
   Trash2,
   Trophy,
   Award,
+  CheckCircle2,
+  AlertCircle,
+  Circle,
 } from 'lucide-react';
 
 interface ResumeEditorProps {
   data: ResumeData;
   onDataChange: (data: ResumeData) => void;
   onReset: () => void;
-  onExport: () => void;
+  onExport?: () => void; // Optional, kept for backwards compatibility but not used in UI
   onImport: (file: File) => Promise<void>;
   onClear: () => void;
 }
@@ -39,7 +42,6 @@ export function ResumeEditor({
   data,
   onDataChange,
   onReset,
-  onExport,
   onImport,
   onClear,
 }: ResumeEditorProps) {
@@ -66,10 +68,6 @@ export function ResumeEditor({
     });
     return () => subscription.unsubscribe();
   }, [form, onDataChange]);
-
-  const handleImportClick = () => {
-    fileInputRef.current?.click();
-  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -122,66 +120,44 @@ export function ResumeEditor({
     }
   };
 
+  // Calculate section completions
+  const sectionCompletions = useMemo(() => {
+    return calculateSectionCompletions(data);
+  }, [data]);
+
+  // Helper function to get completion badge
+  const getCompletionBadge = (sectionId: string) => {
+    const section = sectionCompletions.find(s => s.id === sectionId);
+    if (!section) return null;
+
+    if (section.status === 'complete') {
+      return <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />;
+    } else if (section.status === 'partial') {
+      return (
+        <div className="flex items-center gap-1">
+          <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+          <span className="text-xs text-yellow-600 dark:text-yellow-400">{section.completion}%</span>
+        </div>
+      );
+    } else {
+      return <Circle className="h-4 w-4 text-gray-400" />;
+    }
+  };
+
   return (
     <div className="space-y-4">
-      {/* Action Buttons */}
-      <div className="flex flex-wrap gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={onExport}
-        >
-          <Download className="mr-2 h-4 w-4" />
-          Export JSON
-        </Button>
-
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={handleImportClick}
-        >
-          <Upload className="mr-2 h-4 w-4" />
-          Import JSON
-        </Button>
-
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={handleReset}
-        >
-          <RotateCcw className="mr-2 h-4 w-4" />
-          Reset to Example
-        </Button>
-
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={handleClear}
-          className="text-red-500 hover:text-red-600"
-        >
-          <Trash2 className="mr-2 h-4 w-4" />
-          Clear All
-        </Button>
-      </div>
-
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".json"
-        onChange={handleFileChange}
-        className="hidden"
-      />
+      {/* Progress Indicator */}
+      <ProgressIndicator data={data} />
 
       {/* Form Sections */}
       <form className="space-y-4">
         <Accordion type="multiple" defaultValue={['basics']} className="w-full">
           <AccordionItem value="basics">
             <AccordionTrigger className="text-base font-semibold">
-              👤 Personal Information
+              <div className="flex items-center justify-between w-full pr-2">
+                <span>👤 Personal Information</span>
+                {getCompletionBadge('basics')}
+              </div>
             </AccordionTrigger>
             <AccordionContent>
               <BasicsEditor form={form} />
@@ -190,7 +166,10 @@ export function ResumeEditor({
 
           <AccordionItem value="education">
             <AccordionTrigger className="text-base font-semibold">
-              🎓 Education
+              <div className="flex items-center justify-between w-full pr-2">
+                <span>🎓 Education</span>
+                {getCompletionBadge('education')}
+              </div>
             </AccordionTrigger>
             <AccordionContent>
               <EducationEditor form={form} />
@@ -199,7 +178,10 @@ export function ResumeEditor({
 
           <AccordionItem value="work">
             <AccordionTrigger className="text-base font-semibold">
-              💼 Work Experience
+              <div className="flex items-center justify-between w-full pr-2">
+                <span>💼 Work Experience</span>
+                {getCompletionBadge('work')}
+              </div>
             </AccordionTrigger>
             <AccordionContent>
               <WorkEditor form={form} />
@@ -208,7 +190,10 @@ export function ResumeEditor({
 
           <AccordionItem value="projects">
             <AccordionTrigger className="text-base font-semibold">
-              🚀 Projects
+              <div className="flex items-center justify-between w-full pr-2">
+                <span>🚀 Projects</span>
+                {getCompletionBadge('projects')}
+              </div>
             </AccordionTrigger>
             <AccordionContent>
               <ProjectsEditor form={form} />
@@ -217,7 +202,10 @@ export function ResumeEditor({
 
           <AccordionItem value="skills">
             <AccordionTrigger className="text-base font-semibold">
-              💻 Skills
+              <div className="flex items-center justify-between w-full pr-2">
+                <span>💻 Skills</span>
+                {getCompletionBadge('skills')}
+              </div>
             </AccordionTrigger>
             <AccordionContent>
               <SkillsEditor form={form} />
@@ -226,7 +214,10 @@ export function ResumeEditor({
 
           <AccordionItem value="achievements">
             <AccordionTrigger className="text-base font-semibold">
-              🏆 Achievements
+              <div className="flex items-center justify-between w-full pr-2">
+                <span>🏆 Achievements</span>
+                {getCompletionBadge('achievements')}
+              </div>
             </AccordionTrigger>
             <AccordionContent>
               <ListEditor
@@ -242,7 +233,10 @@ export function ResumeEditor({
 
           <AccordionItem value="certifications">
             <AccordionTrigger className="text-base font-semibold">
-              📜 Certifications
+              <div className="flex items-center justify-between w-full pr-2">
+                <span>📜 Certifications</span>
+                {getCompletionBadge('certifications')}
+              </div>
             </AccordionTrigger>
             <AccordionContent>
               <ListEditor
@@ -261,9 +255,41 @@ export function ResumeEditor({
       <div className="rounded-lg bg-blue-50 p-3 dark:bg-blue-950/20">
         <p className="text-sm text-blue-800 dark:text-blue-200">
           💡 <strong>Tip:</strong> Your changes are automatically saved to your browser.
-          Export your data as JSON to back it up or share it.
+          Use the Export menu in the toolbar to back up your data.
         </p>
       </div>
+
+      {/* Bottom Action Buttons */}
+      <div className="flex flex-wrap gap-2 border-t pt-4">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={handleReset}
+        >
+          <RotateCcw className="mr-2 h-4 w-4" />
+          Reset to Example
+        </Button>
+
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={handleClear}
+          className="text-red-500 hover:text-red-600"
+        >
+          <Trash2 className="mr-2 h-4 w-4" />
+          Clear All Data
+        </Button>
+      </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json"
+        onChange={handleFileChange}
+        className="hidden"
+      />
     </div>
   );
 }
