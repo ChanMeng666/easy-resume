@@ -193,3 +193,37 @@ When adding new resume sections:
 3. Create generator function in `src/lib/latex/generator.ts`
 4. Add section to `generateLatexCode()` sections array
 5. Test LaTeX output in Overleaf
+
+## Claude Code Preferences
+
+### Language Requirements
+- **UI Content**: All text in pages and components MUST be in English. No Chinese content allowed in the codebase.
+- **Conversation**: Communicate with user in Chinese (Mandarin).
+- **Code**: All code strings, comments, and documentation must be in English.
+- **Function Comments**: Add function-level comments following Google Open Source style guide.
+
+### Git Workflow
+- **Commit Style**: Use Conventional Commits format following Angular specification.
+- **GitHub CLI**: GitHub CLI is available for repository operations (use `gh` commands).
+- **Commit Location**: Always verify current working directory is `/home/chanmeng/easy-resume` before committing.
+
+### Testing Strategy
+- Create functional tests in the project folder for every feature milestone.
+- Test comprehensively before moving to next milestone.
+- Use minimal tests to verify implementation effectiveness.
+- Avoid creating extra documentation files unless explicitly requested.
+
+### Code Quality Principles
+1. **Problem-Solving**: Find the best solution, don't bypass problems. Tackle issues head-on.
+2. **Efficiency**: Minimize code changes and use token-efficient implementations.
+3. **Focus**: Stay laser-focused on user's task. Avoid extra/unnecessary work.
+4. **Modularity**:
+   - Decouple UI components, logic components, and data components
+   - Break down components into smaller, granular pieces
+   - Extract and reuse common logic
+5. **Maintainability**: Ensure code is robust, extensible, and maintainable.
+
+### Communication
+- Explain actions clearly in conversation.
+- Avoid verbose preambles unless requested.
+- Keep explanations concise and relevant to the task.
