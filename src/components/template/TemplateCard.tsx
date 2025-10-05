@@ -13,7 +13,7 @@ interface TemplateCardProps {
  * Template card component for displaying template preview and information
  */
 export function TemplateCard({ metadata }: TemplateCardProps) {
-  const pdfPath = `/template/${metadata.id}-preview.pdf`;
+  const pdfPath = metadata.previewImage;
 
   const handleViewFullPreview = () => {
     window.open(pdfPath, '_blank');

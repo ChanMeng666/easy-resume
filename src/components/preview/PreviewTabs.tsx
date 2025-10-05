@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { ExternalLink, Download, Info, FileCode, FileText } from 'lucide-react';
 import { LatexPreview } from './LatexPreview';
+import { getTemplateById } from '@/templates/registry';
 
 interface PreviewTabsProps {
   templateId?: string;
@@ -16,7 +17,8 @@ interface PreviewTabsProps {
  * Get PDF preview path based on template ID
  */
 function getPdfPath(templateId: string = 'two-column'): string {
-  return `/template/${templateId}-preview.pdf`;
+  const template = getTemplateById(templateId);
+  return template?.metadata.previewImage || `/template/${templateId}-preview.pdf`;
 }
 
 /**

@@ -7,7 +7,7 @@ export const executiveMetadata: TemplateMetadata = {
   category: 'business',
   tags: ['Executive', 'Leadership', 'Management', 'Professional', 'Business'],
   isPremium: false,
-  previewImage: '/template/executive-preview.pdf',
+  previewImage: '/template/executive-resum-preview.pdf',
   author: 'Easy Resume Team',
   createdAt: '2025-10-05',
 };

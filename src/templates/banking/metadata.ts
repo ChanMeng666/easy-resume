@@ -7,7 +7,7 @@ export const bankingMetadata: TemplateMetadata = {
   category: 'business',
   tags: ['Banking', 'Finance', 'Consulting', 'Investment', 'Professional', 'Conservative'],
   isPremium: false,
-  previewImage: '/template/banking-preview.pdf',
+  previewImage: '/template/banking-finance-preview.pdf',
   author: 'Easy Resume Team',
   createdAt: '2025-10-05',
 };

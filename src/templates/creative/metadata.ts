@@ -7,7 +7,7 @@ export const creativeMetadata: TemplateMetadata = {
   category: 'creative',
   tags: ['Creative', 'Designer', 'Portfolio', 'Modern', 'Gradient', 'Colorful'],
   isPremium: false,
-  previewImage: '/template/creative-preview.pdf',
+  previewImage: '/template/creative-portfolio-preview.pdf',
   author: 'Easy Resume Team',
   createdAt: '2025-10-05',
 };

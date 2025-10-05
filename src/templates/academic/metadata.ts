@@ -7,7 +7,7 @@ export const academicMetadata: TemplateMetadata = {
   category: 'academic',
   tags: ['Academic', 'Research', 'Professor', 'PhD', 'Publications', 'Multi-page'],
   isPremium: false,
-  previewImage: '/template/academic-preview.pdf',
+  previewImage: '/template/academic-research-preview.pdf',
   author: 'Easy Resume Team',
   createdAt: '2025-10-05',
 };

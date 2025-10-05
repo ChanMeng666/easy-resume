@@ -7,7 +7,7 @@ export const compactMetadata: TemplateMetadata = {
   category: 'tech',
   tags: ['Compact', 'One-Page', 'Entry-Level', 'Student', 'Internship', 'Dense'],
   isPremium: false,
-  previewImage: '/template/compact-preview.pdf',
+  previewImage: '/template/compact-one-page-preview.pdf',
   author: 'Easy Resume Team',
   createdAt: '2025-10-05',
 };
