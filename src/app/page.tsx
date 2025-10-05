@@ -109,7 +109,16 @@ export default function HomePage() {
               key={template.metadata.id}
               className="group overflow-hidden rounded-lg border bg-white shadow-sm transition-shadow hover:shadow-md dark:bg-gray-900"
             >
-              <div className="aspect-[3/4] bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700" />
+              {/* PDF Preview */}
+              <div className="relative aspect-[3/4] overflow-hidden bg-gray-100 dark:bg-gray-800">
+                <iframe
+                  src={`/template/${template.metadata.id}-preview.pdf`}
+                  className="h-full w-full scale-100 transition-transform group-hover:scale-105"
+                  title={`${template.metadata.name} Preview`}
+                />
+                {/* Overlay on hover */}
+                <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/10" />
+              </div>
               <div className="p-4">
                 <h3 className="mb-2 font-semibold">{template.metadata.name}</h3>
                 <p className="mb-3 text-sm text-muted-foreground">
