@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Navbar } from '@/components/shared/Navbar';
-import { SimpleFooter } from '@/components/shared/SimpleFooter';
+import { Footer } from '@/components/shared/Footer';
 import { getAllTemplates } from '@/templates/registry';
 
 export const metadata = {
@@ -129,7 +129,7 @@ export default function TemplatesPage() {
       </section>
 
       {/* Footer */}
-      <SimpleFooter />
+      <Footer />
     </div>
   );
 }
