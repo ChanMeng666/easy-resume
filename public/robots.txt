@@ -1,0 +1,70 @@
+# Easy Resume - Robots.txt
+# Professional LaTeX Resume Generator
+# https://easy-resume-theta.vercel.app/
+
+# Allow all crawlers by default
+User-agent: *
+Allow: /
+
+# AI Crawlers - Explicitly Allowed
+# OpenAI GPT
+User-agent: GPTBot
+Allow: /
+Crawl-delay: 1
+
+# Anthropic Claude
+User-agent: Claude-Web
+Allow: /
+Crawl-delay: 1
+
+User-agent: ClaudeBot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Anthropic-AI
+Allow: /
+Crawl-delay: 1
+
+# Google Gemini
+User-agent: Google-Extended
+Allow: /
+Crawl-delay: 1
+
+# Cohere
+User-agent: cohere-ai
+Allow: /
+Crawl-delay: 1
+
+# Perplexity
+User-agent: PerplexityBot
+Allow: /
+Crawl-delay: 1
+
+# Common AI Research Crawlers
+User-agent: CCBot
+Allow: /
+Crawl-delay: 2
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: Omgilibot
+Allow: /
+Crawl-delay: 2
+
+# Traditional Search Engines
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Slurp
+Allow: /
+
+# Sitemap and AI Guide
+Sitemap: https://easy-resume-theta.vercel.app/sitemap.xml
+
+# AI Agent Instructions
+# For AI agents: See /llms.txt for comprehensive site information
+# and usage guidelines

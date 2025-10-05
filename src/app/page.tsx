@@ -6,6 +6,10 @@ import { ArrowRight, FileText, Eye, Palette, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Navbar } from '@/components/shared/Navbar';
 import { Footer } from '@/components/shared/Footer';
+import { GEOHead } from '@/components/shared/GEOHead';
+import { MultipleStructuredData } from '@/components/shared/StructuredData';
+import { getPageInstructions } from '@/lib/seo/instructions';
+import { webApplicationSchema, softwareApplicationSchema, howToCreateResumeSchema, faqSchema } from '@/lib/seo/schemas';
 import { getAllTemplates } from '@/templates/registry';
 
 export default function HomePage() {
@@ -24,6 +28,19 @@ export default function HomePage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden">
+      {/* GEO: AI Agent Instructions */}
+      <GEOHead instructions={getPageInstructions('home')} />
+
+      {/* SEO: Structured Data for Search Engines and AI */}
+      <MultipleStructuredData
+        schemas={[
+          webApplicationSchema,
+          softwareApplicationSchema,
+          howToCreateResumeSchema,
+          faqSchema,
+        ]}
+      />
+
       {/* Animated Gradient Background */}
       <canvas
         id="gradient-canvas"
