@@ -1,155 +1,185 @@
-'use client';
+import Link from 'next/link';
+import { ArrowRight, FileText, Eye, Palette, Download } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Navbar } from '@/components/shared/Navbar';
+import { SimpleFooter } from '@/components/shared/SimpleFooter';
+import { getAllTemplates } from '@/templates/registry';
 
-import { useMemo } from 'react';
-import Image from 'next/image';
-import { generateLatexCode } from '@/lib/latex/generator';
-import { LatexPreview } from '@/components/preview/LatexPreview';
-import { ExportButtons } from '@/components/preview/ExportButtons';
-import { ResumeEditor } from '@/components/editor/ResumeEditor';
-import { PdfPreview } from '@/components/template/PdfPreview';
-import { useResumeData } from '@/hooks/useResumeData';
-import { Footer } from '@/components/layout/Footer';
+export const metadata = {
+  title: 'Easy Resume - Free LaTeX Resume Generator',
+  description: 'Create professional LaTeX resumes in 3 minutes. Export to Overleaf, no registration required, completely free',
+  keywords: 'LaTeX resume, resume generator, Overleaf, free resume templates',
+};
 
-export default function Home() {
-  const {
-    data: currentData,
-    isLoaded,
-    updateData,
-    resetToDefault,
-    exportData,
-    importData,
-    clearData,
-  } = useResumeData();
-
-  // Generate LaTeX code when data changes
-  const latexCode = useMemo(() => {
-    return generateLatexCode(currentData);
-  }, [currentData]);
-
+export default function HomePage() {
+  const templates = getAllTemplates();
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-      {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm dark:bg-gray-900/80">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Image src="/easy-resume.svg" alt="Easy Resume" width={32} height={32} />
-              <div>
-                <h1 className="text-xl font-bold">Easy Resume LaTeX</h1>
-                <p className="text-sm text-muted-foreground">
-                  Create professional LaTeX resumes
+      {/* Navigation */}
+      <Navbar currentPath="/" />
+
+      {/* Hero Section */}
+      <section className="container mx-auto px-4 py-20 md:py-32">
+        <div className="mx-auto max-w-4xl text-center">
+          <h1 className="mb-6 text-4xl font-bold tracking-tight sm:text-6xl">
+            Create Professional
+            <span className="bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+              {' '}LaTeX Resumes
+            </span>
+            {' '}in Minutes
+          </h1>
+          <p className="mb-8 text-lg text-muted-foreground sm:text-xl">
+            No registration required · Visual editing with real-time preview · One-click export to Overleaf
+          </p>
+          <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <Link href="/editor">
+              <Button size="lg" className="gap-2">
+                Get Started <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+            <Link href="/templates">
+              <Button size="lg" variant="outline">
+                Browse Templates
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="container mx-auto px-4 py-20">
+        <h2 className="mb-12 text-center text-3xl font-bold">Key Features</h2>
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+          {/* Feature 1 */}
+          <div className="rounded-lg border bg-white p-6 shadow-sm dark:bg-gray-900">
+            <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900">
+              <FileText className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            </div>
+            <h3 className="mb-2 text-xl font-semibold">Visual Editing</h3>
+            <p className="text-sm text-muted-foreground">
+              No need to write LaTeX code manually. Edit your resume content through intuitive forms with instant results
+            </p>
+          </div>
+
+          {/* Feature 2 */}
+          <div className="rounded-lg border bg-white p-6 shadow-sm dark:bg-gray-900">
+            <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-cyan-100 dark:bg-cyan-900">
+              <Eye className="h-6 w-6 text-cyan-600 dark:text-cyan-400" />
+            </div>
+            <h3 className="mb-2 text-xl font-semibold">Real-time Preview</h3>
+            <p className="text-sm text-muted-foreground">
+              Syntax-highlighted LaTeX code generated in real-time. View PDF directly in Overleaf
+            </p>
+          </div>
+
+          {/* Feature 3 */}
+          <div className="rounded-lg border bg-white p-6 shadow-sm dark:bg-gray-900">
+            <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900">
+              <Palette className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+            </div>
+            <h3 className="mb-2 text-xl font-semibold">Multiple Templates</h3>
+            <p className="text-sm text-muted-foreground">
+              Professional templates for tech, academic, business and more. Continuously updated free template library
+            </p>
+          </div>
+
+          {/* Feature 4 */}
+          <div className="rounded-lg border bg-white p-6 shadow-sm dark:bg-gray-900">
+            <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-green-100 dark:bg-green-900">
+              <Download className="h-6 w-6 text-green-600 dark:text-green-400" />
+            </div>
+            <h3 className="mb-2 text-xl font-semibold">Local Storage</h3>
+            <p className="text-sm text-muted-foreground">
+              Data saved locally in your browser. Import/export JSON backup with privacy protection
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Template Gallery Preview */}
+      <section className="container mx-auto px-4 py-20">
+        <div className="mb-12 text-center">
+          <h2 className="mb-4 text-3xl font-bold">Featured Templates</h2>
+          <p className="text-muted-foreground">Choose a professional resume template that suits you</p>
+        </div>
+        <div className="grid gap-8 md:grid-cols-3">
+          {/* Featured Templates */}
+          {templates.slice(0, 3).map((template) => (
+            <div
+              key={template.metadata.id}
+              className="group overflow-hidden rounded-lg border bg-white shadow-sm transition-shadow hover:shadow-md dark:bg-gray-900"
+            >
+              <div className="aspect-[3/4] bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700" />
+              <div className="p-4">
+                <h3 className="mb-2 font-semibold">{template.metadata.name}</h3>
+                <p className="mb-3 text-sm text-muted-foreground">
+                  {template.metadata.description}
                 </p>
+                <div className="mb-4 flex flex-wrap gap-1">
+                  {template.metadata.tags.slice(0, 3).map((tag) => (
+                    <span
+                      key={tag}
+                      className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+                <Link href={`/editor?template=${template.metadata.id}`}>
+                  <Button className="w-full" variant="outline">
+                    Use This Template
+                  </Button>
+                </Link>
               </div>
             </div>
+          ))}
+        </div>
+        <div className="mt-12 text-center">
+          <Link href="/templates">
+            <Button variant="outline" size="lg">
+              View All Templates
+            </Button>
+          </Link>
+        </div>
+      </section>
 
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>Powered by</span>
-              <a
-                href="https://www.overleaf.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-medium text-primary hover:underline"
-              >
-                Overleaf
-              </a>
+      {/* Stats Section */}
+      <section className="border-y bg-white/50 dark:bg-gray-900/50">
+        <div className="container mx-auto px-4 py-16">
+          <div className="grid gap-8 md:grid-cols-3">
+            <div className="text-center">
+              <div className="mb-2 text-4xl font-bold text-primary">100%</div>
+              <div className="text-sm text-muted-foreground">Completely Free</div>
+            </div>
+            <div className="text-center">
+              <div className="mb-2 text-4xl font-bold text-primary">3 Min</div>
+              <div className="text-sm text-muted-foreground">Quick Generation</div>
+            </div>
+            <div className="text-center">
+              <div className="mb-2 text-4xl font-bold text-primary">Zero Code</div>
+              <div className="text-sm text-muted-foreground">No LaTeX Knowledge Required</div>
             </div>
           </div>
         </div>
-      </header>
+      </section>
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        {/* Info Banner */}
-        <div className="mb-6 rounded-lg border bg-blue-50 p-4 dark:bg-blue-950/20">
-          <h2 className="mb-2 font-semibold text-blue-900 dark:text-blue-100">
-            Welcome to Easy Resume LaTeX! 🚀
-          </h2>
-          <p className="text-sm text-blue-800 dark:text-blue-200">
-            Edit your resume information on the left, and the LaTeX code will be generated automatically.
-            Click <strong>&quot;Open in Overleaf&quot;</strong> to compile your resume to PDF, or download the .tex file.
+      {/* CTA Section */}
+      <section className="container mx-auto px-4 py-20">
+        <div className="rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-600 p-8 text-center text-white md:p-12">
+          <h2 className="mb-4 text-3xl font-bold">Ready to Create Your Professional Resume?</h2>
+          <p className="mb-8 text-lg opacity-90">
+            No registration required. Start now, completely free
           </p>
+          <Link href="/editor">
+            <Button size="lg" variant="secondary" className="gap-2">
+              Create Free Resume <ArrowRight className="h-4 w-4" />
+            </Button>
+          </Link>
         </div>
-
-        {/* Two Column Layout */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-          {/* Left Column - Editor */}
-          <div className="lg:col-span-2">
-            <div className="rounded-lg border bg-white p-6 shadow-sm dark:bg-gray-900">
-              <h2 className="mb-4 text-lg font-semibold">Edit Resume</h2>
-              {isLoaded ? (
-                <ResumeEditor
-                  data={currentData}
-                  onDataChange={updateData}
-                  onReset={resetToDefault}
-                  onExport={exportData}
-                  onImport={importData}
-                  onClear={clearData}
-                />
-              ) : (
-                <div className="flex items-center justify-center py-8">
-                  <p className="text-muted-foreground">Loading...</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Right Column - PDF Preview, LaTeX Preview & Export */}
-          <div className="lg:col-span-3">
-            <div className="space-y-4">
-              {/* PDF Preview */}
-              <PdfPreview />
-
-              {/* Export Buttons */}
-              <ExportButtons latexCode={latexCode} resumeName={currentData.basics.name.replace(/\s+/g, '_')} />
-
-              {/* LaTeX Code Preview */}
-              <LatexPreview code={latexCode} />
-            </div>
-          </div>
-        </div>
-
-        {/* Instructions */}
-        <div className="mt-8 rounded-lg border bg-white p-6 shadow-sm dark:bg-gray-900">
-          <h2 className="mb-4 text-lg font-semibold">How to Use</h2>
-          <ol className="space-y-2 text-sm">
-            <li className="flex gap-3">
-              <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-                1
-              </span>
-              <span>
-                <strong>Edit directly in the browser:</strong> Use the visual editor on the left to update your resume information
-              </span>
-            </li>
-            <li className="flex gap-3">
-              <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-                2
-              </span>
-              <span>
-                <strong>Real-time preview:</strong> See the generated LaTeX code update automatically on the right
-              </span>
-            </li>
-            <li className="flex gap-3">
-              <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-                3
-              </span>
-              <span>
-                <strong>Open in Overleaf:</strong> Click the button to compile to PDF in Overleaf (free account required)
-              </span>
-            </li>
-            <li className="flex gap-3">
-              <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-                4
-              </span>
-              <span>
-                <strong>Backup your data:</strong> Export your resume as JSON to save or share it. Import JSON to restore previous data.
-              </span>
-            </li>
-          </ol>
-        </div>
-      </main>
+      </section>
 
       {/* Footer */}
-      <Footer />
+      <SimpleFooter />
     </div>
   );
 }
