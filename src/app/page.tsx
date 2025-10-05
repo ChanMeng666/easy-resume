@@ -8,6 +8,7 @@ import { ExportButtons } from '@/components/preview/ExportButtons';
 import { ResumeEditor } from '@/components/editor/ResumeEditor';
 import { PdfPreview } from '@/components/template/PdfPreview';
 import { useResumeData } from '@/hooks/useResumeData';
+import { Footer } from '@/components/layout/Footer';
 
 export default function Home() {
   const {
@@ -148,21 +149,7 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t bg-white/80 backdrop-blur-sm dark:bg-gray-900/80">
-        <div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
-          <p>
-            Built with Next.js, Tailwind CSS, and ❤️ |{' '}
-            <a
-              href="https://github.com/ChanMeng666/easy-resume"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:underline"
-            >
-              View on GitHub
-            </a>
-          </p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
