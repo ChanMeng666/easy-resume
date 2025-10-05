@@ -4,17 +4,28 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ExternalLink, Download, Info } from 'lucide-react';
 
-const PDF_PATH = '/template/resume-preview.pdf';
+interface PdfPreviewProps {
+  templateId?: string;
+}
 
-export function PdfPreview() {
+/**
+ * Get PDF preview path based on template ID
+ */
+function getPdfPath(templateId: string = 'two-column'): string {
+  return `/template/${templateId}-preview.pdf`;
+}
+
+export function PdfPreview({ templateId = 'two-column' }: PdfPreviewProps) {
+  const pdfPath = getPdfPath(templateId);
+
   const handleOpenInNewTab = () => {
-    window.open(PDF_PATH, '_blank');
+    window.open(pdfPath, '_blank');
   };
 
   const handleDownload = () => {
     const link = document.createElement('a');
-    link.href = PDF_PATH;
-    link.download = 'resume-preview.pdf';
+    link.href = pdfPath;
+    link.download = `${templateId}-preview.pdf`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -49,7 +60,7 @@ export function PdfPreview() {
 
         <div className="relative w-full overflow-hidden rounded-lg border bg-gray-100">
           <iframe
-            src={PDF_PATH}
+            src={pdfPath}
             className="h-[600px] w-full"
             title="Resume PDF Preview"
           />

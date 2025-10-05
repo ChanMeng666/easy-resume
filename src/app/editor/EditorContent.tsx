@@ -103,7 +103,7 @@ export function EditorContent({
           <div className="lg:col-span-3">
             <div className="space-y-4">
               {/* PDF Preview */}
-              <PdfPreview />
+              <PdfPreview templateId={selectedTemplateId} />
 
               {/* Export Buttons */}
               <ExportButtons
