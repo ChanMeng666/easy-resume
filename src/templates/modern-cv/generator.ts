@@ -85,6 +85,10 @@ function generatePreamble(): string {
 % Remove page numbers
 \\pagenumbering{gobble}
 
+% Paragraph formatting - eliminate indentation for modern clean look
+\\setlength{\\parindent}{0pt}
+\\setlength{\\parskip}{0.5em}
+
 % List spacing
 \\setlist[itemize]{leftmargin=*, topsep=0pt, itemsep=2pt, parsep=0pt}`;
 }
@@ -145,8 +149,13 @@ function getProfileIcon(network: string): string {
 function generateSummary(summary?: string): string {
   if (!summary) return '';
 
+  // Escape LaTeX and add \noindent before each paragraph to prevent indentation
+  const escapedSummary = escapeLaTeX(summary);
+  // Replace paragraph breaks with \noindent command for extra safety
+  const formattedSummary = escapedSummary.replace(/\n\n/g, '\n\n\\noindent ');
+
   return `\\section{Summary}
-${escapeLaTeX(summary)}`;
+\\noindent ${formattedSummary}`;
 }
 
 /**
@@ -256,5 +265,10 @@ function generateCertificationsSection(certifications?: string[]): string {
 function generateReferencesSection(references?: string): string {
   if (!references) return '';
 
-  return `\\section{References}\n${escapeLaTeX(references)}`;
+  // Escape LaTeX and add \noindent before each paragraph to prevent indentation
+  const escapedReferences = escapeLaTeX(references);
+  const formattedReferences = escapedReferences.replace(/\n\n/g, '\n\n\\noindent ');
+
+  return `\\section{References}
+\\noindent ${formattedReferences}`;
 }
