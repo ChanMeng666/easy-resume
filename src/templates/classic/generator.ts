@@ -78,6 +78,10 @@ function generatePreamble(): string {
 % Remove page numbers
 \\pagenumbering{gobble}
 
+% Paragraph formatting - eliminate indentation
+\\setlength{\\parindent}{0pt}
+\\setlength{\\parskip}{0.5em}
+
 % List spacing
 \\setlist[itemize]{leftmargin=*, topsep=4pt, itemsep=2pt, parsep=0pt}`;
 }
@@ -120,7 +124,10 @@ function generateHeader(basics: ResumeData['basics']): string {
   header += `\n\\vspace{8pt}\n\\cvcontact{${contactLine}}`;
 
   if (basics.summary) {
-    header += `\n\n\\vspace{12pt}\n\\noindent ${escapeLaTeX(basics.summary)}`;
+    // Escape LaTeX and add \noindent before each paragraph to prevent indentation
+    const escapedSummary = escapeLaTeX(basics.summary);
+    const formattedSummary = escapedSummary.replace(/\n\n/g, '\n\n\\noindent ');
+    header += `\n\n\\vspace{12pt}\n\\noindent ${formattedSummary}`;
   }
 
   return header;
@@ -254,5 +261,9 @@ function generateCertificationsSection(certifications?: string[]): string {
 function generateReferencesSection(references?: string): string {
   if (!references) return '';
 
-  return `\\section{References}\n${escapeLaTeX(references)}`;
+  // Escape LaTeX and add \noindent before each paragraph to prevent indentation
+  const escapedReferences = escapeLaTeX(references);
+  const formattedReferences = escapedReferences.replace(/\n\n/g, '\n\n\\noindent ');
+
+  return `\\section{References}\n\\noindent ${formattedReferences}`;
 }
