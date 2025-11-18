@@ -1,7 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { Mail, Github, Star, ExternalLink, FileText, Palette, Download, Sparkles, Briefcase, MessageSquare, Code } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Mail, Github, Star, FileText, Palette, Download, Sparkles, Briefcase, MessageSquare, Code } from 'lucide-react';
 
 /**
  * Footer component with brand identity and developer information
@@ -143,79 +142,40 @@ export function Footer() {
             </div>
           </div>
 
-          {/* Contact & Hire Me */}
+          {/* Contact */}
           <div className="space-y-5">
             <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider">
               <MessageSquare className="h-4 w-4 text-primary" />
-              Let&apos;s Work Together
+              Contact
             </h3>
-            <div className="space-y-4">
+            <div className="space-y-3">
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Need custom web development or AI solutions? I&apos;m available for:
+                Open to collaboration and freelance opportunities.
               </p>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li className="flex items-start gap-2">
-                  <span className="mt-1 text-primary">•</span>
-                  Full-stack web applications
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="mt-1 text-primary">•</span>
-                  AI/ML integration projects
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="mt-1 text-primary">•</span>
-                  Technical consulting
-                </li>
-              </ul>
-              <a href="mailto:chanmeng.dev@gmail.com">
-                <Button className="w-full gap-2 transition-all hover:gap-3">
-                  <Mail className="h-4 w-4" />
-                  Get Free Consultation
-                  <ExternalLink className="h-3 w-3" />
-                </Button>
-              </a>
               <a
                 href="mailto:chanmeng.dev@gmail.com"
-                className="flex items-center justify-center gap-2 text-xs text-muted-foreground transition-colors hover:text-primary"
+                className="group flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-primary"
               >
+                <Mail className="h-3.5 w-3.5 transition-transform group-hover:scale-110" />
                 chanmeng.dev@gmail.com
               </a>
             </div>
           </div>
         </div>
 
-        {/* Bottom Section: Copyright & Tech Stack */}
-        <div className="space-y-4 border-t pt-8">
-          <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
-            <p className="text-sm text-muted-foreground">
-              © {new Date().getFullYear()} Easy Resume by{' '}
-              <a
-                href="https://github.com/ChanMeng666"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-medium text-primary transition-colors hover:text-primary/80"
-              >
-                Chan Meng
-              </a>
-              . Open source and free forever.
-            </p>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span>Built with</span>
-              <span className="rounded bg-primary/10 px-2 py-0.5 font-mono font-semibold text-primary">
-                Next.js 15
-              </span>
-              <span>·</span>
-              <span className="rounded bg-primary/10 px-2 py-0.5 font-mono font-semibold text-primary">
-                React 19
-              </span>
-              <span>·</span>
-              <span className="rounded bg-primary/10 px-2 py-0.5 font-mono font-semibold text-primary">
-                TypeScript
-              </span>
-            </div>
-          </div>
-          <p className="text-center text-xs text-muted-foreground">
-            Available for freelance work and collaboration opportunities
+        {/* Bottom Section: Copyright */}
+        <div className="border-t pt-8 text-center">
+          <p className="text-sm text-muted-foreground">
+            © {new Date().getFullYear()} Easy Resume by{' '}
+            <a
+              href="https://github.com/ChanMeng666"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-primary transition-colors hover:text-primary/80"
+            >
+              Chan Meng
+            </a>
+            . Open source and free forever.
           </p>
         </div>
       </div>
