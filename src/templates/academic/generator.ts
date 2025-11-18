@@ -82,6 +82,10 @@ function generatePreamble(): string {
 % Page numbers for multi-page CV
 \\pagenumbering{arabic}
 
+% Paragraph formatting - eliminate indentation
+\\setlength{\\parindent}{0pt}
+\\setlength{\\parskip}{0.5em}
+
 % List spacing
 \\setlist[itemize]{leftmargin=*, topsep=4pt, itemsep=2pt, parsep=0pt}
 \\setlist[enumerate]{leftmargin=*, topsep=4pt, itemsep=3pt, parsep=0pt}`;
@@ -138,8 +142,12 @@ function generateHeader(basics: ResumeData['basics']): string {
 function generateResearchInterests(summary?: string): string {
   if (!summary) return '';
 
+  // Escape LaTeX and add \noindent before each paragraph to prevent indentation
+  const escapedSummary = escapeLaTeX(summary);
+  const formattedSummary = escapedSummary.replace(/\n\n/g, '\n\n\\noindent ');
+
   return `\\section*{Research Interests}
-${escapeLaTeX(summary)}`;
+\\noindent ${formattedSummary}`;
 }
 
 /**
@@ -303,8 +311,12 @@ ${certList}
 function generateReferencesSection(references?: ResumeData['references']): string {
   if (!references) return '';
 
+  // Escape LaTeX and add \noindent before each paragraph to prevent indentation
+  const escapedReferences = escapeLaTeX(references);
+  const formattedReferences = escapedReferences.replace(/\n\n/g, '\n\n\\noindent ');
+
   return `\\section*{References}
-${escapeLaTeX(references)}`;
+\\noindent ${formattedReferences}`;
 }
 
 /**

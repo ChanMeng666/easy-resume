@@ -72,6 +72,10 @@ function generatePreamble(): string {
 % Remove page numbers
 \\pagenumbering{gobble}
 
+% Paragraph formatting - eliminate indentation
+\\setlength{\\parindent}{0pt}
+\\setlength{\\parskip}{0.5em}
+
 % List spacing - traditional
 \\setlist[itemize]{leftmargin=*, topsep=2pt, itemsep=2pt, parsep=0pt}`;
 }

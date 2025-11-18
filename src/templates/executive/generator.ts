@@ -84,6 +84,10 @@ function generatePreamble(): string {
 % Remove page numbers
 \\pagenumbering{gobble}
 
+% Paragraph formatting - eliminate indentation
+\\setlength{\\parindent}{0pt}
+\\setlength{\\parskip}{0.5em}
+
 % List spacing - professional spacing
 \\setlist[itemize]{leftmargin=*, topsep=2pt, itemsep=3pt, parsep=0pt}`;
 }
@@ -138,8 +142,12 @@ function generateHeader(basics: ResumeData['basics']): string {
 function generateExecutiveSummary(summary?: string): string {
   if (!summary) return '';
 
+  // Escape LaTeX and add \noindent before each paragraph to prevent indentation
+  const escapedSummary = escapeLaTeX(summary);
+  const formattedSummary = escapedSummary.replace(/\n\n/g, '\n\n\\noindent ');
+
   return `\\section*{\\textcolor{PrimaryColor}{Executive Summary}}
-${escapeLaTeX(summary)}`;
+\\noindent ${formattedSummary}`;
 }
 
 /**
