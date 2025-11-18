@@ -212,9 +212,14 @@ function generateHeader(basics: ResumeData['basics']): string {
 function generateSummary(summary?: string): string {
   if (!summary) return '';
 
+  // Escape LaTeX and add \noindent before each paragraph to prevent indentation
+  const escapedSummary = escapeLaTeX(summary);
+  // Replace paragraph breaks with \noindent command
+  const formattedSummary = escapedSummary.replace(/\n\n/g, '\n\n\\noindent ');
+
   return `\\section{Introduction}
 
-${escapeLaTeX(summary)}`;
+\\noindent ${formattedSummary}`;
 }
 
 /**
@@ -252,7 +257,8 @@ function generateExperienceSection(work: ResumeData['work']): string {
     let content = '';
     if (job.highlights && job.highlights.length > 0) {
       const [description, ...bulletPoints] = job.highlights;
-      content = '\n' + escapeLaTeX(description);
+      // Add \noindent before description to prevent paragraph indentation
+      content = '\n\\noindent ' + escapeLaTeX(description);
       if (bulletPoints.length > 0) {
         content += '\n' + arrayToCompactItemize(bulletPoints);
       }
@@ -280,8 +286,9 @@ function generateProjectsSection(projects: ResumeData['projects']): string {
     const projectTitle = `\\textbf{\\color{TextColor}${escapeLaTeX(project.name)} — ${escapeLaTeX(project.description)}}`;
 
     // Display highlights as paragraph text without bullet points
+    // Add \noindent to prevent paragraph indentation
     const highlights = project.highlights && project.highlights.length > 0
-      ? '\n\n' + project.highlights.map(h => escapeLaTeX(h)).join(' ')
+      ? '\n\n\\noindent ' + project.highlights.map(h => escapeLaTeX(h)).join(' ')
       : '';
 
     return `${projectTitle}${highlights}`;
@@ -427,7 +434,11 @@ ${sections.join('\n\n')}`;
 function generateReferencesSection(references?: string): string {
   if (!references) return '';
 
+  // Escape LaTeX and add \noindent before each paragraph to prevent indentation
+  const escapedReferences = escapeLaTeX(references);
+  const formattedReferences = escapedReferences.replace(/\n\n/g, '\n\n\\noindent ');
+
   return `\\section{References}
 
-${escapeLaTeX(references)}`;
+\\noindent ${formattedReferences}`;
 }
