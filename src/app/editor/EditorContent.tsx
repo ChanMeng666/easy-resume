@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { ResumeEditor } from '@/components/editor/ResumeEditor';
 import { TopToolbar } from '@/components/editor/TopToolbar';
 import { PreviewTabs } from '@/components/preview/PreviewTabs';
@@ -28,6 +28,7 @@ export function EditorContent({
   importData,
   clearData,
 }: EditorContentProps) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const urlTemplateId = searchParams.get('template');
 
@@ -35,12 +36,22 @@ export function EditorContent({
     urlTemplateId || DEFAULT_TEMPLATE_ID
   );
 
-  // Update template when URL changes
+  // Update template when URL changes (browser back/forward navigation)
   useEffect(() => {
     if (urlTemplateId && urlTemplateId !== selectedTemplateId) {
       setSelectedTemplateId(urlTemplateId);
     }
   }, [urlTemplateId, selectedTemplateId]);
+
+  // Handle template change: update both state and URL
+  const handleTemplateChange = (templateId: string) => {
+    setSelectedTemplateId(templateId);
+
+    // Update URL parameter to keep it in sync with the selected template
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('template', templateId);
+    router.replace(`/editor?${params.toString()}`, { scroll: false });
+  };
 
   // Generate LaTeX code when data or template changes
   const latexCode = useMemo(() => {
@@ -65,7 +76,7 @@ export function EditorContent({
       {/* Top Toolbar */}
       <TopToolbar
         currentTemplateId={selectedTemplateId}
-        onTemplateChange={setSelectedTemplateId}
+        onTemplateChange={handleTemplateChange}
         latexCode={latexCode}
         resumeName={currentData.basics.name.replace(/\s+/g, '_')}
         lastSaved={lastSaved}
