@@ -83,6 +83,7 @@ export function PreviewTabs({ templateId = 'two-column', latexCode, filename = '
 
           <div className="relative w-full overflow-hidden rounded-lg border bg-gray-100">
             <iframe
+              key={templateId}
               src={pdfPath}
               className="h-[600px] w-full"
               title="Resume PDF Preview"
