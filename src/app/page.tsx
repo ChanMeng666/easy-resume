@@ -20,7 +20,6 @@ export default function HomePage() {
     setIsMounted(true);
     const initGradient = async () => {
       // Dynamically import Gradient to avoid SSR issues
-      // @ts-ignore
       const { Gradient } = await import('@/lib/gradient/Gradient');
       const gradient = new Gradient();
       gradient.initGradient('#gradient-canvas');
@@ -247,7 +246,7 @@ export default function HomePage() {
                 </div>
                 <h3 className="text-xl font-bold mb-3">Privacy First</h3>
                 <p className="text-muted-foreground">
-                  Your data lives in your browser. We don't store your personal information on our servers.
+                  Your data lives in your browser. We don&apos;t store your personal information on our servers.
                 </p>
               </div>
 
