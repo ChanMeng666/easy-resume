@@ -155,14 +155,15 @@ export function arrayToCvTags(keywords: string[]): string {
 }
 
 /**
- * Convert array of strings to compact bullet list for altacv
+ * Convert array of strings to compact bullet list
+ * Uses consistent spacing between items
  * @param items - Array of item strings
  * @returns LaTeX itemize block with compact spacing
  */
 export function arrayToCompactItemize(items: string[]): string {
   if (!items || items.length === 0) return '';
 
-  const itemLines = items.map(item => `  \\item ${escapeLaTeX(item)}`);
+  const itemLines = items.map(item => `  \\item \\strut ${escapeLaTeX(item)}`);
 
-  return `\\begin{itemize}[leftmargin=*]\n${itemLines.join('\n')}\n\\end{itemize}`;
+  return `\\begin{itemize}[leftmargin=*,itemsep=0.3em,parsep=0em,topsep=0.3em]\n${itemLines.join('\n')}\n\\end{itemize}`;
 }

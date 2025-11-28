@@ -114,38 +114,48 @@ function generatePreamble(): string {
 \\setlength{\\parindent}{0pt}
 \\setlength{\\parskip}{0.3em}
 
+% Consistent line spacing
+\\linespread{1.1}
+\\selectfont
+
 % Custom commands for resume elements
 \\newcommand{\\cvname}[1]{%
-  {\\Huge\\bfseries\\color{TextColor}#1}\\\\[0.3em]
+  {\\Huge\\bfseries\\color{TextColor}#1}\\par\\vspace{0.3em}%
 }
 
 \\newcommand{\\cvtitle}[1]{%
-  {\\large\\color{PrimaryColor}#1}\\\\[0.8em]
+  {\\large\\color{PrimaryColor}#1}\\par\\vspace{0.8em}%
 }
 
 \\newcommand{\\cvcontact}[1]{%
   {\\small\\color{LightGrey}#1}
 }
 
+% CV event with consistent spacing - uses strut for uniform line height
 \\newcommand{\\cvevent}[4]{%
-  \\textbf{\\color{TextColor}#1}\\\\
-  {\\color{PrimaryColor}\\textit{#2}}\\\\
-  {\\small\\color{LightGrey}#3 \\textbar\\ #4}\\\\[0.3em]
+  \\par\\vspace{0.2em}%
+  {\\strut\\textbf{\\color{TextColor}#1}}\\par%
+  {\\strut\\color{PrimaryColor}\\textit{#2}}\\par%
+  {\\strut\\small\\color{LightGrey}#3 \\textbar\\ #4}\\par%
+  \\vspace{0.5em}%
 }
 
 \\newcommand{\\cvdivider}{%
-  \\vspace{0.5em}
-  {\\color{AccentColor!30}\\hrule}
-  \\vspace{0.5em}
+  \\vspace{0.6em}%
+  {\\color{AccentColor!30}\\hrule}%
+  \\vspace{0.6em}%
 }
 
+% Skill tag with consistent vertical alignment
 \\newcommand{\\cvtag}[1]{%
-  \\colorbox{AccentColor!15}{\\color{TextColor}\\small\\textbf{#1}}\\space%
+  \\raisebox{0pt}[1.2em][0.3em]{\\colorbox{AccentColor!15}{\\color{TextColor}\\small\\strut\\textbf{#1}}}\\hspace{0.15em}%
 }
 
+% Subsection with consistent spacing
 \\newcommand{\\cvsubsection}[1]{%
-  \\vspace{0.5em}
-  {\\color{PrimaryColor}\\textbf{\\uppercase{#1}}}\\\\[0.3em]
+  \\par\\vspace{0.6em}%
+  {\\strut\\color{PrimaryColor}\\textbf{\\uppercase{#1}}}\\par%
+  \\vspace{0.4em}%
 }`;
 }
 
@@ -224,6 +234,7 @@ function generateSummary(summary?: string): string {
 
 /**
  * Generate education section (for RIGHT column)
+ * Includes consistent spacing between entries
  */
 function generateEducationSection(education: ResumeData['education']): string {
   if (!education || education.length === 0) return '';
@@ -232,7 +243,8 @@ function generateEducationSection(education: ResumeData['education']): string {
     const dateRange = formatDateRange(edu.startDate, edu.endDate);
     const degree = `${edu.studyType} of ${edu.area}`;
 
-    const detailsStr = edu.note ? `\n{\\small ${escapeLaTeX(edu.note)}}` : '';
+    // Add note with consistent spacing
+    const detailsStr = edu.note ? `\\vspace{0.3em}\n{\\small\\strut ${escapeLaTeX(edu.note)}}` : '';
 
     const divider = index < education.length - 1 ? '\n\\cvdivider' : '';
 
@@ -246,6 +258,7 @@ ${entries.join('\n\n')}`;
 
 /**
  * Generate work experience section (for LEFT column)
+ * Uses consistent spacing between job entries and content
  */
 function generateExperienceSection(work: ResumeData['work']): string {
   if (!work || work.length === 0) return '';
@@ -257,10 +270,10 @@ function generateExperienceSection(work: ResumeData['work']): string {
     let content = '';
     if (job.highlights && job.highlights.length > 0) {
       const [description, ...bulletPoints] = job.highlights;
-      // Add \noindent before description to prevent paragraph indentation
-      content = '\n\\noindent ' + escapeLaTeX(description);
+      // Add consistent spacing before description
+      content = '\n\\vspace{0.2em}\\noindent ' + escapeLaTeX(description);
       if (bulletPoints.length > 0) {
-        content += '\n' + arrayToCompactItemize(bulletPoints);
+        content += '\n\\vspace{0.2em}\n' + arrayToCompactItemize(bulletPoints);
       }
     }
 
@@ -327,6 +340,7 @@ ${gridRows.join('\n\n\\vspace{1em}\n\n')}
 
 /**
  * Generate skills section (for RIGHT column)
+ * Uses consistent spacing for skill categories and tags
  */
 function generateSkillsSection(skills: ResumeData['skills']): string {
   if (!skills || skills.length === 0) return '';
@@ -334,9 +348,9 @@ function generateSkillsSection(skills: ResumeData['skills']): string {
   const entries = skills.map((skill) => {
     const tags = skill.keywords.map(keyword => `\\cvtag{${escapeLaTeX(keyword)}}`).join('');
     return `\\cvsubsection{${escapeLaTeX(skill.name)}}
-\\noindent\\raggedright
-${tags}
-\\par`;
+\\noindent\\raggedright\\setlength{\\baselineskip}{1.6em}%
+${tags}%
+\\par\\vspace{0.2em}`;
   });
 
   return `\\section{Skills}
