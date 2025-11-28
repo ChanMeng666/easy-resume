@@ -133,11 +133,13 @@ function generatePreamble(): string {
 
 % CV event with consistent spacing - uses strut for uniform line height
 \\newcommand{\\cvevent}[4]{%
-  \\par\\vspace{0.2em}%
-  {\\strut\\textbf{\\color{TextColor}#1}}\\par%
-  {\\strut\\color{PrimaryColor}\\textit{#2}}\\par%
+  \\par\\vspace{0.3em}%
+  {\\strut\\textbf{\\color{TextColor}#1}}\\par\\nobreak%
+  \\vspace{0.15em}%
+  {\\strut\\color{PrimaryColor}\\textit{#2}}\\par\\nobreak%
+  \\vspace{0.15em}%
   {\\strut\\small\\color{LightGrey}#3 \\textbar\\ #4}\\par%
-  \\vspace{0.5em}%
+  \\vspace{0.6em}%
 }
 
 \\newcommand{\\cvdivider}{%
@@ -146,16 +148,16 @@ function generatePreamble(): string {
   \\vspace{0.6em}%
 }
 
-% Skill tag with consistent vertical alignment
+% Skill tag with fixed height box for consistent alignment
 \\newcommand{\\cvtag}[1]{%
-  \\raisebox{0pt}[1.2em][0.3em]{\\colorbox{AccentColor!15}{\\color{TextColor}\\small\\strut\\textbf{#1}}}\\hspace{0.15em}%
+  \\mbox{\\colorbox{AccentColor!15}{\\rule{0pt}{1.1em}\\color{TextColor}\\small\\textbf{#1}}}\\hspace{0.1em}%
 }
 
-% Subsection with consistent spacing
+% Subsection for skills with consistent baseline
 \\newcommand{\\cvsubsection}[1]{%
-  \\par\\vspace{0.6em}%
-  {\\strut\\color{PrimaryColor}\\textbf{\\uppercase{#1}}}\\par%
-  \\vspace{0.4em}%
+  \\par\\vspace{0.8em}%
+  {\\rule{0pt}{1.2em}\\color{PrimaryColor}\\textbf{\\uppercase{#1}}}\\par\\nobreak%
+  \\vspace{0.3em}%
 }`;
 }
 
@@ -341,16 +343,23 @@ ${gridRows.join('\n\n\\vspace{1em}\n\n')}
 /**
  * Generate skills section (for RIGHT column)
  * Uses consistent spacing for skill categories and tags
+ * Each skill category uses a fixed line height environment for alignment
  */
 function generateSkillsSection(skills: ResumeData['skills']): string {
   if (!skills || skills.length === 0) return '';
 
   const entries = skills.map((skill) => {
     const tags = skill.keywords.map(keyword => `\\cvtag{${escapeLaTeX(keyword)}}`).join('');
+    // Use a minipage with fixed baselineskip to ensure consistent tag row heights
     return `\\cvsubsection{${escapeLaTeX(skill.name)}}
-\\noindent\\raggedright\\setlength{\\baselineskip}{1.6em}%
+\\begingroup
+\\setlength{\\baselineskip}{1.8em}%
+\\setlength{\\lineskiplimit}{0pt}%
+\\setlength{\\lineskip}{0.5em}%
+\\noindent\\raggedright%
 ${tags}%
-\\par\\vspace{0.2em}`;
+\\par
+\\endgroup`;
   });
 
   return `\\section{Skills}
