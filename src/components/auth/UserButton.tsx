@@ -64,7 +64,7 @@ function UserButtonInner() {
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link href="/handler/account-settings" className="cursor-pointer">
+            <Link href="/dashboard?tab=settings" className="cursor-pointer">
               <Settings className="mr-2 h-4 w-4" />
               Account Settings
             </Link>

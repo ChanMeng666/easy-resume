@@ -1,42 +1,122 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { ResumeData } from '@/lib/validation/schema';
 import { resumeData as defaultResumeData } from '@/data/resume';
 
 const STORAGE_KEY = 'easy-resume-data';
 
 export function useResumeData() {
+  const searchParams = useSearchParams();
+  const resumeId = searchParams.get('id');
+
   const [data, setData] = useState<ResumeData>(defaultResumeData);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Load data from localStorage on mount
+  // Track if we're using database mode
+  const isDbMode = !!resumeId;
+
+  // Debounce timer ref for auto-save
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Load data on mount
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          setData(parsed);
+    const loadData = async () => {
+      if (resumeId) {
+        // Load from database
+        try {
+          const response = await fetch(`/api/resumes/${resumeId}`);
+          if (response.ok) {
+            const resume = await response.json();
+            if (resume.data) {
+              setData(resume.data);
+            }
+          } else if (response.status === 404) {
+            setError('Resume not found');
+          } else {
+            setError('Failed to load resume');
+          }
+        } catch (err) {
+          console.error('Failed to load resume from database:', err);
+          setError('Failed to load resume');
+        } finally {
+          setIsLoaded(true);
         }
-      } catch (error) {
-        console.error('Failed to load resume data from localStorage:', error);
-      } finally {
-        setIsLoaded(true);
+      } else {
+        // Load from localStorage
+        if (typeof window !== 'undefined') {
+          try {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+              const parsed = JSON.parse(stored);
+              setData(parsed);
+            }
+          } catch (err) {
+            console.error('Failed to load resume data from localStorage:', err);
+          } finally {
+            setIsLoaded(true);
+          }
+        }
       }
-    }
-  }, []);
+    };
 
-  // Save data to localStorage whenever it changes
+    loadData();
+  }, [resumeId]);
+
+  // Save to database (debounced)
+  const saveToDatabase = useCallback(async (newData: ResumeData) => {
+    if (!resumeId) return;
+
+    setIsSaving(true);
+    try {
+      const response = await fetch(`/api/resumes/${resumeId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: newData }),
+      });
+
+      if (!response.ok) {
+        console.error('Failed to save resume to database');
+      }
+    } catch (err) {
+      console.error('Failed to save resume:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [resumeId]);
+
+  // Save data whenever it changes
   useEffect(() => {
-    if (isLoaded && typeof window !== 'undefined') {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      } catch (error) {
-        console.error('Failed to save resume data to localStorage:', error);
+    if (!isLoaded) return;
+
+    if (isDbMode) {
+      // Debounced save to database
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      saveTimeoutRef.current = setTimeout(() => {
+        saveToDatabase(data);
+      }, 1000); // Save after 1 second of inactivity
+    } else {
+      // Save to localStorage immediately
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        } catch (err) {
+          console.error('Failed to save resume data to localStorage:', err);
+        }
       }
     }
-  }, [data, isLoaded]);
+
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [data, isLoaded, isDbMode, saveToDatabase]);
 
   // Update resume data
   const updateData = (newData: ResumeData) => {
@@ -105,6 +185,10 @@ export function useResumeData() {
   return {
     data,
     isLoaded,
+    isSaving,
+    error,
+    resumeId,
+    isDbMode,
     updateData,
     resetToDefault,
     exportData,
