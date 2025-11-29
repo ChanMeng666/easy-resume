@@ -26,7 +26,8 @@
       "Bash(cat:*)",
       "Bash(git checkout:*)",
       "Bash(npx drizzle-kit generate)",
-      "Bash(npx drizzle-kit:*)"
+      "Bash(npx drizzle-kit:*)",
+      "Bash(npx shadcn@latest add:*)"
     ],
     "deny": [],
     "ask": []
