@@ -3,8 +3,9 @@
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { ExternalLink, Download, Info, FileCode, FileText } from 'lucide-react';
+import { ExternalLink, Download, Info, FileCode, FileText, Zap } from 'lucide-react';
 import { LatexPreview } from './LatexPreview';
+import { LivePdfPreview } from './LivePdfPreview';
 import { getTemplateById } from '@/templates/registry';
 
 interface PreviewTabsProps {
@@ -43,17 +44,26 @@ export function PreviewTabs({ templateId = 'two-column', latexCode, filename = '
 
   return (
     <Card className="p-6">
-      <Tabs defaultValue="template" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+      <Tabs defaultValue="live" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="live" className="gap-2">
+            <Zap className="h-4 w-4" />
+            Live PDF
+          </TabsTrigger>
           <TabsTrigger value="template" className="gap-2">
             <FileText className="h-4 w-4" />
-            Template Preview
+            Template
           </TabsTrigger>
           <TabsTrigger value="latex" className="gap-2">
             <FileCode className="h-4 w-4" />
-            LaTeX Code
+            LaTeX
           </TabsTrigger>
         </TabsList>
+
+        {/* Live PDF Tab */}
+        <TabsContent value="live" className="mt-4">
+          <LivePdfPreview latexCode={latexCode} filename={filename} />
+        </TabsContent>
 
         {/* Template Preview Tab */}
         <TabsContent value="template" className="space-y-4">
