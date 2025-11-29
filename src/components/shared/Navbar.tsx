@@ -4,13 +4,52 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { UserButton } from '@/components/auth/UserButton';
-import { ReactNode } from 'react';
+import { ReactNode, Suspense } from 'react';
 import { useScrollDirection } from '@/lib/hooks/useScrollDirection';
+import { useUser } from "@stackframe/stack";
 
 interface NavbarProps {
   currentPath?: string;
   subtitle?: string;
   rightContent?: ReactNode;
+}
+
+/**
+ * Inner navigation links component that shows dashboard link for logged-in users.
+ */
+function NavLinksInner({ currentPath }: { currentPath: string }) {
+  const user = useUser();
+
+  return (
+    <>
+      {user && (
+        <Link
+          href="/dashboard"
+          className={`text-sm font-medium transition-colors hover:text-primary ${
+            currentPath === '/dashboard' ? 'text-primary' : 'text-foreground'
+          }`}
+        >
+          Dashboard
+        </Link>
+      )}
+      <Link
+        href="/templates"
+        className={`text-sm font-medium transition-colors hover:text-primary ${
+          currentPath === '/templates' ? 'text-primary' : 'text-foreground'
+        }`}
+      >
+        Templates
+      </Link>
+      <a
+        href="https://github.com/ChanMeng666/easy-resume"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-sm font-medium transition-colors hover:text-primary"
+      >
+        GitHub
+      </a>
+    </>
+  );
 }
 
 /**
@@ -40,22 +79,16 @@ export function Navbar({ currentPath = '/', subtitle, rightContent }: NavbarProp
           {/* Right Content - Custom or Default Navigation */}
           {rightContent || (
             <div className="flex items-center gap-6">
-              <Link
-                href="/templates"
-                className={`text-sm font-medium transition-colors hover:text-primary ${
-                  currentPath === '/templates' ? 'text-primary' : 'text-foreground'
-                }`}
-              >
-                Templates
-              </Link>
-              <a
-                href="https://github.com/ChanMeng666/easy-resume"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm font-medium transition-colors hover:text-primary"
-              >
-                GitHub
-              </a>
+              <Suspense fallback={
+                <Link
+                  href="/templates"
+                  className="text-sm font-medium transition-colors hover:text-primary"
+                >
+                  Templates
+                </Link>
+              }>
+                <NavLinksInner currentPath={currentPath} />
+              </Suspense>
               <Link href="/editor">
                 <Button size="sm">Get Started</Button>
               </Link>
