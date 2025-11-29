@@ -12,6 +12,9 @@ import { ResumeData } from '@/lib/validation/schema';
 interface EditorContentProps {
   data: ResumeData;
   isLoaded: boolean;
+  isSaving: boolean;
+  error: string | null;
+  isDbMode: boolean;
   updateData: (data: ResumeData) => void;
   resetToDefault: () => void;
   exportData: () => void;
@@ -22,6 +25,9 @@ interface EditorContentProps {
 export function EditorContent({
   data: currentData,
   isLoaded,
+  isSaving,
+  error,
+  isDbMode,
   updateData,
   resetToDefault,
   exportData,
@@ -80,12 +86,19 @@ export function EditorContent({
         latexCode={latexCode}
         resumeName={currentData.basics.name.replace(/\s+/g, '_')}
         lastSaved={lastSaved}
-        isSaving={false}
+        isSaving={isSaving}
         onExportJSON={exportData}
         onImportJSON={importData}
       />
 
       <main className="container mx-auto px-4 pt-24 pb-8">
+        {/* Error Display */}
+        {error && (
+          <div className="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 dark:bg-red-900/20 dark:border-red-800">
+            <p className="text-red-800 dark:text-red-200">{error}</p>
+          </div>
+        )}
+
         {/* Welcome Guide for first-time users */}
         <WelcomeGuide />
 
@@ -94,8 +107,13 @@ export function EditorContent({
           {/* Left Column - Editor */}
           <div className="lg:col-span-2">
             <div className="rounded-lg border bg-white p-6 shadow-sm dark:bg-gray-900">
-              <div className="mb-4">
+              <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-lg font-semibold">Edit Resume</h2>
+                {isDbMode && (
+                  <span className="text-xs text-muted-foreground px-2 py-1 bg-muted rounded">
+                    Auto-saving to cloud
+                  </span>
+                )}
               </div>
               {isLoaded ? (
                 <ResumeEditor

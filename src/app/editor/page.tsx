@@ -43,7 +43,18 @@ export default function EditorPage() {
           </div>
         </div>
       }>
-        <EditorContent {...resumeData} />
+        <EditorContent
+          data={resumeData.data}
+          isLoaded={resumeData.isLoaded}
+          isSaving={resumeData.isSaving}
+          error={resumeData.error}
+          isDbMode={resumeData.isDbMode}
+          updateData={resumeData.updateData}
+          resetToDefault={resumeData.resetToDefault}
+          exportData={resumeData.exportData}
+          importData={resumeData.importData}
+          clearData={resumeData.clearData}
+        />
       </Suspense>
 
       {/* Footer */}
