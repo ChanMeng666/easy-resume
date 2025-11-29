@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
+import { UserButton } from '@/components/auth/UserButton';
 import { ReactNode } from 'react';
 import { useScrollDirection } from '@/lib/hooks/useScrollDirection';
 
@@ -58,6 +59,7 @@ export function Navbar({ currentPath = '/', subtitle, rightContent }: NavbarProp
               <Link href="/editor">
                 <Button size="sm">Get Started</Button>
               </Link>
+              <UserButton />
             </div>
           )}
         </div>
