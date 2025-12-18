@@ -8,6 +8,6 @@ export const reverseTwoColumnMetadata: TemplateMetadata = {
   tags: ['Two-Column', 'Reverse', 'Professional', 'Business', 'Academic'],
   isPremium: false,
   previewImage: '/template/reverse-two-column-preview.pdf',
-  author: 'Easy Resume Team',
+  author: 'Vitex Team',
   createdAt: '2025-10-05',
 };

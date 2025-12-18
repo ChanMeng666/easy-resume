@@ -64,7 +64,7 @@ export default function HomePage() {
                 {/* Text Content */}
                 <div className="text-center lg:text-left space-y-8 animate-fade-in-up">
                   <div className="inline-flex items-center px-3 py-1 rounded-full border bg-background/50 backdrop-blur-sm text-xs font-medium text-muted-foreground mb-4">
-                    <span className="flex h-2 w-2 rounded-full bg-blue-500 mr-2"></span>
+                    <span className="flex h-2 w-2 rounded-full bg-purple-500 mr-2"></span>
                     New v2.0 is live
                   </div>
                   <h1 className="text-5xl font-bold tracking-tight sm:text-7xl leading-[1.1]">
@@ -79,7 +79,7 @@ export default function HomePage() {
                   
                   <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                     <Link href="/editor">
-                      <Button size="lg" className="h-12 px-8 rounded-full gap-2 text-base shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 transition-all">
+                      <Button size="lg" className="h-12 px-8 rounded-full gap-2 text-base shadow-lg shadow-purple-500/20 hover:shadow-purple-500/30 transition-all">
                         Build My Resume <ArrowRight className="h-4 w-4" />
                       </Button>
                     </Link>
@@ -119,8 +119,8 @@ export default function HomePage() {
                     {/* Floating Elements */}
                     <div className="absolute -right-12 top-20 p-4 glass-card rounded-xl shadow-xl border border-white/20 animate-bounce duration-[3000ms]">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-500/10 rounded-lg">
-                          <Zap className="h-5 w-5 text-blue-600" />
+                        <div className="p-2 bg-purple-500/10 rounded-lg">
+                          <Zap className="h-5 w-5 text-purple-600" />
                         </div>
                         <div>
                           <p className="text-xs text-muted-foreground font-medium">ATS Score</p>
@@ -171,7 +171,7 @@ export default function HomePage() {
           {/* Features Section - Bento Grid */}
           <section className="container mx-auto px-4 py-24 lg:py-32">
             <div className="text-center max-w-2xl mx-auto mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">Why Choose Easy Resume?</h2>
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">Why Choose Vitex?</h2>
               <p className="text-muted-foreground text-lg">
                 Everything you need to build a top-tier resume, packed into a beautiful interface.
               </p>
@@ -180,7 +180,7 @@ export default function HomePage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
               {/* Large Feature 1 */}
               <div className="md:col-span-2 rounded-2xl bg-secondary/20 border p-8 hover:bg-secondary/30 transition-colors group">
-                <div className="h-12 w-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 mb-6 group-hover:scale-110 transition-transform">
+                <div className="h-12 w-12 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 mb-6 group-hover:scale-110 transition-transform">
                   <Eye className="h-6 w-6" />
                 </div>
                 <h3 className="text-2xl font-bold mb-3">Real-time Preview</h3>
@@ -209,12 +209,12 @@ export default function HomePage() {
                       </div>
                       <div className="grid grid-cols-3 gap-2">
                         <div className="col-span-2 space-y-1">
-                          <div className="h-2 w-1/3 bg-blue-500/50 rounded"></div>
+                          <div className="h-2 w-1/3 bg-purple-500/50 rounded"></div>
                           <div className="h-1.5 w-full bg-foreground rounded"></div>
                           <div className="h-1.5 w-full bg-foreground rounded"></div>
                         </div>
                         <div className="space-y-1">
-                          <div className="h-2 w-2/3 bg-blue-500/50 rounded"></div>
+                          <div className="h-2 w-2/3 bg-purple-500/50 rounded"></div>
                           <div className="h-1.5 w-full bg-foreground rounded"></div>
                         </div>
                       </div>
@@ -273,7 +273,7 @@ export default function HomePage() {
 
               <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto relative">
                 {/* Connecting Line (Desktop) */}
-                <div className="hidden md:block absolute top-12 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-500/0 via-blue-500/20 to-blue-500/0" />
+                <div className="hidden md:block absolute top-12 left-0 right-0 h-0.5 bg-gradient-to-r from-purple-500/0 via-purple-500/20 to-purple-500/0" />
 
                 {[
                   { step: "01", title: "Enter Details", desc: "Fill in your experience, education, and skills.", icon: FileText },
@@ -283,7 +283,7 @@ export default function HomePage() {
                   <div key={idx} className="relative flex flex-col items-center text-center">
                     <div className="w-24 h-24 rounded-full bg-background border-4 border-secondary flex items-center justify-center mb-6 z-10 shadow-sm relative group">
                       <item.icon className="h-8 w-8 text-primary group-hover:scale-110 transition-transform" />
-                      <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm">
+                      <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold text-sm">
                         {item.step}
                       </div>
                     </div>
@@ -350,7 +350,7 @@ export default function HomePage() {
 
           {/* CTA Section */}
           <section className="container mx-auto px-4 py-20 mb-10">
-            <div className="rounded-3xl bg-gradient-to-r from-blue-600 to-cyan-600 p-8 md:p-16 text-center text-white relative overflow-hidden shadow-xl">
+            <div className="rounded-3xl bg-gradient-to-r from-purple-600 to-cyan-500 p-8 md:p-16 text-center text-white relative overflow-hidden shadow-xl">
               {/* Abstract Background Pattern */}
               <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
                 <div className="absolute right-0 top-0 w-64 h-64 bg-white rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
@@ -364,7 +364,7 @@ export default function HomePage() {
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Link href="/editor">
-                    <Button size="lg" variant="secondary" className="h-14 px-8 text-lg w-full sm:w-auto text-blue-600 hover:text-blue-700 font-semibold">
+                    <Button size="lg" variant="secondary" className="h-14 px-8 text-lg w-full sm:w-auto text-purple-600 hover:text-purple-700 font-semibold">
                       Create Free Resume
                     </Button>
                   </Link>

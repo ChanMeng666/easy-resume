@@ -1,5 +1,5 @@
-# Easy Resume - Robots.txt
-# Professional LaTeX Resume Generator
+# Vitex - Robots.txt
+# Your Career, Perfectly Composed - Professional LaTeX Resume Generator
 # https://easy-resume-theta.vercel.app/
 
 # Allow all crawlers by default

@@ -8,6 +8,6 @@ export const timelineDualMetadata: TemplateMetadata = {
   tags: ['Two-Column', 'Timeline', 'Symmetric', 'Chronological', 'Tech'],
   isPremium: false,
   previewImage: '/template/timeline-dual-preview.pdf',
-  author: 'Easy Resume Team',
+  author: 'Vitex Team',
   createdAt: '2025-10-05',
 };

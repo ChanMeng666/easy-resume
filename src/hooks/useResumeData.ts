@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { ResumeData } from '@/lib/validation/schema';
 import { resumeData as defaultResumeData } from '@/data/resume';
 
-const STORAGE_KEY = 'easy-resume-data';
+const STORAGE_KEY = 'vitex-resume-data';
 
 export function useResumeData() {
   const searchParams = useSearchParams();

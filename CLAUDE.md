@@ -4,7 +4,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Easy Resume is a LaTeX-based resume generator built with Next.js 15, React 19, and TypeScript. The application generates professional LaTeX code from structured resume data and integrates with Overleaf for PDF compilation. It uses a **custom two-column layout** built with standard LaTeX packages for maximum compatibility.
+Vitex is a LaTeX-based resume generator built with Next.js 15, React 19, and TypeScript. The application generates professional LaTeX code from structured resume data and integrates with Overleaf for PDF compilation. It uses a **custom two-column layout** built with standard LaTeX packages for maximum compatibility.
+
+**Brand**: Vitex (formerly Easy Resume) - "Your Career, Perfectly Composed"
+
+**Brand Guidelines**: See `docs/BRAND_GUIDELINES.md` for comprehensive brand design documentation including:
+- Color system (Vitex Purple #6C3CE9, Electric Cyan #00D4AA)
+- Typography specifications
+- Logo usage guidelines
+- UI component styling
+- Brand voice and tone
 
 **Key Architecture Decision**: This project migrated from an HTML/CSS A4 resume builder to a LaTeX code generator. It uses the article document class with custom commands to create a professional two-column layout (60% left / 40% right) that works on all LaTeX platforms including Overleaf without requiring additional template files.
 
@@ -205,7 +214,7 @@ When adding new resume sections:
 ### Git Workflow
 - **Commit Style**: Use Conventional Commits format following Angular specification.
 - **GitHub CLI**: GitHub CLI is available for repository operations (use `gh` commands).
-- **Commit Location**: Always verify current working directory is `/home/chanmeng/easy-resume` before committing.
+- **Commit Location**: Always verify current working directory is the project root (vitex) before committing.
 
 ### Testing Strategy
 - Create functional tests in the project folder for every feature milestone.

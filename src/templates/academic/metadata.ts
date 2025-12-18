@@ -8,6 +8,6 @@ export const academicMetadata: TemplateMetadata = {
   tags: ['Academic', 'Research', 'Professor', 'PhD', 'Publications', 'Multi-page'],
   isPremium: false,
   previewImage: '/template/academic-research-preview.pdf',
-  author: 'Easy Resume Team',
+  author: 'Vitex Team',
   createdAt: '2025-10-05',
 };

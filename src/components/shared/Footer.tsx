@@ -14,17 +14,17 @@ export function Footer() {
         <div className="mb-16 text-center">
           <div className="mb-6 flex items-center justify-center gap-4">
             <Image
-              src="/easy-resume.svg"
-              alt="Easy Resume"
+              src="/vitex.svg"
+              alt="Vitex"
               width={56}
               height={56}
               className="transition-transform hover:scale-110"
             />
             <div className="text-left">
-              <h2 className="bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-3xl font-bold text-transparent">
-                Easy Resume
+              <h2 className="bg-gradient-to-r from-purple-600 to-cyan-500 bg-clip-text text-3xl font-bold text-transparent">
+                Vitex
               </h2>
-              <p className="text-sm text-muted-foreground">Professional LaTeX Resume Generator</p>
+              <p className="text-sm text-muted-foreground">Your Career, Perfectly Composed</p>
             </div>
           </div>
           <p className="mx-auto max-w-2xl text-base text-muted-foreground leading-relaxed">
@@ -166,7 +166,7 @@ export function Footer() {
         {/* Bottom Section: Copyright */}
         <div className="border-t pt-8 text-center">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} Easy Resume by{' '}
+            © {new Date().getFullYear()} Vitex by{' '}
             <a
               href="https://github.com/ChanMeng666"
               target="_blank"

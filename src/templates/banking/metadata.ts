@@ -8,6 +8,6 @@ export const bankingMetadata: TemplateMetadata = {
   tags: ['Banking', 'Finance', 'Consulting', 'Investment', 'Professional', 'Conservative'],
   isPremium: false,
   previewImage: '/template/banking-finance-preview.pdf',
-  author: 'Easy Resume Team',
+  author: 'Vitex Team',
   createdAt: '2025-10-05',
 };

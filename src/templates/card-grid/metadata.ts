@@ -8,6 +8,6 @@ export const cardGridMetadata: TemplateMetadata = {
   tags: ['Two-Column', 'Cards', 'Modern', 'Creative', 'Visual'],
   isPremium: false,
   previewImage: '/template/card-grid-preview.pdf',
-  author: 'Easy Resume Team',
+  author: 'Vitex Team',
   createdAt: '2025-10-05',
 };

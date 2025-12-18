@@ -8,6 +8,6 @@ export const threeSectionMetadata: TemplateMetadata = {
   tags: ['Two-Column', 'Three-Section', 'Hybrid', 'Professional', 'Modern'],
   isPremium: false,
   previewImage: '/template/three-section-preview.pdf',
-  author: 'Easy Resume Team',
+  author: 'Vitex Team',
   createdAt: '2025-10-05',
 };

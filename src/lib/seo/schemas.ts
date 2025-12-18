@@ -8,15 +8,15 @@
 import { TemplateMetadata } from '@/templates/types';
 
 /**
- * Base Organization schema for Easy Resume
+ * Base Organization schema for Vitex
  */
 export const organizationSchema = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
-  name: 'Easy Resume',
-  description: 'Professional LaTeX Resume Generator',
+  name: 'Vitex',
+  description: 'Your Career, Perfectly Composed - Professional LaTeX Resume Generator',
   url: 'https://easy-resume-theta.vercel.app/',
-  logo: 'https://easy-resume-theta.vercel.app/easy-resume.svg',
+  logo: 'https://easy-resume-theta.vercel.app/vitex.svg',
   sameAs: [
     'https://github.com/ChanMeng666/easy-resume',
   ],
@@ -28,7 +28,7 @@ export const organizationSchema = {
 export const webApplicationSchema = {
   '@context': 'https://schema.org',
   '@type': 'WebApplication',
-  name: 'Easy Resume - Professional LaTeX Resume Generator',
+  name: 'Vitex - Professional LaTeX Resume Generator',
   description: 'Free, privacy-focused web application that generates professional LaTeX resumes through an intuitive visual editor. Create beautiful resumes without LaTeX knowledge, export to Overleaf for instant PDF compilation.',
   url: 'https://easy-resume-theta.vercel.app/',
   applicationCategory: 'BusinessApplication',
@@ -59,7 +59,7 @@ export const webApplicationSchema = {
 export const softwareApplicationSchema = {
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
-  name: 'Easy Resume',
+  name: 'Vitex',
   applicationCategory: 'WebApplication',
   applicationSubCategory: 'Resume Builder',
   operatingSystem: 'Any (Web-based)',
@@ -86,8 +86,8 @@ export const softwareApplicationSchema = {
 export const howToCreateResumeSchema = {
   '@context': 'https://schema.org',
   '@type': 'HowTo',
-  name: 'How to Create a Professional LaTeX Resume with Easy Resume',
-  description: 'Step-by-step guide to creating a professional LaTeX resume using Easy Resume\'s visual editor',
+  name: 'How to Create a Professional LaTeX Resume with Vitex',
+  description: 'Step-by-step guide to creating a professional LaTeX resume using Vitex\'s visual editor',
   image: 'https://easy-resume-theta.vercel.app/screenshots/屏幕截图 2025-09-07 155124.png',
   totalTime: 'PT3M',
   estimatedCost: {
@@ -187,18 +187,18 @@ export const faqSchema = {
   mainEntity: [
     {
       '@type': 'Question',
-      name: 'Do I need to know LaTeX to use Easy Resume?',
+      name: 'Do I need to know LaTeX to use Vitex?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'No, you don\'t need any LaTeX knowledge! Easy Resume provides a visual form-based editor that automatically generates LaTeX code for you. Simply fill in your information using intuitive forms, and the application handles all the LaTeX formatting.',
+        text: 'No, you don\'t need any LaTeX knowledge! Vitex provides a visual form-based editor that automatically generates LaTeX code for you. Simply fill in your information using intuitive forms, and the application handles all the LaTeX formatting.',
       },
     },
     {
       '@type': 'Question',
-      name: 'Is Easy Resume really free?',
+      name: 'Is Vitex really free?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Yes, Easy Resume is completely free and open source under the MIT license. There are no hidden costs, premium features, or subscription fees. All templates and features are available to everyone at no cost.',
+        text: 'Yes, Vitex is completely free and open source under the MIT license. There are no hidden costs, premium features, or subscription fees. All templates and features are available to everyone at no cost.',
       },
     },
     {
@@ -230,7 +230,7 @@ export const faqSchema = {
       name: 'What templates are available?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Easy Resume offers multiple professional templates including Two-Column, Modern CV, Classic Academic, Awesome CV, and more. Templates are categorized by industry: Tech, Academic, Business, and Creative. All templates are free and continuously updated.',
+        text: 'Vitex offers multiple professional templates including Two-Column, Modern CV, Classic Academic, Awesome CV, and more. Templates are categorized by industry: Tech, Academic, Business, and Creative. All templates are free and continuously updated.',
       },
     },
   ],

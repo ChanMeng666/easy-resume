@@ -8,6 +8,6 @@ export const twoColumnMetadata: TemplateMetadata = {
   tags: ['Tech', 'Two-Column', 'Modern', 'Professional'],
   isPremium: false,
   previewImage: '/template/two-column-preview.pdf',
-  author: 'Easy Resume Team',
+  author: 'Vitex Team',
   createdAt: '2025-01-01',
 };

@@ -8,6 +8,6 @@ export const sidebarAccentMetadata: TemplateMetadata = {
   tags: ['Two-Column', 'Sidebar', 'Modern', 'Visual', 'Creative'],
   isPremium: false,
   previewImage: '/template/sidebar-accent-preview.pdf',
-  author: 'Easy Resume Team',
+  author: 'Vitex Team',
   createdAt: '2025-10-05',
 };

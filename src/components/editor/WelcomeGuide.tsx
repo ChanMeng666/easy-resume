@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { X, Rocket, Edit, FileCode, Download } from 'lucide-react';
 
-const WELCOME_DISMISSED_KEY = 'easy-resume-welcome-dismissed';
+const WELCOME_DISMISSED_KEY = 'vitex-welcome-dismissed';
 
 /**
  * WelcomeGuide component
@@ -30,7 +30,7 @@ export function WelcomeGuide() {
   if (!isVisible) return null;
 
   return (
-    <Card className="relative mb-6 overflow-hidden border-2 border-blue-300 bg-gradient-to-r from-blue-50 to-cyan-50 p-6 dark:from-blue-950/30 dark:to-cyan-950/30">
+    <Card className="relative mb-6 overflow-hidden border-2 border-purple-300 bg-gradient-to-r from-purple-50 to-cyan-50 p-6 dark:from-purple-950/30 dark:to-cyan-950/30">
       {/* Close Button */}
       <button
         onClick={handleDismiss}
@@ -42,14 +42,14 @@ export function WelcomeGuide() {
 
       {/* Header */}
       <div className="mb-4 flex items-center gap-3">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-600">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-purple-600">
           <Rocket className="h-6 w-6 text-white" />
         </div>
         <div>
-          <h2 className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-            Welcome to Easy Resume! 🎉
+          <h2 className="text-2xl font-bold text-purple-900 dark:text-purple-100">
+            Welcome to Vitex!
           </h2>
-          <p className="text-sm text-blue-700 dark:text-blue-300">
+          <p className="text-sm text-purple-700 dark:text-purple-300">
             Create your professional LaTeX resume in minutes
           </p>
         </div>
@@ -58,12 +58,12 @@ export function WelcomeGuide() {
       {/* Quick Start Steps */}
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
         <div className="flex gap-3 rounded-lg bg-white/50 p-4 dark:bg-gray-900/50">
-          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white">
+          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-purple-600 text-sm font-bold text-white">
             1
           </div>
           <div>
             <div className="mb-1 flex items-center gap-2">
-              <Edit className="h-4 w-4 text-blue-600" />
+              <Edit className="h-4 w-4 text-purple-600" />
               <h3 className="font-semibold">Edit Your Info</h3>
             </div>
             <p className="text-sm text-muted-foreground">

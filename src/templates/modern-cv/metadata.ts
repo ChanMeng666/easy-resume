@@ -8,6 +8,6 @@ export const modernCvMetadata: TemplateMetadata = {
   tags: ['Minimalist', 'Modern', 'Single-Column', 'Clean'],
   isPremium: false,
   previewImage: '/template/modern-cv-preview.pdf',
-  author: 'Easy Resume Team',
+  author: 'Vitex Team',
   createdAt: '2025-01-05',
 };

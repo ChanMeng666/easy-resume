@@ -8,6 +8,6 @@ export const executiveMetadata: TemplateMetadata = {
   tags: ['Executive', 'Leadership', 'Management', 'Professional', 'Business'],
   isPremium: false,
   previewImage: '/template/executive-resum-preview.pdf',
-  author: 'Easy Resume Team',
+  author: 'Vitex Team',
   createdAt: '2025-10-05',
 };

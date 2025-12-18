@@ -8,6 +8,6 @@ export const classicMetadata: TemplateMetadata = {
   tags: ['Academic', 'Classic', 'Formal', 'Traditional'],
   isPremium: false,
   previewImage: '/template/classic-preview.pdf',
-  author: 'Easy Resume Team',
+  author: 'Vitex Team',
   createdAt: '2025-01-05',
 };

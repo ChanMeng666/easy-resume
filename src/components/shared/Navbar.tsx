@@ -67,9 +67,9 @@ export function Navbar({ currentPath = '/', subtitle, rightContent }: NavbarProp
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3">
-            <Image src="/easy-resume.svg" alt="Easy Resume" width={32} height={32} />
+            <Image src="/vitex.svg" alt="Vitex" width={32} height={32} />
             <div>
-              <span className="text-xl font-bold">Easy Resume</span>
+              <span className="text-xl font-bold">Vitex</span>
               {subtitle && (
                 <p className="text-sm text-muted-foreground">{subtitle}</p>
               )}

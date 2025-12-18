@@ -8,7 +8,7 @@ import { getAllTemplates } from '@/templates/registry';
 import { TemplateGalleryClient } from './TemplateGalleryClient';
 
 export const metadata = {
-  title: 'Templates - Easy Resume',
+  title: 'Templates - Vitex',
   description: 'Browse all professional LaTeX resume templates and find the style that suits you',
 };
 
@@ -78,7 +78,7 @@ export default function TemplatesPage() {
 
       {/* CTA Section */}
       <section className="container mx-auto px-4 py-20">
-        <div className="rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-600 p-8 text-center text-white md:p-12">
+        <div className="rounded-2xl bg-gradient-to-r from-purple-600 to-cyan-500 p-8 text-center text-white md:p-12">
           <h2 className="mb-4 text-3xl font-bold">Found a Template You Like?</h2>
           <p className="mb-8 text-lg opacity-90">
             Start creating your professional resume now
