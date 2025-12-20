@@ -2,23 +2,26 @@
 
 > Official brand design system for Vitex - Your Career, Perfectly Composed
 
-**Version**: 1.0.0
-**Last Updated**: December 2024
-**Status**: Active
+**Version**: 2.0.0  
+**Last Updated**: December 2024  
+**Status**: Active  
+**Design System**: Neobrutalism
 
 ---
 
 ## Table of Contents
 
 1. [Brand Foundation](#1-brand-foundation)
-2. [Visual Identity](#2-visual-identity)
+2. [Design System: Neobrutalism](#2-design-system-neobrutalism)
 3. [Color System](#3-color-system)
 4. [Typography](#4-typography)
 5. [Logo Usage](#5-logo-usage)
 6. [UI Components](#6-ui-components)
-7. [Motion & Animation](#7-motion--animation)
-8. [Brand Voice](#8-brand-voice)
-9. [Implementation Reference](#9-implementation-reference)
+7. [Shadows & Borders](#7-shadows--borders)
+8. [Motion & Animation](#8-motion--animation)
+9. [Layout Patterns](#9-layout-patterns)
+10. [Brand Voice](#10-brand-voice)
+11. [Implementation Reference](#11-implementation-reference)
 
 ---
 
@@ -48,6 +51,7 @@ To become the preferred professional resume tool for global tech talent.
 | **Simple** | Zero learning curve |
 | **Private** | All data stored locally |
 | **Open** | Open source and transparent |
+| **Bold** | Distinctive, memorable design |
 
 ### 1.6 Brand Taglines
 
@@ -57,90 +61,105 @@ To become the preferred professional resume tool for global tech talent.
 
 ---
 
-## 2. Visual Identity
+## 2. Design System: Neobrutalism
 
-### 2.1 Design Philosophy
+### 2.1 What is Neobrutalism?
 
-Vitex's visual identity embodies:
+Neobrutalism (also known as Neo-brutalism) is a modern design aesthetic that combines the raw, honest approach of Brutalist architecture with contemporary digital design elements. It features:
 
-- **Future-forward**: Modern gradients, glass morphism effects
-- **Technical excellence**: Clean lines, precise spacing
-- **Approachable professionalism**: Warm accents balanced with serious tones
-- **Dynamic energy**: Subtle animations that convey progress and growth
+- **Bold, thick borders** (typically black)
+- **Hard shadows** (solid color, no blur)
+- **High contrast** color combinations
+- **Playful yet professional** aesthetic
+- **Clear visual hierarchy**
 
-### 2.2 Design Principles
+### 2.2 Why Neobrutalism for Vitex?
 
-1. **Clarity First**: Information hierarchy should be immediately clear
-2. **Purposeful Color**: Every color serves a functional purpose
-3. **Consistent Spacing**: Use the 4px/8px grid system
-4. **Subtle Depth**: Layer with shadows and blur, not borders
-5. **Responsive Grace**: Adapt elegantly across all screen sizes
+1. **Distinctiveness**: Stands out from generic "AI-generated" aesthetics
+2. **Professionalism with personality**: Bold but not childish
+3. **Clear affordances**: Users immediately understand interactive elements
+4. **Memorable**: Creates strong brand recognition
+5. **Accessibility**: High contrast improves readability
+
+### 2.3 Core Design Principles
+
+| Principle | Description |
+|-----------|-------------|
+| **Bold Borders** | All interactive elements have 2-3px black borders |
+| **Hard Shadows** | Solid shadows offset 4-8px, no blur |
+| **Light Background** | Soft gray (#f0f0f0) base with white cards |
+| **High Contrast** | Black borders against colorful fills |
+| **Playful Motion** | Subtle hover animations that feel tactile |
+| **No Dark Mode** | Single, cohesive light theme only |
+
+### 2.4 Design Don'ts
+
+- ❌ Don't use soft shadows or blur
+- ❌ Don't use gradients for backgrounds (reserved for brand accents only)
+- ❌ Don't use thin borders (minimum 2px)
+- ❌ Don't use rounded shadows (shadows are always rectangular)
+- ❌ Don't implement dark mode
+- ❌ Don't use generic "Inter" or system fonts for emphasis
 
 ---
 
 ## 3. Color System
 
-### 3.1 Primary Colors
+### 3.1 Background Colors
 
-| Name | HEX | HSL | RGB | Usage |
-|------|-----|-----|-----|-------|
-| **Vitex Purple** | `#6C3CE9` | 258° 80% 57% | 108, 60, 233 | Primary brand color, buttons, links |
-| **Vitex Purple Light** | `#8B5CF6` | 258° 90% 66% | 139, 92, 246 | Hover states, light backgrounds |
-| **Vitex Purple Dark** | `#5521C9` | 258° 72% 46% | 85, 33, 201 | Active states, dark accents |
+| Name | HEX | CSS Variable | Usage |
+|------|-----|--------------|-------|
+| **Neo Gray** | `#f0f0f0` | `--neo-bg` | Page background |
+| **White** | `#ffffff` | `--neo-white` | Card backgrounds |
+| **Black** | `#000000` | `--neo-black` | Borders, shadows |
 
-### 3.2 Accent Colors
+### 3.2 Brand Colors
 
-| Name | HEX | HSL | RGB | Usage |
-|------|-----|-----|-----|-------|
-| **Electric Cyan** | `#00D4AA` | 166° 100% 42% | 0, 212, 170 | Success states, highlights, CTAs |
-| **Electric Cyan Light** | `#34E7C0` | 166° 78% 55% | 52, 231, 192 | Secondary accents |
+| Name | HEX | CSS Variable | Usage |
+|------|-----|--------------|-------|
+| **Vitex Purple** | `#6C3CE9` | `--vitex-purple` | Primary buttons, CTAs |
+| **Vitex Purple Light** | `#8B5CF6` | `--vitex-purple-light` | Hover states |
+| **Vitex Purple Dark** | `#5521C9` | `--vitex-purple-dark` | Active states |
+| **Electric Cyan** | `#00D4AA` | `--vitex-cyan` | Accent, success states |
+| **Electric Cyan Light** | `#34E7C0` | `--vitex-cyan-light` | Accent hover |
 
-### 3.3 Neutral Colors
-
-| Name | HEX | Usage |
-|------|-----|-------|
-| **Midnight** | `#0F0A1F` | Dark mode background |
-| **Charcoal** | `#1A1625` | Dark mode cards |
-| **Slate** | `#64748B` | Secondary text |
-| **Silver** | `#E2E8F0` | Borders, dividers |
-| **Snow** | `#F8FAFC` | Light mode background |
-| **White** | `#FFFFFF` | Card backgrounds |
-
-### 3.4 Semantic Colors
+### 3.3 Semantic Colors
 
 | Name | HEX | Usage |
 |------|-----|-------|
-| **Success** | `#10B981` | Success messages, confirmations |
-| **Warning** | `#F59E0B` | Warning messages |
-| **Error** | `#EF4444` | Error states, destructive actions |
-| **Info** | `#3B82F6` | Informational messages |
+| **Success** | `#22C55E` (green-500) | Success badges, confirmations |
+| **Warning** | `#FACC15` (yellow-400) | Warning messages |
+| **Error** | `#EF4444` (red-500) | Error states, destructive |
+| **Info** | `#3B82F6` (blue-500) | Informational messages |
 
-### 3.5 Gradients
+### 3.4 Text Colors
+
+| Name | HEX | CSS Variable | Usage |
+|------|-----|--------------|-------|
+| **Primary** | `#1a1a1a` | `--text-primary` | Headlines, body text |
+| **Secondary** | `#525252` | `--text-secondary` | Secondary content |
+| **Muted** | `#737373` | `--text-muted` | Placeholders, hints |
+
+### 3.5 Text Gradient (Brand Only)
 
 ```css
-/* Primary Brand Gradient - CTAs, Hero sections */
---gradient-primary: linear-gradient(135deg, #6C3CE9 0%, #00D4AA 100%);
-
-/* Text Gradient - Headlines, highlights */
---gradient-text: linear-gradient(90deg, #6C3CE9 0%, #00D4AA 100%);
-
-/* Glow Effect - Background accents */
---gradient-glow: radial-gradient(circle, rgba(108,60,233,0.15) 0%, rgba(0,212,170,0.05) 50%, transparent 70%);
-
-/* Canvas Animation Colors */
---gradient-color-1: #8B5CF6;  /* Purple */
---gradient-color-2: #00D4AA;  /* Cyan */
---gradient-color-3: #1A1625;  /* Dark */
---gradient-color-4: #F8FAFC;  /* Light */
+/* Only for headlines and brand emphasis */
+.text-gradient-vitex {
+  background: linear-gradient(90deg, #6C3CE9 0%, #00D4AA 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
 ```
 
 ### 3.6 Color Usage Rules
 
-1. **Primary actions** always use Vitex Purple
-2. **Success/positive actions** use Electric Cyan
-3. **Text gradients** only on headings, never body text
-4. **Dark mode** inverts backgrounds but maintains color relationships
-5. **Contrast ratio** must meet WCAG AA standards (4.5:1 minimum)
+1. **Primary actions** always use Vitex Purple with black border
+2. **Accent actions** use Electric Cyan for secondary CTAs
+3. **All interactive elements** have black borders
+4. **Text gradients** only on hero headlines, never body text
+5. **White backgrounds** for cards, gray for page background
+6. **No dark mode** - maintain single cohesive theme
 
 ---
 
@@ -149,87 +168,75 @@ Vitex's visual identity embodies:
 ### 4.1 Font Stack
 
 ```css
-/* Sans-serif (UI Text) */
-font-family: var(--font-geist-sans), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-
-/* Monospace (Code) */
-font-family: var(--font-geist-mono), 'SF Mono', 'Fira Code', 'Fira Mono', Consolas, monospace;
+/* System font stack - clean and fast */
+font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 
+             'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
 ```
 
-### 4.2 Type Scale
+### 4.2 Font Weights in Neobrutalism
 
-| Element | Size | Weight | Line Height | Letter Spacing |
-|---------|------|--------|-------------|----------------|
-| H1 | 48px / 3rem | Bold (700) | 1.1 | -0.025em |
-| H2 | 32px / 2rem | Semibold (600) | 1.2 | -0.025em |
-| H3 | 24px / 1.5rem | Semibold (600) | 1.3 | -0.025em |
-| H4 | 20px / 1.25rem | Semibold (600) | 1.4 | normal |
-| Body | 16px / 1rem | Regular (400) | 1.6 | normal |
-| Small | 14px / 0.875rem | Regular (400) | 1.5 | normal |
-| Caption | 12px / 0.75rem | Medium (500) | 1.4 | 0.025em |
-| Code | 14px / 0.875rem | Regular (400) | 1.5 | normal |
+| Weight | Name | CSS Class | Usage |
+|--------|------|-----------|-------|
+| 900 | Black | `font-black` | Headlines, card titles |
+| 700 | Bold | `font-bold` | Buttons, labels, emphasis |
+| 500 | Medium | `font-medium` | Body text, descriptions |
+| 400 | Regular | `font-normal` | Code, long-form content |
 
-### 4.3 Typography Rules
+### 4.3 Type Scale
 
-1. **Headlines** may use text gradients
-2. **Body text** must be solid colors only
-3. **Code blocks** always use monospace font
-4. **Links** inherit text color with purple hover
-5. **Maximum line length** is 75 characters for readability
+| Element | Size | Weight | Tailwind Classes |
+|---------|------|--------|------------------|
+| H1 (Hero) | 48-72px | Black | `text-5xl sm:text-6xl lg:text-7xl font-black` |
+| H2 (Section) | 30-36px | Black | `text-3xl md:text-4xl font-black` |
+| H3 (Card) | 20-24px | Black | `text-xl sm:text-2xl font-black` |
+| Body | 16px | Medium | `text-base font-medium` |
+| Small | 14px | Medium | `text-sm font-medium` |
+| Caption | 12px | Bold | `text-xs font-bold uppercase` |
+
+### 4.4 Typography Rules
+
+1. **Headlines** use `font-black` (weight 900)
+2. **Buttons and labels** use `font-bold` (weight 700)
+3. **Body text** uses `font-medium` (weight 500)
+4. **Tight letter spacing** for headlines (`tracking-tight`)
+5. **Uppercase** for tags and small badges
 
 ---
 
 ## 5. Logo Usage
 
-### 5.1 Logo Variants
+### 5.1 Logo in Neobrutalism Context
 
-| Variant | Usage | File |
-|---------|-------|------|
-| **Full Logo** | Primary usage, navigation | `vitex.svg` |
-| **Icon Only** | Favicon, small spaces | `vitex-icon.svg` (future) |
-| **Wordmark** | Text-only contexts | Text "Vitex" in brand font |
+The Vitex logo should be displayed within a card container:
 
-### 5.2 Current Logo Specification
-
-```svg
-<!-- Text-based gradient logo -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 32">
-  <defs>
-    <linearGradient id="vitexGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#6C3CE9"/>
-      <stop offset="100%" style="stop-color:#00D4AA"/>
-    </linearGradient>
-  </defs>
-  <text x="0" y="24"
-        font-family="system-ui, -apple-system, sans-serif"
-        font-size="28"
-        font-weight="700"
-        fill="url(#vitexGrad)">
-    Vitex
-  </text>
-</svg>
+```html
+<div class="p-2 bg-white rounded-lg border-2 border-black 
+            shadow-[3px_3px_0px_0px_rgba(0,0,0,0.9)]">
+  <img src="/vitex.svg" alt="Vitex" width="28" height="28" />
+</div>
 ```
 
-### 5.3 Logo Clear Space
-
-Maintain padding equal to the height of the "V" character around all sides.
-
-### 5.4 Logo Color Variations
+### 5.2 Logo Placement
 
 | Context | Treatment |
 |---------|-----------|
-| Light backgrounds | Gradient fill (default) |
-| Dark backgrounds | Gradient fill or white |
-| Single color required | Vitex Purple `#6C3CE9` |
-| Grayscale | `#333333` or `#FFFFFF` |
+| Navbar | Logo in bordered card container |
+| Footer | Logo with larger padding and shadow |
+| Favicon | Standard usage without container |
 
-### 5.5 Logo Don'ts
+### 5.3 Logo Wordmark
 
-- Don't rotate or skew the logo
-- Don't change the gradient colors
-- Don't add drop shadows or effects
-- Don't place on busy backgrounds
-- Don't stretch or compress
+When displayed as text:
+
+```html
+<span class="text-xl font-black">Vitex</span>
+```
+
+Or with gradient:
+
+```html
+<span class="text-3xl font-black text-gradient-vitex">Vitex</span>
+```
 
 ---
 
@@ -240,75 +247,76 @@ Maintain padding equal to the height of the "V" character around all sides.
 #### Primary Button
 ```css
 .btn-primary {
-  background: linear-gradient(135deg, #6C3CE9 0%, #8B5CF6 100%);
+  background-color: #6C3CE9;
   color: white;
-  border-radius: 9999px;
-  padding: 12px 32px;
-  font-weight: 600;
-  box-shadow: 0 4px 14px rgba(108, 60, 233, 0.3);
-  transition: all 0.3s ease;
+  border: 2px solid black;
+  border-radius: 0.5rem; /* rounded-lg */
+  padding: 0.625rem 1.25rem; /* h-10 px-5 */
+  font-weight: 700;
+  box-shadow: 4px 4px 0px 0px rgba(0,0,0,0.9);
+  transition: all 0.2s ease;
 }
 
 .btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(108, 60, 233, 0.4);
+  box-shadow: 6px 6px 0px 0px rgba(0,0,0,0.9);
+  transform: translate(-2px, -2px);
+}
+
+.btn-primary:active {
+  box-shadow: 2px 2px 0px 0px rgba(0,0,0,0.9);
+  transform: translate(2px, 2px);
 }
 ```
 
-#### Secondary Button
+#### Outline Button
 ```css
-.btn-secondary {
-  background: transparent;
-  color: #6C3CE9;
-  border: 2px solid #6C3CE9;
-  border-radius: 9999px;
-  padding: 10px 30px;
-  font-weight: 600;
-  transition: all 0.3s ease;
-}
-
-.btn-secondary:hover {
-  background: rgba(108, 60, 233, 0.1);
+.btn-outline {
+  background-color: white;
+  color: #1a1a1a;
+  border: 2px solid black;
+  border-radius: 0.5rem;
+  box-shadow: 4px 4px 0px 0px rgba(0,0,0,0.9);
+  /* Same hover/active as primary */
 }
 ```
 
 #### Ghost Button
 ```css
 .btn-ghost {
-  background: transparent;
-  color: currentColor;
-  padding: 8px 16px;
-  font-weight: 500;
-  transition: color 0.2s ease;
+  background-color: transparent;
+  border: 2px solid transparent;
+  box-shadow: none;
 }
 
 .btn-ghost:hover {
-  color: #6C3CE9;
+  background-color: #f3f4f6;
+  border-color: black;
+  box-shadow: 2px 2px 0px 0px rgba(0,0,0,0.9);
 }
 ```
+
+#### Button Sizes
+
+| Size | Height | Padding | Border Radius |
+|------|--------|---------|---------------|
+| sm | 32px | 16px horizontal | 6px |
+| default | 40px | 20px horizontal | 8px |
+| lg | 48px | 32px horizontal | 12px |
 
 ### 6.2 Cards
 
 ```css
 .card {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(108, 60, 233, 0.1);
-  border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(108, 60, 233, 0.08);
-  transition: all 0.3s ease;
+  background-color: white;
+  border: 2px solid black;
+  border-radius: 0.75rem; /* rounded-xl */
+  box-shadow: 4px 4px 0px 0px rgba(0,0,0,0.9);
+  transition: all 0.2s ease;
 }
 
 .card:hover {
-  box-shadow: 0 8px 32px rgba(108, 60, 233, 0.12);
-  transform: translateY(-2px);
-}
-
-/* Dark mode */
-.dark .card {
-  background: rgba(26, 22, 37, 0.8);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  box-shadow: 6px 6px 0px 0px rgba(0,0,0,0.9);
+  transform: translate(-2px, -2px);
 }
 ```
 
@@ -316,228 +324,428 @@ Maintain padding equal to the height of the "V" character around all sides.
 
 ```css
 .input {
-  background: white;
-  border: 2px solid #E2E8F0;
-  border-radius: 12px;
-  padding: 12px 16px;
-  font-size: 16px;
+  background-color: white;
+  border: 2px solid black;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
   transition: all 0.2s ease;
 }
 
 .input:focus {
-  border-color: #6C3CE9;
   outline: none;
-  box-shadow: 0 0 0 3px rgba(108, 60, 233, 0.1);
-}
-
-.input::placeholder {
-  color: #94A3B8;
+  box-shadow: 4px 4px 0px 0px rgba(0,0,0,0.9);
+  transform: translate(-2px, -2px);
 }
 ```
 
-### 6.4 Glass Effect
-
-```css
-.glass {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(108, 60, 233, 0.1);
-}
-
-.dark .glass {
-  background: rgba(26, 22, 37, 0.7);
-  border: 1px solid rgba(139, 92, 246, 0.2);
-}
-```
-
-### 6.5 Badges & Tags
+### 6.4 Badges
 
 ```css
 .badge {
   display: inline-flex;
   align-items: center;
-  padding: 4px 12px;
-  font-size: 12px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 2px solid black;
+  border-radius: 0.5rem;
+  box-shadow: 2px 2px 0px 0px rgba(0,0,0,0.9);
+}
+
+/* Variants */
+.badge-primary { background-color: #6C3CE9; color: white; }
+.badge-accent { background-color: #00D4AA; color: white; }
+.badge-warning { background-color: #FACC15; color: black; }
+.badge-success { background-color: #22C55E; color: white; }
+```
+
+### 6.5 Tabs
+
+```css
+.tabs-list {
+  background-color: white;
+  border: 2px solid black;
+  border-radius: 0.75rem;
+  padding: 0.375rem;
+  box-shadow: 4px 4px 0px 0px rgba(0,0,0,0.9);
+}
+
+.tab-trigger {
+  padding: 0.5rem 1rem;
+  font-weight: 700;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.tab-trigger[data-state="active"] {
+  background-color: #6C3CE9;
+  color: white;
+  border: 2px solid black;
+  box-shadow: 2px 2px 0px 0px rgba(0,0,0,0.9);
+}
+```
+
+### 6.6 Dialogs
+
+```css
+.dialog-overlay {
+  background-color: rgba(0, 0, 0, 0.6);
+}
+
+.dialog-content {
+  background-color: white;
+  border: 2px solid black;
+  border-radius: 0.75rem;
+  box-shadow: 8px 8px 0px 0px rgba(0,0,0,0.9);
+  padding: 1.5rem;
+}
+
+.dialog-close-button {
+  width: 32px;
+  height: 32px;
+  border: 2px solid black;
+  border-radius: 0.5rem;
+  background-color: white;
+  box-shadow: 2px 2px 0px 0px rgba(0,0,0,0.9);
+}
+```
+
+### 6.7 Dropdown Menus
+
+```css
+.dropdown-content {
+  background-color: white;
+  border: 2px solid black;
+  border-radius: 0.75rem;
+  padding: 0.5rem;
+  box-shadow: 4px 4px 0px 0px rgba(0,0,0,0.9);
+}
+
+.dropdown-item {
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
   font-weight: 500;
-  border-radius: 9999px;
-  background: rgba(108, 60, 233, 0.1);
-  color: #6C3CE9;
+  cursor: pointer;
 }
 
-.tag {
-  padding: 2px 8px;
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border-radius: 4px;
-  background: #F1F5F9;
-  color: #64748B;
+.dropdown-item:hover {
+  background-color: #f3f4f6;
+}
+
+.dropdown-separator {
+  height: 2px;
+  background-color: black;
+  margin: 0.25rem 0;
 }
 ```
 
 ---
 
-## 7. Motion & Animation
+## 7. Shadows & Borders
 
-### 7.1 Timing Functions
+### 7.1 Shadow Scale
 
-```css
-/* Standard ease - Most interactions */
---ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+| Name | CSS Value | Tailwind | Usage |
+|------|-----------|----------|-------|
+| **sm** | `2px 2px 0px 0px rgba(0,0,0,0.9)` | `shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]` | Small elements, badges |
+| **default** | `4px 4px 0px 0px rgba(0,0,0,0.9)` | `shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]` | Cards, buttons, inputs |
+| **lg** | `6px 6px 0px 0px rgba(0,0,0,0.9)` | `shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)]` | Hover states |
+| **xl** | `8px 8px 0px 0px rgba(0,0,0,0.9)` | `shadow-[8px_8px_0px_0px_rgba(0,0,0,0.9)]` | Dialogs, hero elements |
 
-/* Ease out - Elements entering */
---ease-out: cubic-bezier(0, 0, 0.2, 1);
-
-/* Ease in - Elements exiting */
---ease-in: cubic-bezier(0.4, 0, 1, 1);
-
-/* Spring - Playful interactions */
---ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
-```
-
-### 7.2 Duration Scale
-
-| Type | Duration | Usage |
-|------|----------|-------|
-| Instant | 100ms | Micro-interactions, hovers |
-| Fast | 200ms | Button clicks, toggles |
-| Normal | 300ms | Page transitions, modals |
-| Slow | 500ms | Complex animations |
-
-### 7.3 Standard Animations
+### 7.2 CSS Variables for Shadows
 
 ```css
-/* Fade in up - Page elements */
-@keyframes fade-in-up {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Scale in - Modals, popovers */
-@keyframes scale-in {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-/* Pulse - Loading, attention */
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
+:root {
+  --neo-shadow-sm: 2px 2px 0px 0px rgba(0,0,0,0.9);
+  --neo-shadow: 4px 4px 0px 0px rgba(0,0,0,0.9);
+  --neo-shadow-lg: 6px 6px 0px 0px rgba(0,0,0,0.9);
+  --neo-shadow-xl: 8px 8px 0px 0px rgba(0,0,0,0.9);
 }
 ```
 
-### 7.4 Hover Effects
+### 7.3 Border Standards
 
-1. **Buttons**: translateY(-2px) + shadow increase
-2. **Cards**: translateY(-2px) + shadow increase
-3. **Links**: Color transition to primary
-4. **Icons**: scale(1.1) transformation
+| Element | Border Width | Color |
+|---------|--------------|-------|
+| Cards | 2px | black |
+| Buttons | 2px | black |
+| Inputs | 2px | black |
+| Dialogs | 2px | black |
+| Tags/Badges | 2px | black |
+| Dividers | 2px | black |
+
+### 7.4 Border Radius Scale
+
+| Name | Value | Tailwind | Usage |
+|------|-------|----------|-------|
+| **sm** | 4px | `rounded` | Tags |
+| **md** | 6px | `rounded-md` | Small buttons |
+| **lg** | 8px | `rounded-lg` | Buttons, inputs |
+| **xl** | 12px | `rounded-xl` | Cards, dialogs |
+| **2xl** | 16px | `rounded-2xl` | Hero sections |
 
 ---
 
-## 8. Brand Voice
+## 8. Motion & Animation
 
-### 8.1 Tone Attributes
+### 8.1 Hover Behavior Pattern
+
+All interactive cards follow this pattern:
+
+```css
+.interactive-card {
+  transition: all 0.2s ease;
+}
+
+.interactive-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px 0px rgba(0,0,0,0.9);
+}
+```
+
+### 8.2 Button Click Pattern
+
+```css
+.button:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px 0px rgba(0,0,0,0.9);
+}
+```
+
+### 8.3 Framer Motion Usage
+
+Use framer-motion for:
+- Page load animations (`initial`, `animate`)
+- Scroll-triggered reveals (`whileInView`)
+- Staggered list animations
+
+**Do NOT use framer-motion for:**
+- Hover shadows (use CSS instead to respect border-radius)
+- Random values that cause hydration mismatches
+
+```tsx
+// Good: CSS hover + framer-motion for entrance
+<motion.div
+  initial={{ opacity: 0, y: 20 }}
+  animate={{ opacity: 1, y: 0 }}
+  className="hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] 
+             hover:translate-x-[-2px] hover:translate-y-[-2px]
+             transition-all duration-200"
+>
+  {/* content */}
+</motion.div>
+
+// Bad: framer-motion whileHover with boxShadow
+<motion.div
+  whileHover={{ boxShadow: "8px 8px 0px 0px rgba(0,0,0,0.9)" }}
+>
+  {/* Shadow will be square, not rounded! */}
+</motion.div>
+```
+
+### 8.4 Custom Animations
+
+```css
+/* Bounce animation for floating elements */
+@keyframes neo-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+/* Pulse animation for attention */
+@keyframes neo-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* Wiggle animation for playful elements */
+@keyframes neo-wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-3deg); }
+  75% { transform: rotate(3deg); }
+}
+```
+
+### 8.5 Timing
+
+| Type | Duration | Easing | Usage |
+|------|----------|--------|-------|
+| Instant | 100ms | ease | Micro-interactions |
+| Fast | 200ms | ease | Hover states, button clicks |
+| Normal | 300ms | ease-out | Page transitions |
+| Slow | 500ms | ease-in-out | Complex animations |
+
+---
+
+## 9. Layout Patterns
+
+### 9.1 Page Background
+
+```css
+.page {
+  background-color: #f0f0f0;
+  min-height: 100vh;
+}
+```
+
+### 9.2 Background Patterns
+
+#### Grid Pattern
+```css
+.neo-grid-bg {
+  background-image: 
+    linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+```
+
+#### Dots Pattern
+```css
+.neo-dots-bg {
+  background-image: radial-gradient(rgba(0,0,0,0.1) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+```
+
+### 9.3 Section Containers
+
+```css
+/* White section with border */
+.section-white {
+  background-color: white;
+  border-top: 2px solid black;
+  border-bottom: 2px solid black;
+}
+
+/* Gray section (default) */
+.section-gray {
+  background-color: #f0f0f0;
+}
+```
+
+### 9.4 Card Grid Layouts
+
+```html
+<!-- 3-column responsive grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  <!-- cards -->
+</div>
+
+<!-- 2-column layout (editor) -->
+<div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+  <div class="lg:col-span-2"><!-- editor --></div>
+  <div class="lg:col-span-3"><!-- preview --></div>
+</div>
+```
+
+### 9.5 Navbar
+
+```css
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background-color: white;
+  border-bottom: 2px solid black;
+}
+```
+
+### 9.6 Footer
+
+```css
+.footer {
+  background-color: white;
+  border-top: 2px solid black;
+}
+
+.footer-card {
+  background-color: #fafafa;
+  border: 2px solid black;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: 4px 4px 0px 0px rgba(0,0,0,0.9);
+}
+```
+
+---
+
+## 10. Brand Voice
+
+### 10.1 Tone Attributes
 
 | Attribute | Description |
 |-----------|-------------|
+| **Bold** | Confident, direct, impactful |
 | **Professional** | Expert, reliable, trustworthy |
 | **Friendly** | Approachable, supportive, encouraging |
 | **Clear** | Direct, concise, jargon-free |
-| **Confident** | Assured, positive, empowering |
 
-### 8.2 Writing Guidelines
-
-**Do:**
-- Use active voice
-- Keep sentences concise
-- Focus on user benefits
-- Use "you" and "your"
-
-**Don't:**
-- Use technical jargon unnecessarily
-- Write in passive voice
-- Use superlatives excessively
-- Make promises we can't keep
-
-### 8.3 Key Messages
-
-| Context | Message |
-|---------|---------|
-| **Value Proposition** | "Create professional LaTeX resumes without the complexity" |
-| **Privacy** | "Your data stays in your browser - always" |
-| **Cost** | "Free forever, no hidden fees" |
-| **Ease** | "No LaTeX knowledge required" |
-| **Quality** | "Professional typographic quality in minutes" |
-
-### 8.4 UI Copy Examples
+### 10.2 UI Copy Examples
 
 | Element | Copy |
 |---------|------|
-| Primary CTA | "Build My Resume" or "Start Building" |
-| Secondary CTA | "View Templates" or "Browse Templates" |
+| Primary CTA | "Build My Resume" or "Get Started" |
+| Secondary CTA | "View Templates" |
 | Export | "Open in Overleaf" |
-| Empty State | "Let's create your first resume" |
+| Empty State | "No resumes yet" |
 | Success | "Your resume is ready!" |
 | Error | "Something went wrong. Please try again." |
 
 ---
 
-## 9. Implementation Reference
+## 11. Implementation Reference
 
-### 9.1 CSS Variables Location
-
-All brand colors are defined in:
-- `src/app/globals.css` - CSS custom properties
-- `tailwind.config.ts` - Tailwind theme extension
-
-### 9.2 Key Files
+### 11.1 Key CSS Files
 
 | File | Purpose |
 |------|---------|
-| `src/app/globals.css` | CSS variables, global styles |
-| `tailwind.config.ts` | Tailwind configuration |
-| `public/vitex.svg` | Logo file |
-| `src/app/layout.tsx` | Metadata, fonts |
-| `docs/BRAND_GUIDELINES.md` | This document |
+| `src/app/globals.css` | CSS variables, utility classes, Neobrutalism foundations |
+| `tailwind.config.ts` | Tailwind theme configuration |
 
-### 9.3 Component Library
-
-UI components are built with:
-- **shadcn/ui** - Base components
-- **Tailwind CSS** - Styling
-- **Lucide React** - Icons
-
-### 9.4 Icon Guidelines
-
-- Use **Lucide React** icons exclusively
-- Icon stroke width: 1.5px - 2px
-- Icon size in buttons: 16px (h-4 w-4)
-- Icon size standalone: 20px - 24px
-- Color: inherit from parent or explicit brand color
-
-### 9.5 Responsive Breakpoints
+### 11.2 CSS Utility Classes
 
 ```css
-/* Mobile first approach */
+/* In globals.css */
+.neo-shadow-sm { box-shadow: var(--neo-shadow-sm); }
+.neo-shadow { box-shadow: var(--neo-shadow); }
+.neo-shadow-lg { box-shadow: var(--neo-shadow-lg); }
+.neo-shadow-xl { box-shadow: var(--neo-shadow-xl); }
+
+.neo-border { border: 2px solid black; }
+.neo-border-3 { border: 3px solid black; }
+
+.neo-card { 
+  @apply bg-white rounded-xl neo-border neo-shadow transition-all duration-200;
+}
+
+.neo-grid-bg { /* grid pattern */ }
+.neo-dots-bg { /* dots pattern */ }
+
+.text-gradient-vitex { /* brand gradient text */ }
+```
+
+### 11.3 Component Library
+
+- **Base**: shadcn/ui components
+- **Styling**: Tailwind CSS with Neobrutalism overrides
+- **Icons**: Lucide React
+- **Animation**: Framer Motion (for entrances only)
+
+### 11.4 Icon Guidelines
+
+- Use **Lucide React** icons exclusively
+- Icon stroke width: 2px (default)
+- Icon size in buttons: 16px (`h-4 w-4`)
+- Icon size standalone: 20-24px (`h-5 w-5` or `h-6 w-6`)
+- Icons in colored containers should use white fill
+
+### 11.5 Responsive Breakpoints
+
+```css
 sm: 640px   /* Small devices */
 md: 768px   /* Medium devices */
 lg: 1024px  /* Large devices */
@@ -547,31 +755,82 @@ xl: 1280px  /* Extra large devices */
 
 ---
 
-## Appendix A: Color Accessibility
+## Appendix A: Component Quick Reference
 
-| Combination | Contrast Ratio | WCAG Level |
-|-------------|----------------|------------|
-| Purple on White | 4.6:1 | AA |
-| White on Purple | 4.6:1 | AA |
-| Cyan on Dark | 8.2:1 | AAA |
-| Dark text on Light | 12.6:1 | AAA |
+### Button Classes
 
-## Appendix B: Brand Assets Checklist
+```tsx
+// Primary
+<Button variant="default">Primary</Button>
 
-- [x] Primary logo (SVG)
-- [ ] Icon logo (SVG) - Future
-- [ ] Favicon set (ICO, PNG)
-- [ ] Open Graph image (1200x630)
-- [ ] App icons (various sizes)
-- [x] Brand guidelines document
+// Outline
+<Button variant="outline">Outline</Button>
+
+// Ghost
+<Button variant="ghost">Ghost</Button>
+
+// Accent (Cyan)
+<Button variant="accent">Accent</Button>
+
+// Destructive
+<Button variant="destructive">Delete</Button>
+```
+
+### Card Example
+
+```tsx
+<Card className="hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] 
+                hover:translate-x-[-2px] hover:translate-y-[-2px]">
+  <CardHeader>
+    <CardTitle>Card Title</CardTitle>
+    <CardDescription>Card description here</CardDescription>
+  </CardHeader>
+  <CardContent>
+    {/* content */}
+  </CardContent>
+</Card>
+```
+
+### Badge Variants
+
+```tsx
+<Badge variant="default">Primary</Badge>
+<Badge variant="secondary">Secondary</Badge>
+<Badge variant="accent">Accent</Badge>
+<Badge variant="success">Success</Badge>
+<Badge variant="warning">Warning</Badge>
+<Badge variant="destructive">Error</Badge>
+```
+
+---
+
+## Appendix B: Migration from v1.0
+
+### Breaking Changes in v2.0
+
+1. **Removed dark mode** - Light-only Neobrutalism design
+2. **New shadow system** - Hard shadows instead of soft
+3. **Border requirements** - All interactive elements require borders
+4. **Typography weights** - Increased use of `font-black` (900)
+5. **Animation approach** - CSS hover instead of framer-motion for shadows
+
+### Removed Features
+
+- Dark mode toggle
+- Soft shadow utilities
+- Glass morphism effects
+- Gradient backgrounds (except for brand text)
+
+---
 
 ## Appendix C: Version History
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 2.0.0 | Dec 2024 | Complete redesign with Neobrutalism system |
 | 1.0.0 | Dec 2024 | Initial brand system creation |
 
 ---
 
-**Document maintained by**: Vitex Team
+**Document maintained by**: Vitex Team  
 **Questions?** Open an issue on GitHub

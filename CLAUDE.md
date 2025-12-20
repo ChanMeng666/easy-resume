@@ -8,11 +8,20 @@ Vitex is a LaTeX-based resume generator built with Next.js 15, React 19, and Typ
 
 **Brand**: Vitex (formerly Easy Resume) - "Your Career, Perfectly Composed"
 
+**Design System**: **Neobrutalism** - A bold, distinctive design aesthetic featuring:
+- Thick black borders (2-3px) on all interactive elements
+- Hard shadows (4-8px offset, solid black, no blur)
+- Light gray background (#f0f0f0) with white cards
+- High contrast, playful yet professional aesthetic
+- No dark mode - single cohesive light theme
+
 **Brand Guidelines**: See `docs/BRAND_GUIDELINES.md` for comprehensive brand design documentation including:
+- Neobrutalism design principles and implementation
 - Color system (Vitex Purple #6C3CE9, Electric Cyan #00D4AA)
-- Typography specifications
+- Typography specifications (font-black for headlines, font-bold for buttons)
+- Shadow and border standards
+- UI component styling with hover animations
 - Logo usage guidelines
-- UI component styling
 - Brand voice and tone
 
 **Key Architecture Decision**: This project migrated from an HTML/CSS A4 resume builder to a LaTeX code generator. It uses the article document class with custom commands to create a professional two-column layout (60% left / 40% right) that works on all LaTeX platforms including Overleaf without requiring additional template files.
@@ -89,19 +98,81 @@ The previous GET URL approach (`snip_uri` with data URL) failed with 414 errors 
 
 ## UI Components
 
-### Page Structure (`src/app/page.tsx`)
-- **Client component**: Uses `'use client'` directive for React hooks
-- **Layout**: Two-column grid (2/5 split) - left shows resume info summary, right shows LaTeX preview and export
-- **Key features**: Real-time LaTeX generation using `useMemo` hook, syntax-highlighted code preview
+### Design System: Neobrutalism
+
+The UI follows a **Neobrutalism** design aesthetic with these key characteristics:
+
+#### Core Style Rules
+```css
+/* Standard shadow sizes */
+--neo-shadow-sm: 2px 2px 0px 0px rgba(0,0,0,0.9);   /* badges, small elements */
+--neo-shadow: 4px 4px 0px 0px rgba(0,0,0,0.9);       /* cards, buttons, inputs */
+--neo-shadow-lg: 6px 6px 0px 0px rgba(0,0,0,0.9);   /* hover states */
+--neo-shadow-xl: 8px 8px 0px 0px rgba(0,0,0,0.9);   /* dialogs, hero elements */
+
+/* Standard borders: always 2px solid black */
+/* Standard border-radius: rounded-lg (8px) for buttons, rounded-xl (12px) for cards */
+```
+
+#### Utility Classes (in globals.css)
+- `.neo-shadow`, `.neo-shadow-lg`, `.neo-shadow-xl` - Hard shadow utilities
+- `.neo-border` - 2px solid black border
+- `.neo-card` - Complete card styling with white bg, border, and shadow
+- `.neo-grid-bg`, `.neo-dots-bg` - Background patterns
+
+#### Hover Behavior Pattern
+**Important**: Use CSS for hover shadows, NOT framer-motion `whileHover` with boxShadow (causes square shadows on rounded elements).
+
+```tsx
+// Correct: CSS hover classes
+<Card className="hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] 
+                hover:translate-x-[-2px] hover:translate-y-[-2px] 
+                transition-all duration-200">
+
+// Wrong: framer-motion boxShadow (ignores border-radius)
+<motion.div whileHover={{ boxShadow: "8px 8px 0px 0px rgba(0,0,0,0.9)" }}>
+```
+
+### Page Structure
+
+#### Homepage (`src/app/page.tsx`)
+- **Hero section**: Large headline with gradient text, animated floating badges
+- **Features grid**: 3-column card grid with hover effects
+- **Statistics section**: White banner with bordered stats
+- **CTA section**: Final call-to-action with primary button
+
+#### Templates Page (`src/app/templates/page.tsx`)
+- Filter buttons with active state styling
+- Template cards with preview iframe and hover overlay
+
+#### Dashboard Page (`src/app/dashboard/page.tsx`)
+- Tab navigation with Neobrutalism styling
+- Resume cards grid with creation dialog
+
+#### Editor Page (`src/app/editor/page.tsx`)
+- Two-column layout (editor left, preview right)
+- Toolbar with export buttons and template selector
 
 ### Preview Components
 - **LatexPreview** (`src/components/preview/LatexPreview.tsx`): Displays generated LaTeX with Prism.js syntax highlighting
 - **ExportButtons** (`src/components/preview/ExportButtons.tsx`): Three export actions (Overleaf, Copy, Download)
 
 ### UI Library
-- **shadcn/ui**: Pre-built components in `src/components/ui/` (button, input, textarea, accordion, tabs, card, label)
-- **Styling**: Tailwind CSS with custom dark mode support
+- **shadcn/ui**: Pre-built components in `src/components/ui/` customized for Neobrutalism
+- **Styling**: Tailwind CSS (light mode only, no dark mode)
 - **Icons**: Lucide React icon library
+- **Animation**: Framer Motion for page entrances and staggered reveals (NOT for hover shadows)
+
+### Component Styling Quick Reference
+
+| Component | Border | Shadow | Hover Shadow | Radius |
+|-----------|--------|--------|--------------|--------|
+| Button | 2px black | 4px 4px | 6px 6px | rounded-lg |
+| Card | 2px black | 4px 4px | 6px 6px | rounded-xl |
+| Input | 2px black | none | 4px 4px (focus) | rounded-lg |
+| Dialog | 2px black | 8px 8px | - | rounded-xl |
+| Badge | 2px black | 2px 2px | - | rounded-lg |
+| Tabs | 2px black | 4px 4px | - | rounded-xl |
 
 ## File Organization
 
@@ -177,12 +248,23 @@ This project underwent multiple architectural transformations:
    - **Added**: LaTeX generation system, Overleaf integration, Prism.js syntax highlighting
    - Fixed 414 Request-URI Too Large error by switching from GET to POST form submission
 
-2. **moderncv to Custom Two-Column Layout (current)**:
+2. **moderncv to Custom Two-Column Layout**:
    - **Removed**: Single-column moderncv template, dependency on altacv.cls
    - **Added**: Custom two-column layout using article class and standard packages
    - **Benefits**: Works on all LaTeX platforms without additional files, full customization control
    - **Layout**: Left column (intro, experience, projects), Right column (education, skills, achievements, certifications)
    - **Packages**: Uses only standard packages (paracol, geometry, xcolor, fontawesome5, hyperref, enumitem, titlesec)
+
+3. **UI Redesign to Neobrutalism (current)**:
+   - **Removed**: Dark mode support, soft shadows, glass morphism effects, gradient backgrounds
+   - **Added**: Bold Neobrutalism design system with:
+     - Hard shadows (4-8px offset, solid black)
+     - Thick black borders (2px) on all interactive elements
+     - Light gray page background (#f0f0f0) with white cards
+     - Framer Motion for entrance animations
+     - CSS-based hover effects (not framer-motion boxShadow)
+   - **Benefits**: Distinctive, memorable design that avoids generic "AI slop" aesthetic
+   - **Key files modified**: All UI components, globals.css, all pages
 
 **Legacy reference**: `A4_RESUME_USAGE.md` documents the original HTML/CSS approach (not currently used)
 
@@ -231,6 +313,15 @@ When adding new resume sections:
    - Break down components into smaller, granular pieces
    - Extract and reuse common logic
 5. **Maintainability**: Ensure code is robust, extensible, and maintainable.
+
+### UI Development Guidelines
+1. **Follow Neobrutalism**: All new UI must use the Neobrutalism design system
+2. **No Dark Mode**: Do not implement dark mode styling
+3. **CSS for Hover Shadows**: Use Tailwind CSS classes for hover shadows, not framer-motion `whileHover` with boxShadow
+4. **Avoid Hydration Mismatches**: Never use `Math.random()` or `Date.now()` in components that render on both server and client
+5. **Consistent Shadows**: Use the standard shadow scale (2px/4px/6px/8px)
+6. **Always Use Borders**: All interactive elements must have 2px black borders
+7. **Framer Motion Usage**: Use for entrance animations and staggered reveals only
 
 ### Communication
 - Explain actions clearly in conversation.
