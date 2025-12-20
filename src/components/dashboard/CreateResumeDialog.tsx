@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2 } from "lucide-react";
+import { Loader2, Sparkles, Edit3 } from "lucide-react";
 import { getDefaultResumeData } from "@/lib/defaults/resumeData";
 
 interface CreateResumeDialogProps {
@@ -28,6 +28,25 @@ const templates = [
   { id: "modern", name: "Modern", description: "Clean and minimal" },
 ];
 
+const editorModes = [
+  {
+    id: "ai",
+    name: "AI Editor",
+    description: "Chat with AI to build your resume",
+    icon: Sparkles,
+    color: "bg-purple-500",
+    recommended: true,
+  },
+  {
+    id: "manual",
+    name: "Manual Editor",
+    description: "Traditional form-based editing",
+    icon: Edit3,
+    color: "bg-gray-500",
+    recommended: false,
+  },
+];
+
 /**
  * Neobrutalism styled dialog for creating a new resume.
  */
@@ -39,6 +58,7 @@ export function CreateResumeDialog({
   const router = useRouter();
   const [title, setTitle] = useState("My Resume");
   const [selectedTemplate, setSelectedTemplate] = useState("two-column");
+  const [selectedMode, setSelectedMode] = useState("ai");
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,8 +86,9 @@ export function CreateResumeDialog({
       onOpenChange(false);
       onCreated?.();
 
-      // Navigate to editor with the new resume
-      router.push(`/editor?id=${resume.id}`);
+      // Navigate to the appropriate editor based on selection
+      const editorPath = selectedMode === "ai" ? "/editor" : "/editor/manual";
+      router.push(`${editorPath}?id=${resume.id}&template=${selectedTemplate}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create resume");
     } finally {
@@ -81,11 +102,41 @@ export function CreateResumeDialog({
         <DialogHeader>
           <DialogTitle>Create New Resume</DialogTitle>
           <DialogDescription>
-            Give your resume a name and choose a template to get started.
+            Choose how you want to create your resume.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
+          {/* Editor Mode Selection */}
+          <div className="space-y-2">
+            <Label>Editor Mode</Label>
+            <div className="grid grid-cols-2 gap-3">
+              {editorModes.map((mode) => (
+                <button
+                  key={mode.id}
+                  type="button"
+                  onClick={() => setSelectedMode(mode.id)}
+                  className={`p-4 rounded-lg border-2 border-black text-left transition-all relative ${
+                    selectedMode === mode.id
+                      ? `${mode.color} text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,0.9)]`
+                      : "bg-white hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px]"
+                  }`}
+                >
+                  {mode.recommended && (
+                    <span className="absolute -top-2 -right-2 px-2 py-0.5 text-[10px] font-bold bg-yellow-400 text-black rounded-md border border-black">
+                      Recommended
+                    </span>
+                  )}
+                  <mode.icon className={`h-5 w-5 mb-2 ${selectedMode === mode.id ? "text-white" : "text-gray-600"}`} />
+                  <p className="font-bold text-sm">{mode.name}</p>
+                  <p className={`text-xs ${selectedMode === mode.id ? 'text-white/80' : 'text-muted-foreground'}`}>
+                    {mode.description}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Resume Title */}
           <div className="space-y-2">
             <Label htmlFor="title">Resume Title</Label>
@@ -137,14 +188,17 @@ export function CreateResumeDialog({
           >
             Cancel
           </Button>
-          <Button onClick={handleCreate} disabled={isCreating}>
+          <Button onClick={handleCreate} disabled={isCreating} className="gap-1">
             {isCreating ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Creating...
               </>
             ) : (
-              "Create Resume"
+              <>
+                {selectedMode === "ai" && <Sparkles className="h-4 w-4" />}
+                Create Resume
+              </>
             )}
           </Button>
         </DialogFooter>

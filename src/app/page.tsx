@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, FileText, Eye, Palette, Download, CheckCircle, Zap, Shield, Layout, Sparkles, ChevronRight } from 'lucide-react';
+import { FileText, Eye, Palette, Download, CheckCircle, Zap, Shield, Layout, Sparkles, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Navbar } from '@/components/shared/Navbar';
 import { Footer } from '@/components/shared/Footer';
@@ -187,12 +187,13 @@ export default function HomePage() {
                   <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                     <Link href="/editor">
                       <Button size="lg" className="h-14 px-8 text-lg gap-2">
-                        Build My Resume <ArrowRight className="h-5 w-5" />
+                        <Sparkles className="h-5 w-5" />
+                        Create with AI
                       </Button>
                     </Link>
-                    <Link href="/templates">
+                    <Link href="/editor/manual">
                       <Button size="lg" variant="outline" className="h-14 px-8 text-lg">
-                        View Templates
+                        Manual Editor
                       </Button>
                     </Link>
                   </div>
@@ -478,8 +479,9 @@ export default function HomePage() {
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Link href="/editor">
-                    <Button size="lg" variant="secondary" className="h-14 px-8 text-lg w-full sm:w-auto text-primary font-black">
-                      Create Resume
+                    <Button size="lg" variant="secondary" className="h-14 px-8 text-lg w-full sm:w-auto text-primary font-black gap-2">
+                      <Sparkles className="h-5 w-5" />
+                      Create with AI
                     </Button>
                   </Link>
                   <Link href="/templates">

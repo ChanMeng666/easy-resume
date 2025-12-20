@@ -5,6 +5,7 @@
 /* Import PDF and A4 specific styles */
 @import url('../styles/pdf.css');
 @import url('../styles/a4-layout.css');
+@import url('../styles/copilot-neobrutalism.css');
 
 /* ============================================
    NEOBRUTALISM DESIGN SYSTEM

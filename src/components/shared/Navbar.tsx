@@ -7,6 +7,7 @@ import { UserButton } from '@/components/auth/UserButton';
 import { ReactNode, Suspense } from 'react';
 import { useScrollDirection } from '@/lib/hooks/useScrollDirection';
 import { useUser } from "@stackframe/stack";
+import { Sparkles } from 'lucide-react';
 
 interface NavbarProps {
   currentPath?: string;
@@ -42,6 +43,16 @@ function NavLinksInner({ currentPath }: { currentPath: string }) {
         }`}
       >
         Templates
+      </Link>
+      <Link
+        href="/editor/manual"
+        className={`text-sm font-bold transition-all hover:bg-gray-100 px-3 py-2 rounded-lg border-2 border-transparent hover:border-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)] ${
+          currentPath === '/editor/manual' 
+            ? 'text-primary bg-primary/10 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]' 
+            : 'text-muted-foreground'
+        }`}
+      >
+        Manual Editor
       </Link>
       <a
         href="https://github.com/ChanMeng666/easy-resume"
@@ -87,7 +98,10 @@ export function Navbar({ currentPath = '/', rightContent }: NavbarProps) {
                 <NavLinksInner currentPath={currentPath} />
               </Suspense>
               <Link href="/editor">
-                <Button size="sm">Get Started</Button>
+                <Button size="sm" className="gap-1">
+                  <Sparkles className="w-4 h-4" />
+                  AI Editor
+                </Button>
               </Link>
               <UserButton />
             </div>

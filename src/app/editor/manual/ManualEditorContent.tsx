@@ -3,6 +3,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 import { ResumeEditor } from '@/components/editor/ResumeEditor';
 import { TopToolbar } from '@/components/editor/TopToolbar';
 import { PreviewTabs } from '@/components/preview/PreviewTabs';
@@ -10,8 +11,10 @@ import { WelcomeGuide } from '@/components/editor/WelcomeGuide';
 import { getTemplateById, DEFAULT_TEMPLATE_ID } from '@/templates/registry';
 import { ResumeData } from '@/lib/validation/schema';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Sparkles } from 'lucide-react';
 
-interface EditorContentProps {
+interface ManualEditorContentProps {
   data: ResumeData;
   isLoaded: boolean;
   isSaving: boolean;
@@ -25,9 +28,10 @@ interface EditorContentProps {
 }
 
 /**
- * Neobrutalism styled editor content component.
+ * Manual editor content component - Traditional form-based editing.
+ * Preserves the original editing experience for users who prefer manual control.
  */
-export function EditorContent({
+export function ManualEditorContent({
   data: currentData,
   isLoaded,
   isSaving,
@@ -38,7 +42,7 @@ export function EditorContent({
   exportData,
   importData,
   clearData,
-}: EditorContentProps) {
+}: ManualEditorContentProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlTemplateId = searchParams.get('template');
@@ -61,7 +65,7 @@ export function EditorContent({
     // Update URL parameter to keep it in sync with the selected template
     const params = new URLSearchParams(searchParams.toString());
     params.set('template', templateId);
-    router.replace(`/editor?${params.toString()}`, { scroll: false });
+    router.replace(`/editor/manual?${params.toString()}`, { scroll: false });
   };
 
   // Generate LaTeX code when data or template changes
@@ -97,6 +101,29 @@ export function EditorContent({
       />
 
       <main className="container mx-auto px-4 pt-24 pb-8">
+        {/* AI Editor Promo Banner */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6 p-4 rounded-xl bg-gradient-to-r from-purple-100 to-cyan-100 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Sparkles className="w-6 h-6 text-purple-600" />
+              <div>
+                <p className="font-bold text-sm">Try our new AI Editor!</p>
+                <p className="text-xs text-muted-foreground">Create your resume faster with AI assistance</p>
+              </div>
+            </div>
+            <Button asChild size="sm" className="neo-button">
+              <Link href="/editor">
+                <Sparkles className="w-4 h-4 mr-1" />
+                Switch to AI
+              </Link>
+            </Button>
+          </div>
+        </motion.div>
+
         {/* Error Display */}
         {error && (
           <motion.div

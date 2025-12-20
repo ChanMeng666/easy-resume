@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { StackAuthProvider } from "@/components/auth/StackProvider";
+import { CopilotKit } from "@copilotkit/react-core";
+import "@copilotkit/react-ui/styles.css";
+import "@copilotkit/react-textarea/styles.css";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -34,7 +37,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <StackAuthProvider>
-          {children}
+          <CopilotKit runtimeUrl="/api/copilotkit">
+            {children}
+          </CopilotKit>
         </StackAuthProvider>
       </body>
     </html>
