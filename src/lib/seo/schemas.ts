@@ -29,7 +29,7 @@ export const webApplicationSchema = {
   '@context': 'https://schema.org',
   '@type': 'WebApplication',
   name: 'Vitex - Professional LaTeX Resume Generator',
-  description: 'Free, privacy-focused web application that generates professional LaTeX resumes through an intuitive visual editor. Create beautiful resumes without LaTeX knowledge, export to Overleaf for instant PDF compilation.',
+  description: 'Professional, privacy-focused web application that generates professional LaTeX resumes through an intuitive visual editor. Create beautiful resumes without LaTeX knowledge, export to Overleaf for instant PDF compilation.',
   url: 'https://easy-resume-theta.vercel.app/',
   applicationCategory: 'BusinessApplication',
   operatingSystem: 'Web Browser',
@@ -46,7 +46,6 @@ export const webApplicationSchema = {
     'Local Data Storage',
     'No Registration Required',
     'Privacy-Focused',
-    'Open Source',
   ],
   screenshot: 'https://easy-resume-theta.vercel.app/screenshots/屏幕截图 2025-09-07 155124.png',
   author: organizationSchema,
@@ -160,7 +159,7 @@ export function getTemplateListSchema(templates: TemplateMetadata[]) {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
     name: 'Professional LaTeX Resume Templates',
-    description: 'Collection of free professional resume templates for various industries',
+    description: 'Collection of professional resume templates for various industries',
     numberOfItems: templates.length,
     itemListElement: templates.map((template, index) => ({
       '@type': 'ListItem',
@@ -195,10 +194,10 @@ export const faqSchema = {
     },
     {
       '@type': 'Question',
-      name: 'Is Vitex really free?',
+      name: 'Do I need to pay to use Vitex?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Yes, Vitex is completely free and open source under the MIT license. There are no hidden costs, premium features, or subscription fees. All templates and features are available to everyone at no cost.',
+        text: 'Vitex offers professional resume building tools with no registration required. Create and export your resume with our intuitive visual editor.',
       },
     },
     {
@@ -230,7 +229,7 @@ export const faqSchema = {
       name: 'What templates are available?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Vitex offers multiple professional templates including Two-Column, Modern CV, Classic Academic, Awesome CV, and more. Templates are categorized by industry: Tech, Academic, Business, and Creative. All templates are free and continuously updated.',
+        text: 'Vitex offers multiple professional templates including Two-Column, Modern CV, Classic Academic, Awesome CV, and more. Templates are categorized by industry: Tech, Academic, Business, and Creative. All templates are professionally designed and continuously updated.',
       },
     },
   ],

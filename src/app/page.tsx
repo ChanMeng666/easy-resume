@@ -180,7 +180,7 @@ export default function HomePage() {
                   </h1>
 
                   <p className="text-lg text-muted-foreground sm:text-xl max-w-2xl mx-auto lg:mx-0 leading-relaxed font-medium">
-                    Create professional, ATS-friendly resumes in minutes. Real-time preview, no coding required, and completely free.
+                    Create professional, ATS-friendly resumes in minutes. Real-time preview, no coding required, professional quality.
                   </p>
                   
                   {/* CTA Buttons */}
@@ -201,7 +201,7 @@ export default function HomePage() {
                   <div className="flex items-center justify-center lg:justify-start gap-6 pt-4">
                     <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]">
                       <CheckCircle className="h-4 w-4 text-green-500" />
-                      <span className="text-sm font-bold">Free Forever</span>
+                      <span className="text-sm font-bold">Professional Quality</span>
                     </div>
                     <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]">
                       <CheckCircle className="h-4 w-4 text-green-500" />
@@ -479,7 +479,7 @@ export default function HomePage() {
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Link href="/editor">
                     <Button size="lg" variant="secondary" className="h-14 px-8 text-lg w-full sm:w-auto text-primary font-black">
-                      Create Free Resume
+                      Create Resume
                     </Button>
                   </Link>
                   <Link href="/templates">

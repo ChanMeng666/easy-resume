@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { Mail, Github, Star, FileText, Palette, Download, Sparkles, Briefcase, MessageSquare, Code } from 'lucide-react';
+import { Mail, Github, FileText, Palette, Download, Sparkles, Briefcase, MessageSquare } from 'lucide-react';
 
 /**
  * Neobrutalism styled footer with brand identity and developer information.
@@ -22,12 +22,12 @@ export function Footer() {
             />
           </div>
           <p className="mx-auto max-w-2xl text-base text-muted-foreground font-medium leading-relaxed">
-            Create beautiful, ATS-friendly resumes in minutes. No registration, no hassle, completely free.
+            Create beautiful, ATS-friendly resumes in minutes. No registration, no hassle, professional quality.
           </p>
         </div>
 
         {/* Main Content Grid */}
-        <div className="mb-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
           {/* Product */}
           <div className="p-6 bg-gray-50 rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
             <h3 className="flex items-center gap-2 text-sm font-black uppercase tracking-wider mb-4">
@@ -54,49 +54,6 @@ export function Footer() {
                   <Download className="h-4 w-4" />
                   Features
                 </a>
-              </li>
-            </ul>
-          </div>
-
-          {/* Resources */}
-          <div className="p-6 bg-gray-50 rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
-            <h3 className="flex items-center gap-2 text-sm font-black uppercase tracking-wider mb-4">
-              <div className="p-1.5 bg-accent rounded-md border-2 border-black">
-                <Code className="h-4 w-4 text-white" />
-              </div>
-              Resources
-            </h3>
-            <ul className="space-y-3">
-              <li>
-                <a
-                  href="https://github.com/ChanMeng666/easy-resume"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-all hover:text-foreground hover:translate-x-1"
-                >
-                  <Github className="h-4 w-4" />
-                  GitHub Repository
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://github.com/ChanMeng666/easy-resume"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-all hover:text-foreground hover:translate-x-1"
-                >
-                  <Star className="h-4 w-4" />
-                  Star on GitHub
-                </a>
-              </li>
-              <li>
-                <span className="inline-flex items-center gap-2 text-xs font-bold text-green-600">
-                  <span className="relative flex h-2 w-2">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500"></span>
-                  </span>
-                  Open Source & Free Forever
-                </span>
               </li>
             </ul>
           </div>
@@ -179,7 +136,7 @@ export function Footer() {
             >
               Chan Meng
             </a>
-            . Open source and free forever.
+            . Professional resume builder for your career success.
           </p>
         </div>
       </div>

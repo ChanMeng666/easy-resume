@@ -51,7 +51,7 @@ export default function TemplatesPage() {
             <span className="inline-flex items-center justify-center w-8 h-8 bg-primary text-white rounded-lg border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)] font-black mr-2">
               {templates.filter(t => !t.metadata.isPremium).length}
             </span>
-            free templates available
+            professional templates available
           </p>
         </div>
       </section>
