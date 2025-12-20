@@ -12,21 +12,14 @@ export function Footer() {
       <div className="container mx-auto px-4 py-16">
         {/* Top Section: Brand Identity */}
         <div className="mb-16 text-center">
-          <div className="mb-6 flex items-center justify-center gap-4">
-            <div className="p-3 bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
-              <Image
-                src="/vitex.svg"
-                alt="Vitex"
-                width={48}
-                height={48}
-              />
-            </div>
-            <div className="text-left">
-              <h2 className="text-3xl font-black text-gradient-vitex">
-                Vitex
-              </h2>
-              <p className="text-sm text-muted-foreground font-bold">Your Career, Perfectly Composed</p>
-            </div>
+          <div className="mb-6 flex items-center justify-center">
+            <Image
+              src="/logo/vitex-logo-black.svg"
+              alt="Vitex"
+              width={200}
+              height={86}
+              className="h-auto"
+            />
           </div>
           <p className="mx-auto max-w-2xl text-base text-muted-foreground font-medium leading-relaxed">
             Create beautiful, ATS-friendly resumes in minutes. No registration, no hassle, completely free.

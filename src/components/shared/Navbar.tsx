@@ -70,16 +70,8 @@ export function Navbar({ currentPath = '/', subtitle, rightContent }: NavbarProp
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="p-2 bg-white rounded-lg border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,0.9)] group-hover:shadow-[5px_5px_0px_0px_rgba(0,0,0,0.9)] group-hover:translate-x-[-2px] group-hover:translate-y-[-2px] transition-all">
-              <Image src="/vitex.svg" alt="Vitex" width={28} height={28} />
-            </div>
-            <div>
-              <span className="text-xl font-black">Vitex</span>
-              {subtitle && (
-                <p className="text-sm text-muted-foreground font-medium">{subtitle}</p>
-              )}
-            </div>
+          <Link href="/" className="flex items-center">
+            <Image src="/logo/vitex-logo-black.svg" alt="Vitex" width={120} height={52} className="h-auto" />
           </Link>
 
           {/* Right Content - Custom or Default Navigation */}

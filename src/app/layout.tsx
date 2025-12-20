@@ -17,9 +17,9 @@ export const metadata: Metadata = {
   title: "Vitex",
   description: "Your Career, Perfectly Composed - Professional LaTeX Resume Generator",
   icons: {
-    icon: '/vitex.svg',
-    shortcut: '/vitex.svg',
-    apple: '/vitex.svg',
+    icon: '/logo/vitex-logo-white-with-bg.svg',
+    shortcut: '/logo/vitex-logo-white-with-bg.svg',
+    apple: '/logo/vitex-logo-white-with-bg.svg',
   },
 };
 

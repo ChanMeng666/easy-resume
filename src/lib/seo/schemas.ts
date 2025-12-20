@@ -16,7 +16,7 @@ export const organizationSchema = {
   name: 'Vitex',
   description: 'Your Career, Perfectly Composed - Professional LaTeX Resume Generator',
   url: 'https://easy-resume-theta.vercel.app/',
-  logo: 'https://easy-resume-theta.vercel.app/vitex.svg',
+  logo: 'https://easy-resume-theta.vercel.app/logo/vitex-logo-white-with-bg.svg',
   sameAs: [
     'https://github.com/ChanMeng666/easy-resume',
   ],
