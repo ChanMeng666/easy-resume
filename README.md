@@ -50,6 +50,7 @@ Create your **FREE** professional LaTeX resume in minutes.
     - [`1` Visual Resume Editor](#1-visual-resume-editor)
     - [`2` LaTeX Code Generation](#2-latex-code-generation)
     - [`3` Overleaf Integration](#3-overleaf-integration)
+    - [`4` AI-Powered Editing](#4-ai-powered-editing-copilotkit)
     - [`*` Additional Features](#-additional-features)
   - [🛠️ Tech Stack](#️-tech-stack)
   - [🏗️ Architecture](#️-architecture)
@@ -166,6 +167,20 @@ Seamless integration with Overleaf for instant PDF compilation. Three export met
 
 [![][back-to-top]](#readme-top)
 
+### `4` AI-Powered Editing (CopilotKit)
+
+Experience conversational resume building powered by CopilotKit and GPT-4o:
+
+- 🤖 **AI Chat Sidebar**: Tell AI about yourself and watch your resume build automatically
+- ✨ **Smart Suggestions**: AI-enhanced textareas with intelligent autocomplete
+- 🔄 **Real-time Updates**: See changes instantly as AI modifies your resume
+- 🎯 **Context-Aware**: AI understands your current resume and available templates
+- 💬 **Natural Language**: Just say "Add my work experience at Google" or "Improve my summary"
+
+> 💡 Two editor modes available: AI-powered (`/editor`) and manual form-based (`/editor/manual`)
+
+[![][back-to-top]](#readme-top)
+
 ### `*` Additional Features
 
 Beyond the core features, this project includes:
@@ -181,8 +196,9 @@ Beyond the core features, this project includes:
 - [x] 💾 **Data Import/Export**: Backup and restore resume data as JSON
 - [x] 🔄 **Template Switching**: Real-time template switching with URL parameter support
 - [x] 🚀 **One-Click Deploy**: Instant deployment to Vercel or other platforms
+- [x] 🤖 **CopilotKit Integration**: AI-powered resume editing with GPT-4o
 
-> ✨ The project demonstrates modern React/Next.js development practices with LaTeX integration and extensible template architecture.
+> ✨ The project demonstrates modern React/Next.js development practices with LaTeX integration, AI capabilities, and extensible template architecture.
 
 <div align="right">
 
@@ -227,6 +243,7 @@ Beyond the core features, this project includes:
 - **Forms**: React Hook Form + Zod validation
 - **Syntax Highlighting**: Prism.js for LaTeX code
 - **Icons**: Lucide React icon library
+- **AI Integration**: CopilotKit with OpenAI GPT-4o
 
 **Development Tools:**
 - **Linting**: ESLint with Next.js configuration
@@ -378,7 +395,22 @@ yarn install
 pnpm install
 ```
 
-**3. Start Development**
+**3. Configure Environment Variables**
+
+Create a `.env.local` file in the project root:
+
+```env
+# Required for AI features (CopilotKit)
+OPENAI_API_KEY=sk-your-openai-api-key
+
+# Optional: Database and authentication (for cloud storage)
+# See .env.local.example for all available options
+```
+
+> [!NOTE]
+> AI features require an OpenAI API key. Without it, you can still use the manual editor at `/editor/manual`.
+
+**4. Start Development**
 
 ```bash
 npm run dev

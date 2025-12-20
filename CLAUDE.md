@@ -179,13 +179,28 @@ The UI follows a **Neobrutalism** design aesthetic with these key characteristic
 ```
 src/
 ├── app/
-│   ├── page.tsx              # Main application page (LaTeX generator UI)
+│   ├── page.tsx              # Marketing homepage
 │   ├── layout.tsx            # Root layout with metadata
-│   └── globals.css           # Global styles and CSS variables
+│   ├── globals.css           # Global styles and CSS variables
+│   ├── api/
+│   │   ├── copilotkit/route.ts  # CopilotKit runtime endpoint
+│   │   └── ...               # Other API routes
+│   ├── editor/
+│   │   ├── page.tsx          # AI Editor page (with CopilotKit)
+│   │   ├── AIEditorContent.tsx  # AI editor content component
+│   │   └── manual/page.tsx   # Manual editor page (form-based)
+│   └── templates/page.tsx    # Template gallery
 ├── components/
+│   ├── copilot/              # CopilotKit AI components
+│   │   └── AITextarea.tsx    # AI-enhanced textareas (React 19 compatible)
+│   ├── editor/               # Resume editor components
 │   ├── preview/              # LaTeX preview and export buttons
 │   └── ui/                   # shadcn/ui components
 ├── lib/
+│   ├── copilot/              # CopilotKit integration
+│   │   ├── tools.ts          # AI actions (useCopilotAction hooks)
+│   │   ├── instructions.ts   # AI system instructions
+│   │   └── schemas.ts        # AI parameter schemas
 │   ├── latex/
 │   │   ├── generator.ts      # Main LaTeX code generation logic
 │   │   └── utils.ts          # LaTeX formatting utilities
@@ -194,6 +209,10 @@ src/
 │   ├── validation/
 │   │   └── schema.ts         # Zod schemas for type validation
 │   └── utils.ts              # General utilities (cn for className merging)
+├── templates/                # LaTeX template system
+│   ├── registry.ts           # Template registry
+│   ├── types.ts              # Template type definitions
+│   └── [template-name]/      # Individual templates
 └── data/
     └── resume.ts             # Resume content data (main editing file)
 ```
@@ -239,6 +258,84 @@ The generator maps common network names to FontAwesome icons:
 - `\cvtag{keyword}`: Colored box for skill tags
 - `\cvsubsection{heading}`: Uppercase subsection headers
 
+## CopilotKit Integration
+
+The project integrates **CopilotKit** to provide AI-powered resume editing capabilities.
+
+### Architecture
+
+```
+src/
+├── app/api/copilotkit/route.ts    # CopilotKit runtime endpoint (GPT-4o)
+├── lib/copilot/
+│   ├── tools.ts                   # AI actions for resume manipulation
+│   ├── instructions.ts            # AI system instructions
+│   ├── schemas.ts                 # Zod schemas for AI parameters
+│   ├── suggestions.ts             # AI suggestion generation
+│   └── ...                        # Other AI utilities
+├── components/copilot/
+│   ├── AITextarea.tsx             # AI-enhanced textarea components
+│   └── ...                        # Other AI UI components
+```
+
+### CopilotKit Features
+
+1. **AI Chat Sidebar**: Users interact with AI to build/edit their resume conversationally
+2. **Resume Manipulation Tools**: AI can add/update/remove work, education, skills, projects
+3. **Template Switching**: AI can change templates based on user preference
+4. **Readable Context**: AI has access to current resume data and available templates
+
+### AI Tools (src/lib/copilot/tools.ts)
+
+The following `useCopilotAction` hooks are registered:
+- **updateBasicInfo**: Update name, title, email, phone, location, summary
+- **addWorkExperience / updateWorkExperience / removeWorkExperience**: Manage work entries
+- **addEducation / updateEducation / removeEducation**: Manage education entries
+- **addSkillCategory / updateSkillCategory / removeSkillCategory**: Manage skill categories
+- **addProject / updateProject / removeProject**: Manage project entries
+- **addAchievement / removeAchievement**: Manage achievements
+- **addCertification / removeCertification**: Manage certifications
+- **selectTemplate**: Change the resume template
+- **addSocialProfile / removeSocialProfile**: Manage social/professional profiles
+
+### AI-Enhanced Textareas (src/components/copilot/AITextarea.tsx)
+
+Provides intelligent autocomplete suggestions for:
+- `AISummaryTextarea`: Professional summary writing
+- `AIWorkHighlightTextarea`: Achievement bullet points with action verbs
+- `AIProjectDescriptionTextarea`: Technical project descriptions
+- `AIEducationNotesTextarea`: Coursework, honors, activities
+- `AIGenericTextarea`: Generic AI-assisted text input
+
+### Editor Modes
+
+The editor has two modes accessible via different routes:
+- **AI Editor** (`/editor`): Full AI-powered editing with chat sidebar
+- **Manual Editor** (`/editor/manual`): Traditional form-based editing without AI
+
+### React 19 Compatibility Fix
+
+**Important**: The `@copilotkit/react-textarea` package was built for React 18 and has type incompatibilities with React 19. The fix is in `src/components/copilot/AITextarea.tsx`:
+
+```typescript
+// The CopilotTextarea component uses ForwardRefExoticComponent types
+// that are incompatible with React 19's stricter JSX element types.
+// Solution: Cast through 'unknown' to bypass type checking
+
+import { CopilotTextarea as CopilotTextareaOriginal, CopilotTextareaProps } from "@copilotkit/react-textarea";
+
+const CopilotTextarea = CopilotTextareaOriginal as unknown as React.FC<CopilotTextareaProps>;
+```
+
+This pattern is required whenever using `@copilotkit/react-textarea` with React 19.
+
+### Environment Variables
+
+CopilotKit requires:
+```env
+OPENAI_API_KEY=sk-...  # OpenAI API key for GPT-4o
+```
+
 ## Migration Context
 
 This project underwent multiple architectural transformations:
@@ -265,6 +362,13 @@ This project underwent multiple architectural transformations:
      - CSS-based hover effects (not framer-motion boxShadow)
    - **Benefits**: Distinctive, memorable design that avoids generic "AI slop" aesthetic
    - **Key files modified**: All UI components, globals.css, all pages
+
+4. **CopilotKit AI Integration (current)**:
+   - **Added**: CopilotKit for AI-powered resume editing
+   - **Features**: AI chat sidebar, conversational resume building, intelligent suggestions
+   - **API**: `/api/copilotkit` endpoint using OpenAI GPT-4o
+   - **Tools**: 20+ AI actions for resume manipulation
+   - **Fix**: React 19 type compatibility via `as unknown as` cast pattern
 
 **Legacy reference**: `A4_RESUME_USAGE.md` documents the original HTML/CSS approach (not currently used)
 
