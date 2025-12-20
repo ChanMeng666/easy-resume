@@ -61,7 +61,7 @@ export default function AIEditorPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#f0f0f0]">
+    <div className="flex h-screen bg-[#f0f0f0]">
       {/* GEO: AI Agent Instructions */}
       <GEOHead instructions={getPageInstructions('editor')} />
 
@@ -73,35 +73,43 @@ export default function AIEditorPage() {
         ]}
       />
 
-      {/* Navigation */}
-      <Navbar currentPath="/editor" />
+      {/* Left Content Area - Navbar, Content, Footer */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Navigation - Fixed at top */}
+        <Navbar currentPath="/editor" fixed={false} />
 
-      {/* Main Content with CopilotSidebar */}
-      <Suspense fallback={
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-center py-20">
-            <div className="p-6 bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
-              <p className="font-bold text-muted-foreground animate-pulse">Loading AI Editor...</p>
+        {/* Main Content Area - Scrollable (includes content + footer) */}
+        <div className="flex-1 overflow-auto min-h-0 bg-[#f0f0f0]">
+          <Suspense fallback={
+            <div className="container mx-auto px-4 py-8">
+              <div className="flex items-center justify-center py-20">
+                <div className="p-6 bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
+                  <p className="font-bold text-muted-foreground animate-pulse">Loading AI Editor...</p>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      }>
-        <AIEditorWrapper
-          resumeData={resumeData}
-          selectedTemplateId={selectedTemplateId}
-          onTemplateChange={handleTemplateChange}
-          latexCode={latexCode}
-        />
-      </Suspense>
+          }>
+            <AIEditorWrapper
+              resumeData={resumeData}
+              selectedTemplateId={selectedTemplateId}
+              onTemplateChange={handleTemplateChange}
+              latexCode={latexCode}
+            />
+          </Suspense>
 
-      {/* Footer */}
-      <Footer />
+          {/* Footer - Inside scrollable area */}
+          <Footer />
+        </div>
+      </div>
+
+      {/* Right Sidebar - CopilotKit */}
+      <CopilotSidebarWrapper />
     </div>
   );
 }
 
 /**
- * Wrapper component that sets up CopilotKit hooks.
+ * Wrapper component that sets up CopilotKit hooks for the content area.
  * Separated to ensure hooks are called at the right level.
  */
 function AIEditorWrapper({
@@ -127,25 +135,36 @@ function AIEditorWrapper({
   );
 
   return (
+    <AIEditorContent
+      data={resumeData.data}
+      isLoaded={resumeData.isLoaded}
+      isSaving={resumeData.isSaving}
+      error={resumeData.error}
+      isDbMode={resumeData.isDbMode}
+      updateData={resumeData.updateData}
+      selectedTemplateId={selectedTemplateId}
+      onTemplateChange={onTemplateChange}
+      latexCode={latexCode}
+      onExportJSON={resumeData.exportData}
+      onImportJSON={resumeData.importData}
+    />
+  );
+}
+
+/**
+ * Wrapper component for CopilotSidebar.
+ * The sidebar doesn't need hooks since they're already registered in AIEditorWrapper.
+ */
+function CopilotSidebarWrapper() {
+  return (
     <CopilotSidebar
       defaultOpen={true}
       instructions={RESUME_AI_INSTRUCTIONS}
       labels={CHAT_LABELS}
       className="copilot-neobrutalism"
     >
-      <AIEditorContent
-        data={resumeData.data}
-        isLoaded={resumeData.isLoaded}
-        isSaving={resumeData.isSaving}
-        error={resumeData.error}
-        isDbMode={resumeData.isDbMode}
-        updateData={resumeData.updateData}
-        selectedTemplateId={selectedTemplateId}
-        onTemplateChange={onTemplateChange}
-        latexCode={latexCode}
-        onExportJSON={resumeData.exportData}
-        onImportJSON={resumeData.importData}
-      />
+      {/* Empty content - actual content is in the left flex container */}
+      <div />
     </CopilotSidebar>
   );
 }

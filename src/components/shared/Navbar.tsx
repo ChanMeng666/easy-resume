@@ -12,6 +12,8 @@ import { Sparkles } from 'lucide-react';
 interface NavbarProps {
   currentPath?: string;
   rightContent?: ReactNode;
+  /** Whether to use fixed positioning. Defaults to true for backward compatibility. */
+  fixed?: boolean;
 }
 
 /**
@@ -70,13 +72,19 @@ function NavLinksInner({ currentPath }: { currentPath: string }) {
  * Neobrutalism styled navigation bar with auto-hide on scroll down.
  * Features bold borders, hard shadows, and clean typography.
  */
-export function Navbar({ currentPath = '/', rightContent }: NavbarProps) {
+export function Navbar({ currentPath = '/', rightContent, fixed = true }: NavbarProps) {
   const scrollDirection = useScrollDirection();
 
+  // Use fixed positioning by default for backward compatibility
+  // When fixed=false, use relative positioning for flex layouts
+  const positionClasses = fixed
+    ? `fixed top-0 left-0 right-0 z-50 transition-transform duration-300 ${
+        scrollDirection === 'down' ? '-translate-y-full' : 'translate-y-0'
+      }`
+    : 'relative';
+
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 bg-white border-b-2 border-black transition-transform duration-300 ${
-      scrollDirection === 'down' ? '-translate-y-full' : 'translate-y-0'
-    }`}>
+    <nav className={`${positionClasses} bg-white border-b-2 border-black`}>
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}

@@ -48,7 +48,7 @@ export function AIEditorContent({
   }, [currentData]);
 
   return (
-    <>
+    <div className="min-h-full">
       {/* Top Toolbar */}
       <TopToolbar
         currentTemplateId={selectedTemplateId}
@@ -61,7 +61,7 @@ export function AIEditorContent({
         onImportJSON={onImportJSON}
       />
 
-      <main className="container mx-auto px-4 pt-24 pb-8">
+      <main className="container mx-auto px-4 py-8">
         {/* Error Display */}
         {error && (
           <motion.div
@@ -183,6 +183,6 @@ export function AIEditorContent({
           </ol>
         </motion.div>
       </main>
-    </>
+    </div>
   );
 }
