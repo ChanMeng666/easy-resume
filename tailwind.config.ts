@@ -9,6 +9,9 @@ export default {
   darkMode: ['class', "class"],
   theme: {
   	extend: {
+  		fontFamily: {
+  			brand: ['var(--font-titan-one)', 'sans-serif'],
+  		},
   		colors: {
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',

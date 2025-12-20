@@ -112,7 +112,7 @@ export default function DashboardPage() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h1 className="text-3xl font-black">Dashboard</h1>
+          <h1 className="text-3xl font-brand">Dashboard</h1>
           <p className="text-muted-foreground mt-1 font-medium">
             Manage your resumes and account settings
           </p>

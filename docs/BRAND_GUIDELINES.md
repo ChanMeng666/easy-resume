@@ -165,7 +165,44 @@ Neobrutalism (also known as Neo-brutalism) is a modern design aesthetic that com
 
 ## 4. Typography
 
-### 4.1 Font Stack
+### 4.1 Font Hierarchy
+
+Vitex uses a three-tier font hierarchy:
+
+| Tier | Font | CSS Variable | Tailwind Class | Usage |
+|------|------|--------------|----------------|-------|
+| **Brand/Display** | Titan One | `--font-titan-one` | `font-brand` | Hero headlines, CTA titles, brand name |
+| **Headlines** | System Stack | - | `font-black` | Section titles, card titles |
+| **Body** | System Stack | - | `font-medium` | Body text, descriptions |
+| **Code** | Geist Mono | `--font-geist-mono` | `font-mono` | Code, technical content |
+
+### 4.2 Brand Font: Titan One
+
+**Titan One** is our brand display font - a bold, playful typeface that perfectly complements the Neobrutalism design system.
+
+```css
+/* Loaded via Next.js Google Fonts */
+font-family: 'Titan One', sans-serif;
+letter-spacing: 0.05em; /* Applied automatically via .font-brand class */
+```
+
+**Design Note:** Titan One has chunky letterforms that can appear crowded at default spacing. The `.font-brand` class automatically applies `letter-spacing: 0.05em` (tracking-wider) for optimal readability.
+
+**Usage Guidelines:**
+- Use for Hero section main headlines (H1)
+- Use for CTA section titles
+- Use for brand name displays ("Vitex")
+- **Never use for body text** - reserved for high-impact moments only
+
+```tsx
+// Brand headline with gradient
+<h1 className="font-brand text-5xl">Your Headline Here</h1>
+
+// Brand text with gradient effect
+<span className="text-gradient-vitex-brand text-4xl">Vitex</span>
+```
+
+### 4.3 System Font Stack
 
 ```css
 /* System font stack - clean and fast */
@@ -173,33 +210,57 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
              'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
 ```
 
-### 4.2 Font Weights in Neobrutalism
+### 4.4 Font Weights in Neobrutalism
 
 | Weight | Name | CSS Class | Usage |
 |--------|------|-----------|-------|
-| 900 | Black | `font-black` | Headlines, card titles |
+| 400 | Regular (Titan One) | `font-brand` | Brand headlines, Hero titles |
+| 900 | Black | `font-black` | Section headlines, card titles |
 | 700 | Bold | `font-bold` | Buttons, labels, emphasis |
 | 500 | Medium | `font-medium` | Body text, descriptions |
 | 400 | Regular | `font-normal` | Code, long-form content |
 
-### 4.3 Type Scale
+### 4.5 Type Scale
 
-| Element | Size | Weight | Tailwind Classes |
-|---------|------|--------|------------------|
-| H1 (Hero) | 48-72px | Black | `text-5xl sm:text-6xl lg:text-7xl font-black` |
-| H2 (Section) | 30-36px | Black | `text-3xl md:text-4xl font-black` |
-| H3 (Card) | 20-24px | Black | `text-xl sm:text-2xl font-black` |
-| Body | 16px | Medium | `text-base font-medium` |
-| Small | 14px | Medium | `text-sm font-medium` |
-| Caption | 12px | Bold | `text-xs font-bold uppercase` |
+| Element | Size | Font | Tailwind Classes |
+|---------|------|------|------------------|
+| H1 (Hero) | 48-72px | Titan One | `text-5xl sm:text-6xl lg:text-7xl font-brand` |
+| H1 (CTA) | 30-36px | Titan One | `text-3xl md:text-4xl font-brand` |
+| H2 (Section) | 30-36px | System Black | `text-3xl md:text-4xl font-black` |
+| H3 (Card) | 20-24px | System Black | `text-xl sm:text-2xl font-black` |
+| Body | 16px | System Medium | `text-base font-medium` |
+| Small | 14px | System Medium | `text-sm font-medium` |
+| Caption | 12px | System Bold | `text-xs font-bold uppercase` |
 
-### 4.4 Typography Rules
+### 4.6 Typography Rules
 
-1. **Headlines** use `font-black` (weight 900)
-2. **Buttons and labels** use `font-bold` (weight 700)
-3. **Body text** uses `font-medium` (weight 500)
-4. **Tight letter spacing** for headlines (`tracking-tight`)
-5. **Uppercase** for tags and small badges
+1. **Hero headlines** use `font-brand` (Titan One)
+2. **CTA section titles** use `font-brand` (Titan One)
+3. **Section headlines** use `font-black` (weight 900)
+4. **Buttons and labels** use `font-bold` (weight 700)
+5. **Body text** uses `font-medium` (weight 500)
+6. **Tight letter spacing** for headlines (`tracking-tight`)
+7. **Uppercase** for tags and small badges
+
+### 4.7 Brand Text Gradient
+
+Combine Titan One with the brand gradient for maximum visual impact:
+
+```css
+/* Brand font with gradient effect */
+.text-gradient-vitex-brand {
+  font-family: var(--font-titan-one), sans-serif;
+  background: linear-gradient(90deg, #6C3CE9 0%, #00D4AA 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+```
+
+Use this class for:
+- Featured hero text with emphasis
+- Brand name displays in marketing sections
+- Key phrases that need maximum attention
 
 ---
 

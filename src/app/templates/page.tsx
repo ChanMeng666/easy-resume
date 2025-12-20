@@ -46,7 +46,7 @@ export default function TemplatesPage() {
             <ArrowLeft className="h-4 w-4" />
             Back to Home
           </Link>
-          <h1 className="mb-4 text-4xl font-black">Pick Your Style</h1>
+          <h1 className="mb-4 text-4xl font-brand">Pick Your Style</h1>
           <p className="text-lg text-muted-foreground font-medium max-w-2xl">
             <span className="inline-flex items-center justify-center w-8 h-8 bg-primary text-white rounded-lg border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)] font-black mr-2">
               {templates.filter(t => !t.metadata.isPremium).length}
@@ -85,7 +85,7 @@ export default function TemplatesPage() {
       {/* CTA Section */}
       <section className="container mx-auto px-4 py-20">
         <div className="rounded-2xl bg-gradient-to-br from-purple-600 to-primary p-8 text-center text-white md:p-12 border-3 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,0.9)]">
-          <h2 className="mb-4 text-3xl font-black">Ready to Build Your Resume?</h2>
+          <h2 className="mb-4 text-3xl font-brand">Ready to Build Your Resume?</h2>
           <p className="mb-8 text-lg opacity-90 font-medium max-w-xl mx-auto">
             Pick any template above, then let AI help you create the perfect resume through simple conversation.
           </p>

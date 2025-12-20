@@ -135,6 +135,20 @@ body {
   .text-gradient-vitex {
     @apply bg-gradient-to-r from-purple-600 to-cyan-500 bg-clip-text text-transparent;
   }
+  
+  /* Brand font with gradient - combines Titan One with brand colors */
+  .text-gradient-vitex-brand {
+    @apply font-brand bg-gradient-to-r from-purple-600 to-cyan-500 bg-clip-text text-transparent;
+  }
+}
+
+/* ============================================
+   BRAND FONT STYLING
+   Titan One requires extra letter-spacing for readability
+   ============================================ */
+
+.font-brand {
+  letter-spacing: 0.05em; /* tracking-wider equivalent */
 }
 
 /* ============================================

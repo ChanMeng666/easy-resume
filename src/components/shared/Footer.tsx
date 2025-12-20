@@ -12,7 +12,7 @@ export function Footer() {
       <div className="container mx-auto px-4 py-16">
         {/* Top Section: Brand Identity */}
         <div className="mb-16 text-center">
-          <div className="mb-6 flex items-center justify-center">
+          <div className="mb-6 flex flex-col items-center justify-center gap-4">
             <Image
               src="/logo/vitex-logo-black.svg"
               alt="Vitex"
@@ -20,6 +20,7 @@ export function Footer() {
               height={86}
               className="h-auto"
             />
+            <span className="text-gradient-vitex-brand text-4xl">Vitex</span>
           </div>
           <p className="mx-auto max-w-2xl text-base text-muted-foreground font-medium leading-relaxed">
             Create beautiful, ATS-friendly resumes in minutes. No registration, no hassle, professional quality.

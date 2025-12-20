@@ -189,9 +189,9 @@ export default function HomePage() {
                   </motion.div>
 
                   {/* Main Heading */}
-                  <h1 className="text-5xl font-black tracking-tight sm:text-6xl lg:text-7xl leading-[1.1]">
+                  <h1 className="text-5xl font-brand tracking-tight sm:text-6xl lg:text-7xl leading-[1.1]">
                     Chat with AI, <br />
-                    <span className="text-gradient-vitex">Build Your Resume</span>
+                    <span className="text-gradient-vitex-brand">Build Your Resume</span>
                     <br />
                     in Minutes
                   </h1>
@@ -498,7 +498,7 @@ export default function HomePage() {
                   <Bot className="h-4 w-4" />
                   Powered by GPT-4o
                 </div>
-                <h2 className="text-3xl md:text-4xl font-black mb-6">Your Career Story, AI-Crafted</h2>
+                <h2 className="text-3xl md:text-4xl font-brand mb-6">Your Career Story, AI-Crafted</h2>
                 <p className="text-lg md:text-xl opacity-90 mb-10 font-medium">
                   Stop struggling with blank pages. Tell AI your story and get a professional resume in minutes.
                 </p>
