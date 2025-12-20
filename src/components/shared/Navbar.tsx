@@ -10,7 +10,6 @@ import { useUser } from "@stackframe/stack";
 
 interface NavbarProps {
   currentPath?: string;
-  subtitle?: string;
   rightContent?: ReactNode;
 }
 
@@ -60,7 +59,7 @@ function NavLinksInner({ currentPath }: { currentPath: string }) {
  * Neobrutalism styled navigation bar with auto-hide on scroll down.
  * Features bold borders, hard shadows, and clean typography.
  */
-export function Navbar({ currentPath = '/', subtitle, rightContent }: NavbarProps) {
+export function Navbar({ currentPath = '/', rightContent }: NavbarProps) {
   const scrollDirection = useScrollDirection();
 
   return (
