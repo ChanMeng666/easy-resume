@@ -20,7 +20,6 @@ export function Footer() {
               height={86}
               className="h-auto"
             />
-            <span className="text-gradient-vitex-brand text-4xl">Vitex</span>
           </div>
           <p className="mx-auto max-w-2xl text-base text-muted-foreground font-medium leading-relaxed">
             Create beautiful, ATS-friendly resumes in minutes. No registration, no hassle, professional quality.

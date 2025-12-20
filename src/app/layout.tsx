@@ -28,8 +28,8 @@ const titanOne = Titan_One({
 });
 
 export const metadata: Metadata = {
-  title: "Vitex",
-  description: "Your Career, Perfectly Composed - Professional LaTeX Resume Generator",
+  title: "Vitex | AI-powered Resume Builder",
+  description: "Your Career, Perfectly Composed - AI-powered resume builder with professional LaTeX templates. Create ATS-friendly resumes in minutes with AI assistance.",
   icons: {
     icon: '/logo/vitex-logo-white-with-bg.svg',
     shortcut: '/logo/vitex-logo-white-with-bg.svg',

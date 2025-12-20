@@ -56,14 +56,6 @@ function NavLinksInner({ currentPath }: { currentPath: string }) {
       >
         Manual Editor
       </Link>
-      <a
-        href="https://github.com/ChanMeng666/easy-resume"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-sm font-bold transition-all hover:bg-gray-100 px-3 py-2 rounded-lg border-2 border-transparent hover:border-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]"
-      >
-        GitHub
-      </a>
     </>
   );
 }
