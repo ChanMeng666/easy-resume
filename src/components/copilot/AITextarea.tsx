@@ -1,7 +1,12 @@
 "use client";
 
-import { CopilotTextarea } from "@copilotkit/react-textarea";
+import { CopilotTextarea as CopilotTextareaOriginal } from "@copilotkit/react-textarea";
 import { cn } from "@/lib/utils";
+import { ComponentProps } from "react";
+
+// Type assertion to fix React 19 compatibility issue with CopilotTextarea
+// The library was built for React 18 and has incompatible JSX element types
+const CopilotTextarea = CopilotTextareaOriginal as React.FC<ComponentProps<typeof CopilotTextareaOriginal>>;
 
 /**
  * Props for AIEnhancedTextarea components.
