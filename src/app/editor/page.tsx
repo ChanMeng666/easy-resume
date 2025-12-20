@@ -10,6 +10,9 @@ import { getPageInstructions } from '@/lib/seo/instructions';
 import { howToCreateResumeSchema, getBreadcrumbSchema } from '@/lib/seo/schemas';
 import { EditorContent } from './EditorContent';
 
+/**
+ * Neobrutalism styled editor page.
+ */
 export default function EditorPage() {
   const resumeData = useResumeData();
 
@@ -20,7 +23,7 @@ export default function EditorPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen bg-[#f0f0f0]">
       {/* GEO: AI Agent Instructions */}
       <GEOHead instructions={getPageInstructions('editor')} />
 
@@ -39,7 +42,9 @@ export default function EditorPage() {
       <Suspense fallback={
         <div className="container mx-auto px-4 py-8">
           <div className="flex items-center justify-center py-20">
-            <p className="text-muted-foreground">Loading...</p>
+            <div className="p-6 bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
+              <p className="font-bold text-muted-foreground animate-pulse">Loading...</p>
+            </div>
           </div>
         </div>
       }>

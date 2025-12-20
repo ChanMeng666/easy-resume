@@ -2,12 +2,14 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
 import { ResumeEditor } from '@/components/editor/ResumeEditor';
 import { TopToolbar } from '@/components/editor/TopToolbar';
 import { PreviewTabs } from '@/components/preview/PreviewTabs';
 import { WelcomeGuide } from '@/components/editor/WelcomeGuide';
 import { getTemplateById, DEFAULT_TEMPLATE_ID } from '@/templates/registry';
 import { ResumeData } from '@/lib/validation/schema';
+import { Badge } from '@/components/ui/badge';
 
 interface EditorContentProps {
   data: ResumeData;
@@ -22,6 +24,9 @@ interface EditorContentProps {
   clearData: () => void;
 }
 
+/**
+ * Neobrutalism styled editor content component.
+ */
 export function EditorContent({
   data: currentData,
   isLoaded,
@@ -94,9 +99,13 @@ export function EditorContent({
       <main className="container mx-auto px-4 pt-24 pb-8">
         {/* Error Display */}
         {error && (
-          <div className="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 dark:bg-red-900/20 dark:border-red-800">
-            <p className="text-red-800 dark:text-red-200">{error}</p>
-          </div>
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 p-4 rounded-xl bg-red-50 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
+          >
+            <p className="text-red-800 font-bold">{error}</p>
+          </motion.div>
         )}
 
         {/* Welcome Guide for first-time users */}
@@ -105,14 +114,19 @@ export function EditorContent({
         {/* Two Column Layout */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
           {/* Left Column - Editor */}
-          <div className="lg:col-span-2">
-            <div className="rounded-lg border bg-white p-6 shadow-sm dark:bg-gray-900">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
+            className="lg:col-span-2"
+          >
+            <div className="rounded-xl bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] p-6">
               <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Edit Resume</h2>
+                <h2 className="text-lg font-black">Edit Resume</h2>
                 {isDbMode && (
-                  <span className="text-xs text-muted-foreground px-2 py-1 bg-muted rounded">
+                  <Badge variant="accent" className="text-xs">
                     Auto-saving to cloud
-                  </span>
+                  </Badge>
                 )}
               </div>
               {isLoaded ? (
@@ -126,60 +140,53 @@ export function EditorContent({
                 />
               ) : (
                 <div className="flex items-center justify-center py-8">
-                  <p className="text-muted-foreground">Loading...</p>
+                  <p className="text-muted-foreground font-medium animate-pulse">Loading...</p>
                 </div>
               )}
             </div>
-          </div>
+          </motion.div>
 
           {/* Right Column - Preview Tabs */}
-          <div className="lg:col-span-3">
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+            className="lg:col-span-3"
+          >
             <PreviewTabs
               templateId={selectedTemplateId}
               latexCode={latexCode}
               filename={currentData.basics.name.replace(/\s+/g, '_')}
             />
-          </div>
+          </motion.div>
         </div>
 
         {/* Instructions */}
-        <div className="mt-8 rounded-lg border bg-white p-6 shadow-sm dark:bg-gray-900">
-          <h2 className="mb-4 text-lg font-semibold">How to Use</h2>
-          <ol className="space-y-2 text-sm">
-            <li className="flex gap-3">
-              <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-                1
-              </span>
-              <span>
-                <strong>Edit directly in the browser:</strong> Use the visual editor on the left to update your resume information
-              </span>
-            </li>
-            <li className="flex gap-3">
-              <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-                2
-              </span>
-              <span>
-                <strong>Real-time preview:</strong> See the generated LaTeX code update automatically on the right
-              </span>
-            </li>
-            <li className="flex gap-3">
-              <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-                3
-              </span>
-              <span>
-                <strong>Open in Overleaf:</strong> Click the button to compile to PDF in Overleaf (free account required)
-              </span>
-            </li>
-            <li className="flex gap-3">
-              <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-                4
-              </span>
-              <span>
-                <strong>Backup your data:</strong> Export your resume as JSON to save or share it. Import JSON to restore previous data.
-              </span>
-            </li>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mt-8 rounded-xl bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] p-6"
+        >
+          <h2 className="mb-4 text-lg font-black">How to Use</h2>
+          <ol className="space-y-3 text-sm">
+            {[
+              { title: 'Edit directly in the browser:', desc: 'Use the visual editor on the left to update your resume information' },
+              { title: 'Real-time preview:', desc: 'See the generated LaTeX code update automatically on the right' },
+              { title: 'Open in Overleaf:', desc: 'Click the button to compile to PDF in Overleaf (free account required)' },
+              { title: 'Backup your data:', desc: 'Export your resume as JSON to save or share it. Import JSON to restore previous data.' },
+            ].map((item, idx) => (
+              <li key={idx} className="flex gap-3">
+                <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-primary text-xs font-black text-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]">
+                  {idx + 1}
+                </span>
+                <span className="font-medium">
+                  <strong>{item.title}</strong> {item.desc}
+                </span>
+              </li>
+            ))}
           </ol>
-        </div>
+        </motion.div>
       </main>
     </>
   );

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { ArrowRight, FileText, Eye, Palette, Download, CheckCircle, Zap, Shield, Layout, Sparkles, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Navbar } from '@/components/shared/Navbar';
@@ -12,24 +13,122 @@ import { getPageInstructions } from '@/lib/seo/instructions';
 import { webApplicationSchema, softwareApplicationSchema, howToCreateResumeSchema, faqSchema } from '@/lib/seo/schemas';
 import { getAllTemplates } from '@/templates/registry';
 
+/**
+ * Neobrutalism styled background with animated dots.
+ * Uses fixed positions to avoid hydration mismatch.
+ */
+function BackgroundEffects() {
+  // Fixed positions for dots to avoid hydration mismatch
+  const dotPositions = [
+    { left: 5, top: 10, duration: 3.2, delay: 0.1 },
+    { left: 15, top: 25, duration: 4.1, delay: 0.5 },
+    { left: 25, top: 45, duration: 3.5, delay: 1.2 },
+    { left: 35, top: 15, duration: 4.8, delay: 0.3 },
+    { left: 45, top: 70, duration: 3.8, delay: 1.8 },
+    { left: 55, top: 35, duration: 4.2, delay: 0.7 },
+    { left: 65, top: 85, duration: 3.3, delay: 1.5 },
+    { left: 75, top: 55, duration: 4.5, delay: 0.2 },
+    { left: 85, top: 20, duration: 3.7, delay: 1.0 },
+    { left: 95, top: 65, duration: 4.0, delay: 1.3 },
+    { left: 10, top: 80, duration: 3.4, delay: 0.8 },
+    { left: 30, top: 90, duration: 4.3, delay: 1.6 },
+    { left: 50, top: 5, duration: 3.6, delay: 0.4 },
+    { left: 70, top: 40, duration: 4.7, delay: 1.9 },
+    { left: 90, top: 75, duration: 3.9, delay: 0.6 },
+  ];
+
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {/* Grid pattern */}
+      <div className="absolute inset-0 neo-grid-bg" />
+      
+      {/* Animated floating dots with fixed positions */}
+      {dotPositions.map((dot, i) => (
+        <motion.div
+          key={i}
+          className="absolute w-3 h-3 bg-black/5 rounded-full"
+          style={{
+            left: `${dot.left}%`,
+            top: `${dot.top}%`,
+          }}
+          animate={{
+            y: [0, -20, 0],
+            opacity: [0.3, 0.6, 0.3],
+          }}
+          transition={{
+            duration: dot.duration,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: dot.delay,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Feature card component with Neobrutalism style.
+ */
+function FeatureCard({ 
+  icon: Icon, 
+  title, 
+  description, 
+  color = "bg-primary",
+  large = false 
+}: { 
+  icon: React.ElementType; 
+  title: string; 
+  description: string; 
+  color?: string;
+  large?: boolean;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      className={`${large ? 'md:col-span-2' : ''} bg-white rounded-xl p-6 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] transition-all duration-200 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px]`}
+    >
+      <div className={`h-12 w-12 ${color} rounded-lg flex items-center justify-center border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)] mb-4`}>
+        <Icon className="h-6 w-6 text-white" />
+      </div>
+      <h3 className="text-xl font-black mb-2">{title}</h3>
+      <p className="text-muted-foreground font-medium">{description}</p>
+    </motion.div>
+  );
+}
+
+/**
+ * Stat card component for the stats section.
+ */
+function StatCard({ label, value, icon: Icon }: { label: string; value: string; icon: React.ElementType }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      whileInView={{ opacity: 1, scale: 1 }}
+      viewport={{ once: true }}
+      className="flex flex-col items-center justify-center text-center p-4"
+    >
+      <div className="mb-3 p-2 rounded-lg bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]">
+        <Icon className="h-5 w-5 text-primary" />
+      </div>
+      <div className="text-2xl font-black">{value}</div>
+      <div className="text-sm text-muted-foreground font-bold">{label}</div>
+    </motion.div>
+  );
+}
+
 export default function HomePage() {
   const templates = getAllTemplates();
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
-    const initGradient = async () => {
-      // Dynamically import Gradient to avoid SSR issues
-      const { Gradient } = await import('@/lib/gradient/Gradient');
-      const gradient = new Gradient();
-      gradient.initGradient('#gradient-canvas');
-    };
-
-    initGradient();
   }, []);
 
   return (
-    <div className="relative min-h-screen bg-background font-sans text-foreground selection:bg-primary/10 selection:text-primary overflow-hidden">
+    <div className="relative min-h-screen bg-[#f0f0f0] font-sans text-foreground overflow-hidden">
       {/* GEO: AI Agent Instructions */}
       <GEOHead instructions={getPageInstructions('home')} />
 
@@ -43,70 +142,84 @@ export default function HomePage() {
         ]}
       />
 
-      {/* Animated Gradient Background */}
-      <div className="fixed inset-0 -z-10 opacity-30 dark:opacity-20 pointer-events-none">
-        <canvas
-          id="gradient-canvas"
-          data-transition-in
-          className="gradient-canvas"
-        />
-      </div>
+      {/* Background Effects */}
+      <BackgroundEffects />
 
       <div className="relative z-10 flex flex-col min-h-screen">
         <Navbar currentPath="/" />
 
-        <main className="flex-grow">
+        <main className="flex-grow pt-20">
           {/* Hero Section */}
-          <section className="relative pt-20 pb-32 md:pt-32 md:pb-48 overflow-visible">
-            <div className="hero-glow" />
+          <section className="relative py-20 md:py-32 overflow-visible">
             <div className="container mx-auto px-4">
               <div className="grid lg:grid-cols-2 gap-12 items-center">
                 {/* Text Content */}
-                <div className="text-center lg:text-left space-y-8 animate-fade-in-up">
-                  <div className="inline-flex items-center px-3 py-1 rounded-full border bg-background/50 backdrop-blur-sm text-xs font-medium text-muted-foreground mb-4">
-                    <span className="flex h-2 w-2 rounded-full bg-purple-500 mr-2"></span>
+                <motion.div 
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6 }}
+                  className="text-center lg:text-left space-y-8"
+                >
+                  {/* Version Badge */}
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="inline-flex items-center px-4 py-2 rounded-lg bg-white border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,0.9)] text-sm font-bold"
+                  >
+                    <span className="flex h-2 w-2 rounded-full bg-green-500 mr-2 animate-pulse"></span>
                     New v2.0 is live
-                  </div>
-                  <h1 className="text-5xl font-bold tracking-tight sm:text-7xl leading-[1.1]">
+                  </motion.div>
+
+                  {/* Main Heading */}
+                  <h1 className="text-5xl font-black tracking-tight sm:text-6xl lg:text-7xl leading-[1.1]">
                     Craft Your <br />
-                    <span className="text-gradient">Perfect Resume</span>
+                    <span className="text-gradient-vitex">Perfect Resume</span>
                     <br />
                     with LaTeX Power
                   </h1>
-                  <p className="text-lg text-muted-foreground sm:text-xl max-w-2xl mx-auto lg:mx-0 leading-relaxed">
+
+                  <p className="text-lg text-muted-foreground sm:text-xl max-w-2xl mx-auto lg:mx-0 leading-relaxed font-medium">
                     Create professional, ATS-friendly resumes in minutes. Real-time preview, no coding required, and completely free.
                   </p>
                   
+                  {/* CTA Buttons */}
                   <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                     <Link href="/editor">
-                      <Button size="lg" className="h-12 px-8 rounded-full gap-2 text-base shadow-lg shadow-purple-500/20 hover:shadow-purple-500/30 transition-all">
-                        Build My Resume <ArrowRight className="h-4 w-4" />
+                      <Button size="lg" className="h-14 px-8 text-lg gap-2">
+                        Build My Resume <ArrowRight className="h-5 w-5" />
                       </Button>
                     </Link>
                     <Link href="/templates">
-                      <Button size="lg" variant="outline" className="h-12 px-8 rounded-full text-base hover:bg-secondary/50 transition-all">
+                      <Button size="lg" variant="outline" className="h-14 px-8 text-lg">
                         View Templates
                       </Button>
                     </Link>
                   </div>
 
-                  <div className="flex items-center justify-center lg:justify-start gap-6 pt-4 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-2">
+                  {/* Trust Badges */}
+                  <div className="flex items-center justify-center lg:justify-start gap-6 pt-4">
+                    <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]">
                       <CheckCircle className="h-4 w-4 text-green-500" />
-                      <span>Free Forever</span>
+                      <span className="text-sm font-bold">Free Forever</span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]">
                       <CheckCircle className="h-4 w-4 text-green-500" />
-                      <span>No Registration</span>
+                      <span className="text-sm font-bold">No Registration</span>
                     </div>
                   </div>
-                </div>
+                </motion.div>
 
-                {/* 3D Visual */}
-                <div className="relative hidden lg:block perspective-1000">
-                  <div className="relative w-full aspect-[3/4] max-w-md mx-auto transform-style-3d rotate-y-12 transition-transform duration-700 hover:rotate-y-0 hover:scale-105">
+                {/* 3D Resume Preview */}
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.9, rotateY: -15 }}
+                  animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+                  transition={{ duration: 0.8, delay: 0.3 }}
+                  className="relative hidden lg:block"
+                >
+                  <div className="relative w-full aspect-[3/4] max-w-md mx-auto">
                     {/* Main Card */}
-                    <div className="absolute inset-0 rounded-xl bg-white dark:bg-gray-900 shadow-2xl border border-white/10 overflow-hidden">
+                    <div className="absolute inset-0 rounded-xl bg-white border-3 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,0.9)] overflow-hidden">
                       {isMounted && (
                         <iframe 
                           src="/template/banking-finance-preview.pdf" 
@@ -116,54 +229,53 @@ export default function HomePage() {
                       )}
                     </div>
                     
-                    {/* Floating Elements */}
-                    <div className="absolute -right-12 top-20 p-4 glass-card rounded-xl shadow-xl border border-white/20 animate-bounce duration-[3000ms]">
+                    {/* Floating ATS Score Badge */}
+                    <motion.div 
+                      animate={{ y: [0, -8, 0] }}
+                      transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                      className="absolute -right-8 top-20 p-4 bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
+                    >
                       <div className="flex items-center gap-3">
-                        <div className="p-2 bg-purple-500/10 rounded-lg">
-                          <Zap className="h-5 w-5 text-purple-600" />
+                        <div className="p-2 bg-purple-500 rounded-lg border-2 border-black">
+                          <Zap className="h-5 w-5 text-white" />
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground font-medium">ATS Score</p>
-                          <p className="text-sm font-bold">98/100</p>
+                          <p className="text-xs text-muted-foreground font-bold">ATS Score</p>
+                          <p className="text-lg font-black">98/100</p>
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
 
-                    <div className="absolute -left-8 bottom-32 p-4 glass-card rounded-xl shadow-xl border border-white/20 animate-bounce duration-[4000ms]">
+                    {/* Floating Export Badge */}
+                    <motion.div 
+                      animate={{ y: [0, -6, 0] }}
+                      transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                      className="absolute -left-6 bottom-32 p-4 bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
+                    >
                       <div className="flex items-center gap-3">
-                        <div className="p-2 bg-green-500/10 rounded-lg">
-                          <Download className="h-5 w-5 text-green-600" />
+                        <div className="p-2 bg-accent rounded-lg border-2 border-black">
+                          <Download className="h-5 w-5 text-white" />
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground font-medium">Export</p>
-                          <p className="text-sm font-bold">PDF & LaTeX</p>
+                          <p className="text-xs text-muted-foreground font-bold">Export</p>
+                          <p className="text-lg font-black">PDF & LaTeX</p>
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
                   </div>
-                </div>
+                </motion.div>
               </div>
             </div>
           </section>
 
-          {/* Stats Section (Minimal) */}
-          <section className="border-y bg-secondary/30 backdrop-blur-sm">
-            <div className="container mx-auto px-4 py-12">
+          {/* Stats Section */}
+          <section className="py-12 bg-white border-y-2 border-black">
+            <div className="container mx-auto px-4">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-                {[
-                  { label: "Templates", value: "10+", icon: Layout },
-                  { label: "Users", value: "10k+", icon: Sparkles },
-                  { label: "Time Saved", value: "Hours", icon: Zap },
-                  { label: "Cost", value: "$0", icon: CheckCircle },
-                ].map((stat, idx) => (
-                  <div key={idx} className="flex flex-col items-center justify-center text-center">
-                    <div className="mb-3 p-2 rounded-full bg-primary/5 text-primary">
-                      <stat.icon className="h-5 w-5" />
-                    </div>
-                    <div className="text-2xl font-bold">{stat.value}</div>
-                    <div className="text-sm text-muted-foreground font-medium">{stat.label}</div>
-                  </div>
-                ))}
+                <StatCard label="Templates" value="10+" icon={Layout} />
+                <StatCard label="Users" value="10k+" icon={Sparkles} />
+                <StatCard label="Time Saved" value="Hours" icon={Zap} />
+                <StatCard label="Cost" value="$0" icon={CheckCircle} />
               </div>
             </div>
           </section>
@@ -171,125 +283,101 @@ export default function HomePage() {
           {/* Features Section - Bento Grid */}
           <section className="container mx-auto px-4 py-24 lg:py-32">
             <div className="text-center max-w-2xl mx-auto mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">Why Choose Vitex?</h2>
-              <p className="text-muted-foreground text-lg">
+              <motion.h2 
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="text-3xl md:text-4xl font-black mb-4"
+              >
+                Why Choose Vitex?
+              </motion.h2>
+              <motion.p 
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.1 }}
+                className="text-muted-foreground text-lg font-medium"
+              >
                 Everything you need to build a top-tier resume, packed into a beautiful interface.
-              </p>
+              </motion.p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-              {/* Large Feature 1 */}
-              <div className="md:col-span-2 rounded-2xl bg-secondary/20 border p-8 hover:bg-secondary/30 transition-colors group">
-                <div className="h-12 w-12 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 mb-6 group-hover:scale-110 transition-transform">
-                  <Eye className="h-6 w-6" />
-                </div>
-                <h3 className="text-2xl font-bold mb-3">Real-time Preview</h3>
-                <p className="text-muted-foreground mb-6 max-w-md">
-                  See changes instantly as you type. Our split-screen editor shows you exactly what your resume will look like before you export.
-                </p>
-                <div className="h-48 rounded-lg bg-background border overflow-hidden relative flex">
-                  {/* Editor Side (Left) */}
-                  <div className="w-1/2 border-r p-3 space-y-2 font-mono text-[10px] text-muted-foreground/50 bg-secondary/10">
-                    <div className="flex gap-2 text-blue-500/50"><span className="w-4 text-right">1</span>\documentclass&#123;article&#125;</div>
-                    <div className="flex gap-2"><span className="w-4 text-right">2</span></div>
-                    <div className="flex gap-2 text-purple-500/50"><span className="w-4 text-right">3</span>\begin&#123;document&#125;</div>
-                    <div className="flex gap-2"><span className="w-4 text-right">4</span>  \name&#123;John Doe&#125;</div>
-                    <div className="flex gap-2"><span className="w-4 text-right">5</span>  \title&#123;Developer&#125;</div>
-                    <div className="flex gap-2"><span className="w-4 text-right">6</span></div>
-                    <div className="flex gap-2 text-green-500/50"><span className="w-4 text-right">7</span>  \section&#123;Exp&#125;</div>
-                    <div className="w-3/4 h-2 bg-current opacity-20 rounded ml-6"></div>
-                    <div className="w-1/2 h-2 bg-current opacity-20 rounded ml-6"></div>
-                  </div>
-                  {/* Preview Side (Right) */}
-                  <div className="w-1/2 p-3 bg-white dark:bg-white/5">
-                    <div className="space-y-3 opacity-50">
-                      <div className="border-b pb-2">
-                        <div className="h-3 w-1/3 bg-foreground rounded mb-1"></div>
-                        <div className="h-2 w-1/4 bg-muted-foreground rounded"></div>
-                      </div>
-                      <div className="grid grid-cols-3 gap-2">
-                        <div className="col-span-2 space-y-1">
-                          <div className="h-2 w-1/3 bg-purple-500/50 rounded"></div>
-                          <div className="h-1.5 w-full bg-foreground rounded"></div>
-                          <div className="h-1.5 w-full bg-foreground rounded"></div>
-                        </div>
-                        <div className="space-y-1">
-                          <div className="h-2 w-2/3 bg-purple-500/50 rounded"></div>
-                          <div className="h-1.5 w-full bg-foreground rounded"></div>
-                        </div>
-                      </div>
-                    </div>
-                    {/* Cursor Animation */}
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-2 bg-background/80 backdrop-blur shadow-sm rounded border text-xs font-medium flex items-center gap-2 animate-pulse">
-                       <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                       Live Updating
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Feature 2 */}
-              <div className="rounded-2xl bg-secondary/20 border p-8 hover:bg-secondary/30 transition-colors group">
-                <div className="h-12 w-12 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 mb-6 group-hover:scale-110 transition-transform">
-                  <Palette className="h-6 w-6" />
-                </div>
-                <h3 className="text-xl font-bold mb-3">Professional Themes</h3>
-                <p className="text-muted-foreground">
-                  Choose from a variety of ATS-friendly templates designed by career experts.
-                </p>
-              </div>
-
-              {/* Feature 3 */}
-              <div className="rounded-2xl bg-secondary/20 border p-8 hover:bg-secondary/30 transition-colors group">
-                <div className="h-12 w-12 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 mb-6 group-hover:scale-110 transition-transform">
-                  <Shield className="h-6 w-6" />
-                </div>
-                <h3 className="text-xl font-bold mb-3">Privacy First</h3>
-                <p className="text-muted-foreground">
-                  Your data lives in your browser. We don&apos;t store your personal information on our servers.
-                </p>
-              </div>
-
-              {/* Large Feature 4 */}
-              <div className="md:col-span-2 rounded-2xl bg-secondary/20 border p-8 hover:bg-secondary/30 transition-colors group">
-                <div className="h-12 w-12 rounded-xl bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center text-cyan-600 mb-6 group-hover:scale-110 transition-transform">
-                  <FileText className="h-6 w-6" />
-                </div>
-                <h3 className="text-2xl font-bold mb-3">No LaTeX Knowledge Needed</h3>
-                <p className="text-muted-foreground mb-6 max-w-md">
-                  Get the typographic perfection of LaTeX without writing a single line of code. We handle the complex formatting for you.
-                </p>
-              </div>
+              <FeatureCard
+                icon={Eye}
+                title="Real-time Preview"
+                description="See changes instantly as you type. Our split-screen editor shows you exactly what your resume will look like before you export."
+                color="bg-primary"
+                large
+              />
+              <FeatureCard
+                icon={Palette}
+                title="Professional Themes"
+                description="Choose from a variety of ATS-friendly templates designed by career experts."
+                color="bg-purple-500"
+              />
+              <FeatureCard
+                icon={Shield}
+                title="Privacy First"
+                description="Your data lives in your browser. We don't store your personal information on our servers."
+                color="bg-accent"
+              />
+              <FeatureCard
+                icon={FileText}
+                title="No LaTeX Knowledge Needed"
+                description="Get the typographic perfection of LaTeX without writing a single line of code. We handle the complex formatting for you."
+                color="bg-cyan-500"
+                large
+              />
             </div>
           </section>
 
           {/* How It Works Section */}
-          <section className="bg-secondary/10 border-y py-24">
+          <section className="bg-white border-y-2 border-black py-24">
             <div className="container mx-auto px-4">
               <div className="text-center max-w-2xl mx-auto mb-16">
-                <h2 className="text-3xl md:text-4xl font-bold mb-4">How It Works</h2>
-                <p className="text-muted-foreground">Three simple steps to your new job.</p>
+                <motion.h2 
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  className="text-3xl md:text-4xl font-black mb-4"
+                >
+                  How It Works
+                </motion.h2>
+                <motion.p 
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.1 }}
+                  className="text-muted-foreground font-medium"
+                >
+                  Three simple steps to your new job.
+                </motion.p>
               </div>
 
-              <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto relative">
-                {/* Connecting Line (Desktop) */}
-                <div className="hidden md:block absolute top-12 left-0 right-0 h-0.5 bg-gradient-to-r from-purple-500/0 via-purple-500/20 to-purple-500/0" />
-
+              <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
                 {[
-                  { step: "01", title: "Enter Details", desc: "Fill in your experience, education, and skills.", icon: FileText },
-                  { step: "02", title: "Choose Template", desc: "Select a design that matches your style.", icon: Palette },
-                  { step: "03", title: "Export PDF", desc: "Download your resume or open in Overleaf.", icon: Download },
+                  { step: "01", title: "Enter Details", desc: "Fill in your experience, education, and skills.", icon: FileText, color: "bg-primary" },
+                  { step: "02", title: "Choose Template", desc: "Select a design that matches your style.", icon: Palette, color: "bg-purple-500" },
+                  { step: "03", title: "Export PDF", desc: "Download your resume or open in Overleaf.", icon: Download, color: "bg-accent" },
                 ].map((item, idx) => (
-                  <div key={idx} className="relative flex flex-col items-center text-center">
-                    <div className="w-24 h-24 rounded-full bg-background border-4 border-secondary flex items-center justify-center mb-6 z-10 shadow-sm relative group">
-                      <item.icon className="h-8 w-8 text-primary group-hover:scale-110 transition-transform" />
-                      <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold text-sm">
+                  <motion.div
+                    key={idx}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: idx * 0.1 }}
+                    className="relative flex flex-col items-center text-center"
+                  >
+                    <div className={`w-24 h-24 ${item.color} rounded-xl flex items-center justify-center mb-6 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]`}>
+                      <item.icon className="h-10 w-10 text-white" />
+                      <div className="absolute -top-2 -right-2 w-8 h-8 rounded-lg bg-white border-2 border-black flex items-center justify-center font-black text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]">
                         {item.step}
                       </div>
                     </div>
-                    <h3 className="text-xl font-bold mb-2">{item.title}</h3>
-                    <p className="text-muted-foreground max-w-xs">{item.desc}</p>
-                  </div>
+                    <h3 className="text-xl font-black mb-2">{item.title}</h3>
+                    <p className="text-muted-foreground font-medium max-w-xs">{item.desc}</p>
+                  </motion.div>
                 ))}
               </div>
             </div>
@@ -299,83 +387,109 @@ export default function HomePage() {
           <section className="container mx-auto px-4 py-24">
             <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-4">
               <div>
-                <h2 className="text-3xl md:text-4xl font-bold mb-4">Featured Templates</h2>
-                <p className="text-muted-foreground text-lg">Professionally designed templates for every career path.</p>
+                <motion.h2 
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  className="text-3xl md:text-4xl font-black mb-4"
+                >
+                  Featured Templates
+                </motion.h2>
+                <motion.p 
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.1 }}
+                  className="text-muted-foreground text-lg font-medium"
+                >
+                  Professionally designed templates for every career path.
+                </motion.p>
               </div>
               <Link href="/templates">
-                <Button variant="ghost" className="gap-2 group">
-                  View All <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                <Button variant="outline" className="gap-2">
+                  View All <ChevronRight className="h-4 w-4" />
                 </Button>
               </Link>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {templates.slice(0, 3).map((template) => (
-                <Link href={`/editor?template=${template.metadata.id}`} key={template.metadata.id}>
-                  <div className="group relative rounded-xl bg-secondary/20 overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-                    {/* Preview Image */}
-                    <div className="relative aspect-[3/4] bg-gray-100 dark:bg-gray-800 overflow-hidden">
-                      <iframe
-                        src={`/template/${template.metadata.id}-preview.pdf`}
-                        className="h-full w-full scale-100 transition-transform duration-500 group-hover:scale-105 pointer-events-none"
-                        tabIndex={-1}
-                        title={`${template.metadata.name} Preview`}
-                      />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
-                      
-                      {/* Hover Button */}
-                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button className="shadow-xl">Use Template</Button>
-                      </div>
-                    </div>
-                    
-                    <div className="p-4 border-t bg-background/50 backdrop-blur-sm">
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-semibold text-lg">{template.metadata.name}</h3>
-                        <div className="flex gap-1">
-                           {template.metadata.tags.slice(0, 2).map(tag => (
-                             <span key={tag} className="text-[10px] px-1.5 py-0.5 bg-secondary rounded text-muted-foreground uppercase tracking-wide">{tag}</span>
-                           ))}
+              {templates.slice(0, 3).map((template, idx) => (
+                <motion.div
+                  key={template.metadata.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.1 }}
+                >
+                  <Link href={`/editor?template=${template.metadata.id}`}>
+                    <div className="group relative rounded-xl bg-white overflow-hidden border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] transition-all duration-200 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px]">
+                      {/* Preview Image */}
+                      <div className="relative aspect-[3/4] bg-gray-100 overflow-hidden">
+                        <iframe
+                          src={`/template/${template.metadata.id}-preview.pdf`}
+                          className="h-full w-full scale-100 transition-transform duration-500 group-hover:scale-105 pointer-events-none"
+                          tabIndex={-1}
+                          title={`${template.metadata.name} Preview`}
+                        />
+                        
+                        {/* Hover Overlay */}
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button>Use Template</Button>
+                          </div>
                         </div>
                       </div>
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {template.metadata.description}
-                      </p>
+                      
+                      <div className="p-4 border-t-2 border-black bg-white">
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="font-black text-lg">{template.metadata.name}</h3>
+                          <div className="flex gap-1">
+                            {template.metadata.tags.slice(0, 2).map(tag => (
+                              <span key={tag} className="text-[10px] px-2 py-1 bg-gray-100 rounded-md border border-black font-bold uppercase tracking-wide">{tag}</span>
+                            ))}
+                          </div>
+                        </div>
+                        <p className="text-sm text-muted-foreground font-medium line-clamp-2">
+                          {template.metadata.description}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </Link>
+                  </Link>
+                </motion.div>
               ))}
             </div>
           </section>
 
           {/* CTA Section */}
           <section className="container mx-auto px-4 py-20 mb-10">
-            <div className="rounded-3xl bg-gradient-to-r from-purple-600 to-cyan-500 p-8 md:p-16 text-center text-white relative overflow-hidden shadow-xl">
-              {/* Abstract Background Pattern */}
-              <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
-                <div className="absolute right-0 top-0 w-64 h-64 bg-white rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
-                <div className="absolute left-0 bottom-0 w-64 h-64 bg-white rounded-full blur-3xl transform -translate-x-1/2 translate-y-1/2"></div>
-              </div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="rounded-2xl bg-primary p-8 md:p-16 text-center text-white border-3 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,0.9)] relative overflow-hidden"
+            >
+              {/* Background Pattern */}
+              <div className="absolute inset-0 neo-dots-bg opacity-10 pointer-events-none" />
 
               <div className="relative z-10 max-w-2xl mx-auto">
-                <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Stand Out?</h2>
-                <p className="text-lg md:text-xl opacity-90 mb-10">
+                <h2 className="text-3xl md:text-4xl font-black mb-6">Ready to Stand Out?</h2>
+                <p className="text-lg md:text-xl opacity-90 mb-10 font-medium">
                   Join thousands of professionals who have advanced their careers with our resume builder.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Link href="/editor">
-                    <Button size="lg" variant="secondary" className="h-14 px-8 text-lg w-full sm:w-auto text-purple-600 hover:text-purple-700 font-semibold">
+                    <Button size="lg" variant="secondary" className="h-14 px-8 text-lg w-full sm:w-auto text-primary font-black">
                       Create Free Resume
                     </Button>
                   </Link>
                   <Link href="/templates">
-                     <Button size="lg" variant="outline" className="h-14 px-8 text-lg bg-white/10 border-white/20 hover:bg-white/20 text-white w-full sm:w-auto backdrop-blur-sm">
+                    <Button size="lg" variant="outline" className="h-14 px-8 text-lg bg-white/10 border-white text-white w-full sm:w-auto font-bold hover:bg-white/20">
                       Browse Templates
                     </Button>
                   </Link>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </section>
         </main>
 

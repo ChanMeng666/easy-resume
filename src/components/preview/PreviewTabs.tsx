@@ -23,8 +23,8 @@ function getPdfPath(templateId: string = 'two-column'): string {
 }
 
 /**
- * PreviewTabs component
- * Tabbed interface for template preview and LaTeX code
+ * Neobrutalism styled preview tabs component.
+ * Tabbed interface for template preview and LaTeX code.
  */
 export function PreviewTabs({ templateId = 'two-column', latexCode, filename = 'resume' }: PreviewTabsProps) {
   const pdfPath = getPdfPath(templateId);
@@ -68,7 +68,7 @@ export function PreviewTabs({ templateId = 'two-column', latexCode, filename = '
         {/* Template Preview Tab */}
         <TabsContent value="template" className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">PDF Preview</h3>
+            <h3 className="text-lg font-black">PDF Preview</h3>
             <div className="flex gap-2">
               <Button
                 variant="outline"
@@ -91,7 +91,7 @@ export function PreviewTabs({ templateId = 'two-column', latexCode, filename = '
             </div>
           </div>
 
-          <div className="relative w-full overflow-hidden rounded-lg border bg-gray-100">
+          <div className="relative w-full overflow-hidden rounded-xl border-2 border-black bg-gray-100">
             <iframe
               key={templateId}
               src={pdfPath}
@@ -100,12 +100,14 @@ export function PreviewTabs({ templateId = 'two-column', latexCode, filename = '
             />
           </div>
 
-          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950/20">
+          <div className="rounded-xl bg-blue-50 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)] p-4">
             <div className="flex gap-3">
-              <Info className="h-5 w-5 flex-shrink-0 text-blue-600 dark:text-blue-400" />
-              <div className="space-y-2 text-sm text-blue-900 dark:text-blue-100">
-                <p className="font-semibold">Template Style Preview Only</p>
-                <p>
+              <div className="p-2 bg-blue-500 rounded-lg border-2 border-black">
+                <Info className="h-4 w-4 text-white" />
+              </div>
+              <div className="space-y-1 text-sm">
+                <p className="font-black text-blue-900">Template Style Preview Only</p>
+                <p className="text-blue-800 font-medium">
                   This PDF shows the <strong>template design</strong> with sample content.
                   To see your customized resume with your data,
                   click <strong>&quot;Open in Overleaf&quot;</strong> in the top toolbar.

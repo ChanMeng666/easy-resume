@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useUser, AccountSettings } from "@stackframe/stack";
+import { motion } from "framer-motion";
 import { Navbar } from "@/components/shared/Navbar";
 import { ResumeCard } from "@/components/dashboard/ResumeCard";
 import { CreateResumeDialog } from "@/components/dashboard/CreateResumeDialog";
@@ -21,7 +22,7 @@ interface Resume {
 }
 
 /**
- * Dashboard page showing user's resumes and account settings.
+ * Neobrutalism styled dashboard page showing user's resumes and account settings.
  */
 export default function DashboardPage() {
   const router = useRouter();
@@ -80,12 +81,14 @@ export default function DashboardPage() {
   // Show loading state while checking auth
   if (user === undefined) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-[#f0f0f0]">
         <Navbar currentPath="/dashboard" />
         <div className="pt-20 container mx-auto px-4">
           <div className="flex items-center justify-center h-[60vh]">
-            <div className="animate-pulse text-muted-foreground">
-              Loading...
+            <div className="p-6 bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
+              <p className="font-bold text-muted-foreground animate-pulse">
+                Loading...
+              </p>
             </div>
           </div>
         </div>
@@ -99,17 +102,21 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#f0f0f0]">
       <Navbar currentPath="/dashboard" />
 
       <main className="pt-20 pb-12 container mx-auto px-4">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8"
+        >
+          <h1 className="text-3xl font-black">Dashboard</h1>
+          <p className="text-muted-foreground mt-1 font-medium">
             Manage your resumes and account settings
           </p>
-        </div>
+        </motion.div>
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
@@ -128,8 +135,8 @@ export default function DashboardPage() {
           <TabsContent value="resumes">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-xl font-semibold">Your Resumes</h2>
-                <p className="text-sm text-muted-foreground">
+                <h2 className="text-xl font-black">Your Resumes</h2>
+                <p className="text-sm text-muted-foreground font-medium">
                   Create, edit, and share your professional resumes
                 </p>
               </div>
@@ -144,31 +151,41 @@ export default function DashboardPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="space-y-3">
-                    <Skeleton className="h-[180px] w-full rounded-lg" />
+                    <Skeleton className="h-[180px] w-full rounded-xl" />
                   </div>
                 ))}
               </div>
             ) : resumes.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {resumes.map((resume) => (
-                  <ResumeCard
+                {resumes.map((resume, idx) => (
+                  <motion.div
                     key={resume.id}
-                    id={resume.id}
-                    title={resume.title}
-                    templateId={resume.templateId}
-                    updatedAt={resume.updatedAt}
-                    isPublic={resume.isPublic}
-                    onDelete={handleDelete}
-                  />
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.1 }}
+                  >
+                    <ResumeCard
+                      id={resume.id}
+                      title={resume.title}
+                      templateId={resume.templateId}
+                      updatedAt={resume.updatedAt}
+                      isPublic={resume.isPublic}
+                      onDelete={handleDelete}
+                    />
+                  </motion.div>
                 ))}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="p-4 rounded-full bg-muted mb-4">
-                  <FileText className="h-8 w-8 text-muted-foreground" />
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex flex-col items-center justify-center py-16 text-center"
+              >
+                <div className="p-6 rounded-xl bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] mb-6">
+                  <FileText className="h-12 w-12 text-muted-foreground" />
                 </div>
-                <h2 className="text-xl font-semibold mb-2">No resumes yet</h2>
-                <p className="text-muted-foreground mb-6 max-w-sm">
+                <h2 className="text-xl font-black mb-2">No resumes yet</h2>
+                <p className="text-muted-foreground mb-6 max-w-sm font-medium">
                   Create your first resume to get started. You can choose from
                   multiple templates and customize it to your needs.
                 </p>
@@ -176,23 +193,27 @@ export default function DashboardPage() {
                   <Plus className="mr-2 h-4 w-4" />
                   Create Your First Resume
                 </Button>
-              </div>
+              </motion.div>
             )}
           </TabsContent>
 
           {/* Account Settings Tab */}
           <TabsContent value="settings">
-            <div className="max-w-2xl">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="max-w-2xl"
+            >
               <div className="mb-6">
-                <h2 className="text-xl font-semibold">Account Settings</h2>
-                <p className="text-sm text-muted-foreground">
+                <h2 className="text-xl font-black">Account Settings</h2>
+                <p className="text-sm text-muted-foreground font-medium">
                   Manage your profile, security, and connected accounts
                 </p>
               </div>
-              <div className="bg-card rounded-lg border p-6">
+              <div className="bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] p-6">
                 <AccountSettings />
               </div>
-            </div>
+            </motion.div>
           </TabsContent>
         </Tabs>
       </main>

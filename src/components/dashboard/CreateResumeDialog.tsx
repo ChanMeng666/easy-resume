@@ -29,7 +29,7 @@ const templates = [
 ];
 
 /**
- * Dialog for creating a new resume.
+ * Neobrutalism styled dialog for creating a new resume.
  */
 export function CreateResumeDialog({
   open,
@@ -100,20 +100,20 @@ export function CreateResumeDialog({
           {/* Template Selection */}
           <div className="space-y-2">
             <Label>Template</Label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-3">
               {templates.map((template) => (
                 <button
                   key={template.id}
                   type="button"
                   onClick={() => setSelectedTemplate(template.id)}
-                  className={`p-3 rounded-lg border-2 text-left transition-colors ${
+                  className={`p-3 rounded-lg border-2 border-black text-left transition-all ${
                     selectedTemplate === template.id
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-primary/50"
+                      ? "bg-primary text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,0.9)]"
+                      : "bg-white hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px]"
                   }`}
                 >
-                  <p className="font-medium text-sm">{template.name}</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="font-bold text-sm">{template.name}</p>
+                  <p className={`text-xs ${selectedTemplate === template.id ? 'text-white/80' : 'text-muted-foreground'}`}>
                     {template.description}
                   </p>
                 </button>
@@ -123,7 +123,9 @@ export function CreateResumeDialog({
 
           {/* Error Message */}
           {error && (
-            <p className="text-sm text-destructive">{error}</p>
+            <div className="p-3 rounded-lg bg-red-50 border-2 border-black">
+              <p className="text-sm text-red-800 font-medium">{error}</p>
+            </div>
           )}
         </div>
 

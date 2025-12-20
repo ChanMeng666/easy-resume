@@ -19,8 +19,8 @@ interface TopToolbarProps {
 }
 
 /**
- * TopToolbar component
- * Main toolbar with template selector, save status, and export actions
+ * Neobrutalism styled top toolbar component.
+ * Main toolbar with template selector, save status, and export actions.
  */
 export function TopToolbar({
   currentTemplateId,
@@ -77,7 +77,7 @@ export function TopToolbar({
   };
 
   return (
-    <div className="sticky top-20 z-30 border-b bg-white dark:bg-gray-900">
+    <div className="sticky top-20 z-30 bg-white border-b-2 border-black">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between gap-4">
           {/* Left: Template Selector */}
@@ -92,12 +92,13 @@ export function TopToolbar({
           </div>
 
           {/* Right: Primary CTA and Export Menu */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {/* Primary CTA - Open in Overleaf */}
             <Button
               onClick={handleOpenInOverleaf}
               size="lg"
-              className="gap-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
+              variant="accent"
+              className="gap-2"
             >
               <ExternalLink className="h-4 w-4" />
               <span className="hidden sm:inline">Open in Overleaf</span>
@@ -126,14 +127,14 @@ export function TopToolbar({
                   />
 
                   {/* Dropdown Menu */}
-                  <div className="absolute right-0 top-full z-20 mt-2 w-56 rounded-lg border bg-white shadow-lg dark:bg-gray-900">
-                    <div className="p-1">
+                  <div className="absolute right-0 top-full z-20 mt-2 w-56 rounded-xl bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
+                    <div className="p-2">
                       <button
                         onClick={() => {
                           handleDownloadTex();
                           setIsExportMenuOpen(false);
                         }}
-                        className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+                        className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium hover:bg-gray-100 transition-colors"
                       >
                         <Download className="h-4 w-4" />
                         <span>Download .tex file</span>
@@ -144,20 +145,20 @@ export function TopToolbar({
                           handleCopyCode();
                           setIsExportMenuOpen(false);
                         }}
-                        className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+                        className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium hover:bg-gray-100 transition-colors"
                       >
                         <Copy className="h-4 w-4" />
                         <span>Copy LaTeX code</span>
                       </button>
 
-                      <div className="my-1 h-px bg-gray-200 dark:bg-gray-700" />
+                      <div className="my-1 h-0.5 bg-black" />
 
                       <button
                         onClick={() => {
                           onExportJSON();
                           setIsExportMenuOpen(false);
                         }}
-                        className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+                        className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium hover:bg-gray-100 transition-colors"
                       >
                         <Download className="h-4 w-4" />
                         <span>Export JSON backup</span>
@@ -168,7 +169,7 @@ export function TopToolbar({
                           handleImportClick();
                           setIsExportMenuOpen(false);
                         }}
-                        className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+                        className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium hover:bg-gray-100 transition-colors"
                       >
                         <Upload className="h-4 w-4" />
                         <span>Import JSON</span>
