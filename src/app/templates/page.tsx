@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowLeft, MessageSquare, Sparkles } from 'lucide-react';
+import { ArrowLeft, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Navbar } from '@/components/shared/Navbar';
 import { Footer } from '@/components/shared/Footer';
