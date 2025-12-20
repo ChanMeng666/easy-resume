@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { FileText, Eye, Palette, Download, CheckCircle, Zap, Shield, Layout, Sparkles, ChevronRight } from 'lucide-react';
+import { FileText, Eye, Palette, Download, CheckCircle, Zap, Shield, Layout, Sparkles, ChevronRight, MessageSquare, Bot, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Navbar } from '@/components/shared/Navbar';
 import { Footer } from '@/components/shared/Footer';
@@ -160,53 +160,57 @@ export default function HomePage() {
                   transition={{ duration: 0.6 }}
                   className="text-center lg:text-left space-y-8"
                 >
-                  {/* Version Badge */}
+                  {/* AI Badge */}
                   <motion.div
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="inline-flex items-center px-4 py-2 rounded-lg bg-white border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,0.9)] text-sm font-bold"
+                    className="inline-flex items-center px-4 py-2 rounded-lg bg-gradient-to-r from-purple-100 to-cyan-100 border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,0.9)] text-sm font-bold"
                   >
-                    <span className="flex h-2 w-2 rounded-full bg-green-500 mr-2 animate-pulse"></span>
-                    New v2.0 is live
+                    <Bot className="h-4 w-4 mr-2 text-purple-600" />
+                    AI-Native Resume Builder
                   </motion.div>
 
                   {/* Main Heading */}
                   <h1 className="text-5xl font-black tracking-tight sm:text-6xl lg:text-7xl leading-[1.1]">
-                    Craft Your <br />
-                    <span className="text-gradient-vitex">Perfect Resume</span>
+                    Chat with AI, <br />
+                    <span className="text-gradient-vitex">Build Your Resume</span>
                     <br />
-                    with LaTeX Power
+                    in Minutes
                   </h1>
 
                   <p className="text-lg text-muted-foreground sm:text-xl max-w-2xl mx-auto lg:mx-0 leading-relaxed font-medium">
-                    Create professional, ATS-friendly resumes in minutes. Real-time preview, no coding required, professional quality.
+                    Just tell AI about yourself. Watch your professional LaTeX resume come to life instantly. No forms, no hassle—pure conversation.
                   </p>
                   
                   {/* CTA Buttons */}
                   <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                     <Link href="/editor">
                       <Button size="lg" className="h-14 px-8 text-lg gap-2">
-                        <Sparkles className="h-5 w-5" />
-                        Create with AI
+                        <MessageSquare className="h-5 w-5" />
+                        Start Chatting
                       </Button>
                     </Link>
-                    <Link href="/editor/manual">
+                    <Link href="/templates">
                       <Button size="lg" variant="outline" className="h-14 px-8 text-lg">
-                        Manual Editor
+                        Browse Templates
                       </Button>
                     </Link>
                   </div>
 
                   {/* Trust Badges */}
-                  <div className="flex items-center justify-center lg:justify-start gap-6 pt-4">
+                  <div className="flex items-center justify-center lg:justify-start gap-4 pt-4 flex-wrap">
                     <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      <span className="text-sm font-bold">Professional Quality</span>
+                      <Bot className="h-4 w-4 text-purple-500" />
+                      <span className="text-sm font-bold">GPT-4o Powered</span>
+                    </div>
+                    <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]">
+                      <Shield className="h-4 w-4 text-green-500" />
+                      <span className="text-sm font-bold">Privacy First</span>
                     </div>
                     <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]">
                       <CheckCircle className="h-4 w-4 text-green-500" />
-                      <span className="text-sm font-bold">No Registration</span>
+                      <span className="text-sm font-bold">Free Forever</span>
                     </div>
                   </div>
                 </motion.div>
@@ -230,7 +234,7 @@ export default function HomePage() {
                       )}
                     </div>
                     
-                    {/* Floating ATS Score Badge */}
+                    {/* Floating AI Badge */}
                     <motion.div 
                       animate={{ y: [0, -8, 0] }}
                       transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
@@ -238,16 +242,16 @@ export default function HomePage() {
                     >
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-purple-500 rounded-lg border-2 border-black">
-                          <Zap className="h-5 w-5 text-white" />
+                          <Wand2 className="h-5 w-5 text-white" />
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground font-bold">ATS Score</p>
-                          <p className="text-lg font-black">98/100</p>
+                          <p className="text-xs text-muted-foreground font-bold">AI Generated</p>
+                          <p className="text-lg font-black">In Seconds</p>
                         </div>
                       </div>
                     </motion.div>
 
-                    {/* Floating Export Badge */}
+                    {/* Floating Chat Badge */}
                     <motion.div 
                       animate={{ y: [0, -6, 0] }}
                       transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
@@ -255,11 +259,11 @@ export default function HomePage() {
                     >
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-accent rounded-lg border-2 border-black">
-                          <Download className="h-5 w-5 text-white" />
+                          <MessageSquare className="h-5 w-5 text-white" />
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground font-bold">Export</p>
-                          <p className="text-lg font-black">PDF & LaTeX</p>
+                          <p className="text-xs text-muted-foreground font-bold">Just Say</p>
+                          <p className="text-lg font-black">&quot;I&apos;m a...&quot;</p>
                         </div>
                       </div>
                     </motion.div>
@@ -273,9 +277,9 @@ export default function HomePage() {
           <section className="py-12 bg-white border-y-2 border-black">
             <div className="container mx-auto px-4">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+                <StatCard label="AI Conversations" value="∞" icon={MessageSquare} />
                 <StatCard label="Templates" value="10+" icon={Layout} />
-                <StatCard label="Users" value="10k+" icon={Sparkles} />
-                <StatCard label="Time Saved" value="Hours" icon={Zap} />
+                <StatCard label="Build Time" value="3 min" icon={Zap} />
                 <StatCard label="Cost" value="$0" icon={CheckCircle} />
               </div>
             </div>
@@ -290,7 +294,7 @@ export default function HomePage() {
                 viewport={{ once: true }}
                 className="text-3xl md:text-4xl font-black mb-4"
               >
-                Why Choose Vitex?
+                AI-Powered, Human-Centered
               </motion.h2>
               <motion.p 
                 initial={{ opacity: 0, y: 20 }}
@@ -299,34 +303,34 @@ export default function HomePage() {
                 transition={{ delay: 0.1 }}
                 className="text-muted-foreground text-lg font-medium"
               >
-                Everything you need to build a top-tier resume, packed into a beautiful interface.
+                Let AI handle the heavy lifting while you focus on what matters—your story.
               </motion.p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
               <FeatureCard
-                icon={Eye}
-                title="Real-time Preview"
-                description="See changes instantly as you type. Our split-screen editor shows you exactly what your resume will look like before you export."
-                color="bg-primary"
+                icon={MessageSquare}
+                title="Conversational Building"
+                description="No forms to fill. Just chat naturally—tell AI your experience, and watch your resume take shape in real-time."
+                color="bg-purple-500"
                 large
               />
               <FeatureCard
-                icon={Palette}
-                title="Professional Themes"
-                description="Choose from a variety of ATS-friendly templates designed by career experts."
-                color="bg-purple-500"
+                icon={Wand2}
+                title="Smart Suggestions"
+                description="AI crafts impactful bullet points and professional summaries tailored to your industry."
+                color="bg-primary"
               />
               <FeatureCard
                 icon={Shield}
                 title="Privacy First"
-                description="Your data lives in your browser. We don't store your personal information on our servers."
+                description="Your data stays in your browser. No registration, no server storage. You're in full control."
                 color="bg-accent"
               />
               <FeatureCard
                 icon={FileText}
-                title="No LaTeX Knowledge Needed"
-                description="Get the typographic perfection of LaTeX without writing a single line of code. We handle the complex formatting for you."
+                title="LaTeX Quality, Zero Learning"
+                description="Get publication-grade typography without touching code. AI generates professional LaTeX—you just export."
                 color="bg-cyan-500"
                 large
               />
@@ -343,7 +347,7 @@ export default function HomePage() {
                   viewport={{ once: true }}
                   className="text-3xl md:text-4xl font-black mb-4"
                 >
-                  How It Works
+                  3 Minutes to Your New Resume
                 </motion.h2>
                 <motion.p 
                   initial={{ opacity: 0, y: 20 }}
@@ -352,15 +356,15 @@ export default function HomePage() {
                   transition={{ delay: 0.1 }}
                   className="text-muted-foreground font-medium"
                 >
-                  Three simple steps to your new job.
+                  Chat, customize, export. It&apos;s that simple.
                 </motion.p>
               </div>
 
               <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
                 {[
-                  { step: "01", title: "Enter Details", desc: "Fill in your experience, education, and skills.", icon: FileText, color: "bg-primary" },
-                  { step: "02", title: "Choose Template", desc: "Select a design that matches your style.", icon: Palette, color: "bg-purple-500" },
-                  { step: "03", title: "Export PDF", desc: "Download your resume or open in Overleaf.", icon: Download, color: "bg-accent" },
+                  { step: "01", title: "Chat with AI", desc: "\"I'm a software engineer with 5 years at Google...\" Just describe yourself naturally.", icon: MessageSquare, color: "bg-purple-500" },
+                  { step: "02", title: "Watch It Build", desc: "AI adds your experience, crafts bullet points, and formats everything instantly.", icon: Wand2, color: "bg-primary" },
+                  { step: "03", title: "Export to PDF", desc: "One click to Overleaf for instant PDF, or download the LaTeX source.", icon: Download, color: "bg-accent" },
                 ].map((item, idx) => (
                   <motion.div
                     key={idx}
@@ -467,26 +471,30 @@ export default function HomePage() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="rounded-2xl bg-primary p-8 md:p-16 text-center text-white border-3 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,0.9)] relative overflow-hidden"
+              className="rounded-2xl bg-gradient-to-br from-purple-600 to-primary p-8 md:p-16 text-center text-white border-3 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,0.9)] relative overflow-hidden"
             >
               {/* Background Pattern */}
               <div className="absolute inset-0 neo-dots-bg opacity-10 pointer-events-none" />
 
               <div className="relative z-10 max-w-2xl mx-auto">
-                <h2 className="text-3xl md:text-4xl font-black mb-6">Ready to Stand Out?</h2>
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 text-sm font-bold mb-6">
+                  <Bot className="h-4 w-4" />
+                  Powered by GPT-4o
+                </div>
+                <h2 className="text-3xl md:text-4xl font-black mb-6">Your Career Story, AI-Crafted</h2>
                 <p className="text-lg md:text-xl opacity-90 mb-10 font-medium">
-                  Join thousands of professionals who have advanced their careers with our resume builder.
+                  Stop struggling with blank pages. Tell AI your story and get a professional resume in minutes.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Link href="/editor">
                     <Button size="lg" variant="secondary" className="h-14 px-8 text-lg w-full sm:w-auto text-primary font-black gap-2">
-                      <Sparkles className="h-5 w-5" />
-                      Create with AI
+                      <MessageSquare className="h-5 w-5" />
+                      Start Chatting Now
                     </Button>
                   </Link>
-                  <Link href="/templates">
+                  <Link href="/editor/manual">
                     <Button size="lg" variant="outline" className="h-14 px-8 text-lg bg-white/10 border-white text-white w-full sm:w-auto font-bold hover:bg-white/20">
-                      Browse Templates
+                      Or Use Manual Editor
                     </Button>
                   </Link>
                 </div>
