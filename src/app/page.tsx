@@ -14,27 +14,37 @@ import { webApplicationSchema, softwareApplicationSchema, howToCreateResumeSchem
 import { getAllTemplates } from '@/templates/registry';
 
 /**
- * Neobrutalism styled background with animated dots.
+ * Neobrutalism styled background with animated colored bubbles.
  * Uses fixed positions to avoid hydration mismatch.
  */
 function BackgroundEffects() {
-  // Fixed positions for dots to avoid hydration mismatch
-  const dotPositions = [
-    { left: 5, top: 10, duration: 3.2, delay: 0.1 },
-    { left: 15, top: 25, duration: 4.1, delay: 0.5 },
-    { left: 25, top: 45, duration: 3.5, delay: 1.2 },
-    { left: 35, top: 15, duration: 4.8, delay: 0.3 },
-    { left: 45, top: 70, duration: 3.8, delay: 1.8 },
-    { left: 55, top: 35, duration: 4.2, delay: 0.7 },
-    { left: 65, top: 85, duration: 3.3, delay: 1.5 },
-    { left: 75, top: 55, duration: 4.5, delay: 0.2 },
-    { left: 85, top: 20, duration: 3.7, delay: 1.0 },
-    { left: 95, top: 65, duration: 4.0, delay: 1.3 },
-    { left: 10, top: 80, duration: 3.4, delay: 0.8 },
-    { left: 30, top: 90, duration: 4.3, delay: 1.6 },
-    { left: 50, top: 5, duration: 3.6, delay: 0.4 },
-    { left: 70, top: 40, duration: 4.7, delay: 1.9 },
-    { left: 90, top: 75, duration: 3.9, delay: 0.6 },
+  // Color palette for bubbles (Neobrutalism style)
+  const bubbleColors = [
+    { hex: '#6C3CE9', name: 'Vitex Purple' },      // Vitex Purple
+    { hex: '#00D4AA', name: 'Electric Cyan' },    // Electric Cyan
+    { hex: '#22C55E', name: 'Success Green' },    // Success Green
+    { hex: '#FACC15', name: 'Warning Yellow' },   // Warning Yellow
+    { hex: '#EF4444', name: 'Error Red' },        // Error Red
+    { hex: '#3B82F6', name: 'Info Blue' },        // Info Blue
+  ];
+
+  // Fixed bubble configurations to avoid hydration mismatch
+  const bubbleConfigs = [
+    { left: 5, top: 10, size: 80, colorIndex: 0, duration: 3.2, delay: 0.1, borderWidth: 2 },
+    { left: 15, top: 25, size: 96, colorIndex: 1, duration: 4.1, delay: 0.5, borderWidth: 3 },
+    { left: 25, top: 45, size: 64, colorIndex: 2, duration: 3.5, delay: 1.2, borderWidth: 2 },
+    { left: 35, top: 15, size: 112, colorIndex: 0, duration: 4.8, delay: 0.3, borderWidth: 3 },
+    { left: 45, top: 70, size: 80, colorIndex: 3, duration: 3.8, delay: 1.8, borderWidth: 2 },
+    { left: 55, top: 35, size: 96, colorIndex: 4, duration: 4.2, delay: 0.7, borderWidth: 2 },
+    { left: 65, top: 85, size: 64, colorIndex: 5, duration: 3.3, delay: 1.5, borderWidth: 2 },
+    { left: 75, top: 55, size: 128, colorIndex: 1, duration: 4.5, delay: 0.2, borderWidth: 3 },
+    { left: 85, top: 20, size: 80, colorIndex: 0, duration: 3.7, delay: 1.0, borderWidth: 2 },
+    { left: 95, top: 65, size: 96, colorIndex: 2, duration: 4.0, delay: 1.3, borderWidth: 2 },
+    { left: 10, top: 80, size: 64, colorIndex: 3, duration: 3.4, delay: 0.8, borderWidth: 2 },
+    { left: 30, top: 90, size: 112, colorIndex: 5, duration: 4.3, delay: 1.6, borderWidth: 3 },
+    { left: 50, top: 5, size: 80, colorIndex: 1, duration: 3.6, delay: 0.4, borderWidth: 2 },
+    { left: 70, top: 40, size: 96, colorIndex: 4, duration: 4.7, delay: 1.9, borderWidth: 2 },
+    { left: 90, top: 75, size: 64, colorIndex: 0, duration: 3.9, delay: 0.6, borderWidth: 2 },
   ];
 
   return (
@@ -42,27 +52,34 @@ function BackgroundEffects() {
       {/* Grid pattern */}
       <div className="absolute inset-0 neo-grid-bg" />
       
-      {/* Animated floating dots with fixed positions */}
-      {dotPositions.map((dot, i) => (
-        <motion.div
-          key={i}
-          className="absolute w-3 h-3 bg-black/5 rounded-full"
-          style={{
-            left: `${dot.left}%`,
-            top: `${dot.top}%`,
-          }}
-          animate={{
-            y: [0, -20, 0],
-            opacity: [0.3, 0.6, 0.3],
-          }}
-          transition={{
-            duration: dot.duration,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: dot.delay,
-          }}
-        />
-      ))}
+      {/* Animated floating bubbles with Neobrutalism style */}
+      {bubbleConfigs.map((bubble, i) => {
+        const color = bubbleColors[bubble.colorIndex];
+        return (
+          <motion.div
+            key={i}
+            className="absolute rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]"
+            style={{
+              left: `${bubble.left}%`,
+              top: `${bubble.top}%`,
+              width: `${bubble.size}px`,
+              height: `${bubble.size}px`,
+              backgroundColor: color.hex,
+              border: `${bubble.borderWidth}px solid #000000`,
+            }}
+            animate={{
+              y: [0, -20, 0],
+              x: [0, 5, 0],
+            }}
+            transition={{
+              duration: bubble.duration,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: bubble.delay,
+            }}
+          />
+        );
+      })}
     </div>
   );
 }
