@@ -109,10 +109,10 @@ export function PdfViewer({
   }
 
   return (
-    <div className="flex flex-col rounded-lg border bg-white dark:bg-gray-950">
+    <div className="flex flex-col rounded-lg border-2 border-black bg-white dark:bg-gray-950">
       {/* Toolbar */}
       {showToolbar && (
-        <div className="flex items-center justify-between border-b px-4 py-2">
+        <div className="flex items-center justify-between border-b-2 border-black px-4 py-2">
           {/* Zoom Controls */}
           <div className="flex items-center gap-2">
             <Button
@@ -169,11 +169,11 @@ export function PdfViewer({
 
       {/* PDF Container */}
       <div
-        className="relative overflow-auto bg-gray-100 dark:bg-gray-900"
+        className={`relative overflow-hidden bg-gray-100 dark:bg-gray-900 ${showToolbar ? 'rounded-b-lg' : 'rounded-lg'}`}
         style={{ height: '600px' }}
       >
         {isLoading && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80 dark:bg-gray-950/80">
+          <div className={`absolute inset-0 z-10 flex items-center justify-center bg-white/80 dark:bg-gray-950/80 ${showToolbar ? 'rounded-b-lg' : 'rounded-lg'}`}>
             <div className="flex flex-col items-center gap-2">
               <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
               <span className="text-sm text-gray-600 dark:text-gray-400">
@@ -182,21 +182,22 @@ export function PdfViewer({
             </div>
           </div>
         )}
-
-        <div
-          className="flex min-h-full justify-center p-4"
-          style={{
-            transform: `scale(${scale / 100})`,
-            transformOrigin: 'top center',
-          }}
-        >
-          <iframe
-            src={url}
-            className="h-[800px] w-[600px] border-0 bg-white shadow-lg"
-            title="PDF Preview"
-            onLoad={handleLoad}
-            onError={handleError}
-          />
+        <div className="h-full overflow-auto">
+          <div
+            className="flex min-h-full justify-center p-4"
+            style={{
+              transform: `scale(${scale / 100})`,
+              transformOrigin: 'top center',
+            }}
+          >
+            <iframe
+              src={url}
+              className="h-[800px] w-[600px] border-0 bg-white shadow-lg"
+              title="PDF Preview"
+              onLoad={handleLoad}
+              onError={handleError}
+            />
+          </div>
         </div>
       </div>
     </div>

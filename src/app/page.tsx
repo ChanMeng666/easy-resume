@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { FileText, Download, CheckCircle, Zap, Shield, Layout, ChevronRight, MessageSquare, Bot, Wand2 } from 'lucide-react';
+import { FileText, Download, CheckCircle, Shield, ChevronRight, MessageSquare, Bot, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Navbar } from '@/components/shared/Navbar';
 import { Footer } from '@/components/shared/Footer';
@@ -119,7 +119,7 @@ function FeatureCard({
 /**
  * Stat card component for the stats section.
  */
-function StatCard({ label, value, icon: Icon }: { label: string; value: string; icon: React.ElementType }) {
+function StatCard({ label, value }: { label: string; value: string }) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
@@ -127,9 +127,6 @@ function StatCard({ label, value, icon: Icon }: { label: string; value: string; 
       viewport={{ once: true }}
       className="flex flex-col items-center justify-center text-center p-4"
     >
-      <div className="mb-3 p-2 rounded-lg bg-white">
-        <Icon className="h-5 w-5 text-primary" />
-      </div>
       <div className="text-2xl font-black">{value}</div>
       <div className="text-sm text-muted-foreground font-bold">{label}</div>
     </motion.div>
@@ -294,10 +291,10 @@ export default function HomePage() {
           <section className="py-12 bg-white border-y-2 border-black">
             <div className="container mx-auto px-4">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-                <StatCard label="AI Conversations" value="∞" icon={MessageSquare} />
-                <StatCard label="Templates" value="10+" icon={Layout} />
-                <StatCard label="Build Time" value="3 min" icon={Zap} />
-                <StatCard label="Cost" value="$0" icon={CheckCircle} />
+                <StatCard label="AI Conversations" value="∞" />
+                <StatCard label="Templates" value="10+" />
+                <StatCard label="Build Time" value="3 min" />
+                <StatCard label="Cost" value="$0" />
               </div>
             </div>
           </section>
