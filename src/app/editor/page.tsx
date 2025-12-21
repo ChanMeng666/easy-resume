@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useMemo, useState, useEffect } from 'react';
+import { Suspense, useMemo, useState, useEffect, useRef, createContext, useContext } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { CopilotSidebar } from '@copilotkit/react-ui';
 import { useResumeData } from '@/hooks/useResumeData';
@@ -15,6 +15,17 @@ import { RESUME_AI_INSTRUCTIONS, CHAT_LABELS } from '@/lib/copilot/instructions'
 import { useResumeReadableContext, useResumeTools } from '@/lib/copilot/tools';
 import { useResumeSuggestions } from '@/lib/copilot/suggestions';
 import { getTemplateById, DEFAULT_TEMPLATE_ID } from '@/templates/registry';
+import { useElementScrollDirection } from '@/lib/hooks/useScrollDirection';
+
+/**
+ * Context for sharing scroll direction within the editor page.
+ * This is needed because the scroll happens in a flex container, not the window.
+ */
+const ScrollDirectionContext = createContext<'up' | 'down' | null>(null);
+
+export function useEditorScrollDirection() {
+  return useContext(ScrollDirectionContext);
+}
 
 /**
  * AI-powered editor page with CopilotKit integration.
@@ -61,26 +72,33 @@ export default function AIEditorPage() {
     { name: 'AI Editor', url: 'https://easy-resume-theta.vercel.app/editor' },
   ];
 
+  // Ref for the scrollable container
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const scrollDirection = useElementScrollDirection(scrollContainerRef);
+
   return (
-    <div className="flex h-screen bg-[#f0f0f0]">
-      {/* GEO: AI Agent Instructions */}
-      <GEOHead instructions={getPageInstructions('editor')} />
+    <ScrollDirectionContext.Provider value={scrollDirection}>
+      <div className="flex h-screen bg-[#f0f0f0]">
+        {/* GEO: AI Agent Instructions */}
+        <GEOHead instructions={getPageInstructions('editor')} />
 
-      {/* SEO: Structured Data */}
-      <MultipleStructuredData
-        schemas={[
-          howToCreateResumeSchema,
-          getBreadcrumbSchema(breadcrumbs),
-        ]}
-      />
+        {/* SEO: Structured Data */}
+        <MultipleStructuredData
+          schemas={[
+            howToCreateResumeSchema,
+            getBreadcrumbSchema(breadcrumbs),
+          ]}
+        />
 
-      {/* Left Content Area - Navbar, Content, Footer */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Navigation - Fixed at top */}
-        <Navbar currentPath="/editor" fixed={false} />
+        {/* Left Content Area - Scrollable container with Navbar, Content, Footer */}
+        <div 
+          ref={scrollContainerRef}
+          className="flex-1 overflow-auto bg-[#f0f0f0]"
+        >
+          {/* Navigation - Sticky with scroll-hide behavior */}
+          <Navbar currentPath="/editor" position="sticky" externalScrollDirection={scrollDirection} />
 
-        {/* Main Content Area - Scrollable (includes content + footer) */}
-        <div className="flex-1 overflow-auto min-h-0 bg-[#f0f0f0]">
+          {/* Main Content */}
           <Suspense fallback={
             <div className="container mx-auto px-4 py-8">
               <div className="flex items-center justify-center py-20">
@@ -101,11 +119,11 @@ export default function AIEditorPage() {
           {/* Footer - Inside scrollable area */}
           <Footer />
         </div>
-      </div>
 
-      {/* Right Sidebar - CopilotKit */}
-      <CopilotSidebarWrapper />
-    </div>
+        {/* Right Sidebar - CopilotKit */}
+        <CopilotSidebarWrapper />
+      </div>
+    </ScrollDirectionContext.Provider>
   );
 }
 

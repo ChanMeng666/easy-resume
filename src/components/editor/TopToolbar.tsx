@@ -6,6 +6,7 @@ import { TemplateSelector } from './TemplateSelector';
 import { SaveStatusIndicator } from './SaveStatusIndicator';
 import { useState } from 'react';
 import { openInOverleaf, copyToClipboard, downloadTexFile } from '@/lib/overleaf/api';
+import { useScrollDirection } from '@/lib/hooks/useScrollDirection';
 
 interface TopToolbarProps {
   currentTemplateId: string;
@@ -16,6 +17,10 @@ interface TopToolbarProps {
   isSaving?: boolean;
   onExportJSON: () => void;
   onImportJSON: (file: File) => Promise<void>;
+  /** Whether the navbar is using fixed positioning. Defaults to true. */
+  navbarFixed?: boolean;
+  /** External scroll direction override. When provided, uses this instead of window scroll. */
+  externalScrollDirection?: 'up' | 'down' | null;
 }
 
 /**
@@ -31,8 +36,20 @@ export function TopToolbar({
   isSaving,
   onExportJSON,
   onImportJSON,
+  navbarFixed = true,
+  externalScrollDirection,
 }: TopToolbarProps) {
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
+  const windowScrollDirection = useScrollDirection();
+  
+  // Use external scroll direction if provided, otherwise use window scroll
+  const scrollDirection = externalScrollDirection !== undefined 
+    ? externalScrollDirection 
+    : windowScrollDirection;
+  
+  // Navbar height: py-4 (32px) + logo (~52px) + border (2px) ≈ 86px
+  // When navbar is not fixed (e.g., in flex layouts), use 0 as top offset
+  const navbarHeight = navbarFixed ? 86 : 0;
 
   const handleOpenInOverleaf = () => {
     try {
@@ -77,7 +94,10 @@ export function TopToolbar({
   };
 
   return (
-    <div className="sticky top-0 z-30 bg-white border-b-2 border-black">
+    <div 
+      className="sticky z-30 bg-white border-b-2 border-black transition-[top] duration-300"
+      style={{ top: scrollDirection === 'down' ? 0 : navbarHeight }}
+    >
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between gap-4">
           {/* Left: Template Selector */}

@@ -9,6 +9,7 @@ import { ResumeData } from '@/lib/validation/schema';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Sparkles, Edit3, MessageSquare } from 'lucide-react';
+import { useEditorScrollDirection } from './page';
 
 interface AIEditorContentProps {
   data: ResumeData;
@@ -42,6 +43,9 @@ export function AIEditorContent({
 }: AIEditorContentProps) {
   // Track last saved time
   const [lastSaved, setLastSaved] = useState<Date>(new Date());
+  
+  // Get scroll direction from context (for flex layout scroll container)
+  const scrollDirection = useEditorScrollDirection();
 
   useEffect(() => {
     setLastSaved(new Date());
@@ -59,6 +63,8 @@ export function AIEditorContent({
         isSaving={isSaving}
         onExportJSON={onExportJSON}
         onImportJSON={onImportJSON}
+        navbarFixed={false}
+        externalScrollDirection={scrollDirection}
       />
 
       <main className="container mx-auto px-4 py-8">
