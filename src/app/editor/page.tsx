@@ -13,6 +13,7 @@ import { howToCreateResumeSchema, getBreadcrumbSchema } from '@/lib/seo/schemas'
 import { AIEditorContent } from './AIEditorContent';
 import { RESUME_AI_INSTRUCTIONS, CHAT_LABELS } from '@/lib/copilot/instructions';
 import { useResumeReadableContext, useResumeTools } from '@/lib/copilot/tools';
+import { useResumeSuggestions } from '@/lib/copilot/suggestions';
 import { getTemplateById, DEFAULT_TEMPLATE_ID } from '@/templates/registry';
 
 /**
@@ -133,6 +134,9 @@ function AIEditorWrapper({
     selectedTemplateId,
     onTemplateChange
   );
+
+  // Register chat suggestions for AI
+  useResumeSuggestions(resumeData.data, selectedTemplateId);
 
   return (
     <AIEditorContent

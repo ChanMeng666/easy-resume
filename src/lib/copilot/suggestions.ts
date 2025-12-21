@@ -5,6 +5,111 @@ import { useCopilotChatSuggestions } from "@copilotkit/react-ui";
 import { ResumeData } from "@/lib/validation/schema";
 
 /**
+ * Static quick action prompts for resume editing.
+ * These are displayed immediately without waiting for AI generation.
+ */
+export const STATIC_SUGGESTIONS = [
+  {
+    title: "📝 Write Summary",
+    message: "Help me write a professional summary for my resume based on my experience",
+  },
+  {
+    title: "💼 Add Work Experience",
+    message: "Help me add my most recent work experience with achievement-focused bullet points",
+  },
+  {
+    title: "🎓 Add Education",
+    message: "Help me add my educational background to the resume",
+  },
+  {
+    title: "⚡ Add Skills",
+    message: "Help me add my technical and soft skills organized by category",
+  },
+  {
+    title: "🚀 Add Project",
+    message: "Help me add a project that showcases my abilities",
+  },
+  {
+    title: "✨ Improve Content",
+    message: "Review my resume and suggest improvements for better ATS compatibility",
+  },
+];
+
+/**
+ * Context-aware suggestions that change based on resume completeness.
+ */
+export function getContextAwareSuggestions(analysis: ResumeAnalysis): typeof STATIC_SUGGESTIONS {
+  const suggestions: typeof STATIC_SUGGESTIONS = [];
+
+  // Add suggestions based on missing sections
+  if (!analysis.hasBasicInfo) {
+    suggestions.push({
+      title: "📋 Add Contact Info",
+      message: "Help me add my basic contact information (name, email, phone, location)",
+    });
+  }
+
+  if (!analysis.hasSummary) {
+    suggestions.push({
+      title: "📝 Write Summary",
+      message: "Help me write a professional summary for my resume based on my experience",
+    });
+  }
+
+  if (analysis.workCount === 0) {
+    suggestions.push({
+      title: "💼 Add Work Experience",
+      message: "Help me add my most recent work experience with achievement-focused bullet points",
+    });
+  }
+
+  if (analysis.educationCount === 0) {
+    suggestions.push({
+      title: "🎓 Add Education",
+      message: "Help me add my educational background to the resume",
+    });
+  }
+
+  if (analysis.skillsCount === 0) {
+    suggestions.push({
+      title: "⚡ Add Skills",
+      message: "Help me add my technical and soft skills organized by category",
+    });
+  }
+
+  if (analysis.projectsCount === 0) {
+    suggestions.push({
+      title: "🚀 Add Project",
+      message: "Help me add a project that showcases my abilities",
+    });
+  }
+
+  // If resume has some content, suggest improvements
+  if (analysis.workCount > 0 && analysis.avgHighlightsPerWork < 3) {
+    suggestions.push({
+      title: "💪 Enhance Bullet Points",
+      message: "Help me improve my work experience bullet points with stronger action verbs and quantified achievements",
+    });
+  }
+
+  if (suggestions.length < 3) {
+    suggestions.push({
+      title: "✨ Review Resume",
+      message: "Review my resume and suggest improvements for better ATS compatibility",
+    });
+  }
+
+  if (suggestions.length < 4) {
+    suggestions.push({
+      title: "🎨 Change Template",
+      message: "Help me choose the best template for my professional profile",
+    });
+  }
+
+  return suggestions.slice(0, 4);
+}
+
+/**
  * Generate dynamic chat suggestions based on resume completeness.
  * Provides context-aware actions to help users build their resume.
  */
@@ -12,7 +117,13 @@ export function useResumeSuggestions(resumeData: ResumeData, selectedTemplateId:
   // Analyze resume completeness
   const analysis = useMemo(() => analyzeResumeCompleteness(resumeData), [resumeData]);
 
-  // Generate suggestion instructions based on analysis
+  // Get context-aware static suggestions
+  const staticSuggestions = useMemo(
+    () => getContextAwareSuggestions(analysis),
+    [analysis]
+  );
+
+  // Generate suggestion instructions based on analysis for dynamic AI suggestions
   const suggestionInstructions = useMemo(() => {
     const instructions: string[] = [
       "Based on the current resume state, suggest helpful actions:",
@@ -54,14 +165,14 @@ export function useResumeSuggestions(resumeData: ResumeData, selectedTemplateId:
     return instructions.join("\n");
   }, [analysis, selectedTemplateId]);
 
-  // Register suggestions with CopilotKit
+  // Register dynamic suggestions with CopilotKit (AI-generated based on context)
   useCopilotChatSuggestions({
     instructions: suggestionInstructions,
     minSuggestions: 2,
     maxSuggestions: 4,
   }, [resumeData, selectedTemplateId]);
 
-  return analysis;
+  return { analysis, staticSuggestions };
 }
 
 /**
