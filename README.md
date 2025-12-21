@@ -36,7 +36,7 @@ Create your **FREE** professional LaTeX resume in minutes.
 </div>
 
 > [!IMPORTANT]
-> This project is a **LaTeX resume generator** with a multi-page architecture featuring a marketing homepage, template gallery, and visual editor. It generates professional LaTeX code using **custom two-column layouts** and standard packages for maximum compatibility across all LaTeX platforms including Overleaf.
+> This project is a **LaTeX resume generator** with a multi-page architecture featuring a marketing homepage, template gallery, visual editor, and user dashboard. It generates professional LaTeX code using **14+ professional templates** and standard packages for maximum compatibility across all LaTeX platforms including Overleaf. Features include AI-powered editing (CopilotKit), real-time PDF compilation, cloud storage, and resume sharing.
 
 <details>
 <summary><kbd>📑 Table of Contents</kbd></summary>
@@ -94,12 +94,13 @@ Vitex is a modern, browser-based LaTeX resume generator designed for professiona
 
 The name "Vitex" combines the Latin word "Vita" (life/résumé) with "TeX" (the professional typesetting system), symbolizing the power of professional typography for your career journey.
 
-**No LaTeX knowledge required!** Edit your resume using an intuitive visual editor, choose from multiple professional templates, and the application automatically generates LaTeX code using **custom two-column layouts** built with standard packages. Export to Overleaf for instant PDF compilation, or download the .tex file for local compilation.
+**No LaTeX knowledge required!** Edit your resume using an intuitive visual editor, choose from 14+ professional templates, and the application automatically generates LaTeX code using **standard LaTeX packages** for maximum compatibility. Export to Overleaf for instant PDF compilation, use real-time PDF preview, or download the .tex file for local compilation.
 
 > [!NOTE]
 > - Node.js >= 18.0 required for development
 > - Free Overleaf account recommended for PDF compilation
-> - All data stored locally in your browser
+> - Optional: Cloud storage with Stack Auth + Neon PostgreSQL for resume persistence
+> - Local storage available for offline use
 
 | [![][demo-shield-badge]][demo-link]   | No installation required! Visit our live demo to create your resume now.                           |
 | :------------------------------------ | :--------------------------------------------------------------------------------------------- |
@@ -181,22 +182,52 @@ Experience conversational resume building powered by CopilotKit and GPT-4o:
 
 [![][back-to-top]](#readme-top)
 
+### `5` Real-Time PDF Compilation
+
+Compile LaTeX to PDF instantly in your browser without leaving the editor:
+
+- ⚡ **Live PDF Preview**: See your resume as PDF in real-time as you edit
+- 🔄 **Automatic Compilation**: PDF updates automatically with debounced compilation
+- 💾 **Caching**: Smart caching reduces compilation time for unchanged content
+- 🎯 **Multiple Engines**: Support for pdflatex, xelatex, lualatex
+- 📊 **Error Handling**: Clear error messages with LaTeX compilation logs
+- 🔒 **Privacy-First**: Compilation happens server-side, PDFs stored temporarily
+
+[![][back-to-top]](#readme-top)
+
+### `6` Cloud Storage & Sharing
+
+Save resumes in the cloud and share them with others:
+
+- ☁️ **Cloud Storage**: Store unlimited resumes with Stack Auth + Neon PostgreSQL
+- 🔗 **Share Links**: Generate shareable links for public resume viewing
+- 📱 **Dashboard**: Manage all your resumes in one place
+- 🔄 **Version History**: Track changes with resume version snapshots
+- 👤 **User Accounts**: Secure authentication with Stack Auth
+- 🔒 **Privacy Controls**: Toggle public/private sharing per resume
+
+[![][back-to-top]](#readme-top)
+
 ### `*` Additional Features
 
 Beyond the core features, this project includes:
 
-- [x] 🏠 **Multi-Page Architecture**: Marketing homepage (`/`), template gallery (`/templates`), and editor (`/editor`)
-- [x] 🎭 **Template System**: Extensible template registry with multiple professional LaTeX templates
-- [x] 🎨 **Modern UI/UX**: Beautiful design with shadcn/ui components
+- [x] 🏠 **Multi-Page Architecture**: Marketing homepage (`/`), template gallery (`/templates`), editor (`/editor`), and dashboard (`/dashboard`)
+- [x] 🎭 **Template System**: Extensible template registry with 14+ professional LaTeX templates
+- [x] 🎨 **Modern UI/UX**: Neobrutalism design system with shadcn/ui components
 - [x] 🔧 **Type-Safe**: Built with TypeScript and Zod validation
 - [x] ⚡ **Performance Optimized**: Next.js 15 with automatic optimizations and code splitting
 - [x] 📱 **Responsive Design**: Works perfectly on all devices
-- [x] 🌐 **SEO Ready**: Optimized meta tags and semantic HTML
+- [x] 🌐 **SEO Ready**: Optimized meta tags, structured data, and AI-friendly documentation
 - [x] 🎯 **Syntax Highlighting**: Prism.js for beautiful code preview
 - [x] 💾 **Data Import/Export**: Backup and restore resume data as JSON
 - [x] 🔄 **Template Switching**: Real-time template switching with URL parameter support
 - [x] 🚀 **One-Click Deploy**: Instant deployment to Vercel or other platforms
-- [x] 🤖 **CopilotKit Integration**: AI-powered resume editing with GPT-4o
+- [x] 🤖 **CopilotKit Integration**: AI-powered resume editing with GPT-4o and thread persistence
+- [x] 📊 **Real-Time PDF Preview**: Live PDF compilation and preview
+- [x] 🔗 **Resume Sharing**: Public share links with privacy controls
+- [x] 🗄️ **Database Integration**: Drizzle ORM with Neon PostgreSQL
+- [x] 🔐 **Authentication**: Stack Auth for secure user accounts
 
 > ✨ The project demonstrates modern React/Next.js development practices with LaTeX integration, AI capabilities, and extensible template architecture.
 
@@ -239,84 +270,236 @@ Beyond the core features, this project includes:
 - **Framework**: Next.js 15 with App Router
 - **UI Library**: React 19 with Hooks
 - **Language**: TypeScript for type safety
-- **Styling**: Tailwind CSS + shadcn/ui components
+- **Styling**: Tailwind CSS + shadcn/ui components (Neobrutalism design system)
 - **Forms**: React Hook Form + Zod validation
 - **Syntax Highlighting**: Prism.js for LaTeX code
 - **Icons**: Lucide React icon library
 - **AI Integration**: CopilotKit with OpenAI GPT-4o
+- **Animation**: Framer Motion for page transitions
+
+**Backend & Database:**
+- **Database**: Neon PostgreSQL (serverless Postgres)
+- **ORM**: Drizzle ORM for type-safe database queries
+- **Authentication**: Stack Auth for user management
+- **File Storage**: Vercel Blob Storage for PDF files
+- **Caching**: Upstash Redis for compilation cache
+- **API Routes**: Next.js API routes for server-side logic
+
+**LaTeX & PDF:**
+- **LaTeX Compilation**: Server-side PDF compilation via API
+- **Template System**: 14+ professional LaTeX templates
+- **Export Options**: Overleaf integration, .tex download, clipboard copy
+- **Live Preview**: Real-time PDF preview with caching
 
 **Development Tools:**
 - **Linting**: ESLint with Next.js configuration
 - **Code Quality**: TypeScript strict mode
 - **Build System**: Next.js optimized builds
 - **Dev Server**: Next.js development server with hot reload
+- **Database Migrations**: Drizzle Kit for schema management
 
 **Deployment & Hosting:**
-- **Platform**: Vercel (recommended) / Netlify / Any static host
+- **Platform**: Vercel (recommended) / Netlify / Any Node.js host
+- **Database**: Neon PostgreSQL (serverless)
 - **Build**: Optimized production builds
 - **Performance**: Automatic optimization and caching
+- **CDN**: Vercel Edge Network for global distribution
 
 > [!TIP]
 > Each technology was selected for production readiness, developer experience, and modern web standards compliance.
 
+## 📈 Project Evolution
+
+Vitex has undergone significant architectural evolution to become a comprehensive resume builder:
+
+### Major Upgrades
+
+**v0.1.0 - Current Version:**
+- ✅ **14+ Professional Templates**: Extensible template registry system
+- ✅ **Real-Time PDF Compilation**: Live PDF preview with server-side compilation
+- ✅ **Cloud Storage**: Stack Auth + Neon PostgreSQL for resume persistence
+- ✅ **AI-Powered Editing**: CopilotKit integration with GPT-4o and thread persistence
+- ✅ **Resume Sharing**: Public share links with privacy controls
+- ✅ **Version History**: Track changes with resume version snapshots
+- ✅ **Dashboard**: User dashboard for managing multiple resumes
+- ✅ **Database Integration**: Drizzle ORM with type-safe queries
+- ✅ **PDF Caching**: Redis caching for faster compilation
+- ✅ **Neobrutalism Design**: Bold, distinctive UI design system
+
+**Previous Versions:**
+- **HTML/CSS Era**: Original A4 resume builder with Puppeteer PDF export
+- **LaTeX Migration**: Migrated to LaTeX code generation for better compatibility
+- **Template System**: Evolved from single template to extensible registry
+- **AI Integration**: Added CopilotKit for conversational resume building
+
 ## 🏗️ Architecture
+
+### System Architecture Overview
+
+```mermaid
+graph TB
+    subgraph "Client (Browser)"
+        A[Homepage] --> B[Template Gallery]
+        B --> C[Visual Editor]
+        C --> D[Dashboard]
+        E[AI Chat Sidebar] --> C
+        F[PDF Preview] --> C
+    end
+    
+    subgraph "Next.js App Router"
+        G[API Routes]
+        H[Server Components]
+        I[Client Components]
+    end
+    
+    subgraph "Services Layer"
+        J[Resume Service]
+        K[PDF Compilation Service]
+        L[Template Registry]
+        M[CopilotKit Runtime]
+    end
+    
+    subgraph "External Services"
+        N[Neon PostgreSQL]
+        O[Stack Auth]
+        P[Vercel Blob]
+        Q[Upstash Redis]
+        R[OpenAI GPT-4o]
+        S[Overleaf]
+    end
+    
+    C --> G
+    G --> J
+    G --> K
+    G --> M
+    J --> N
+    J --> O
+    K --> P
+    K --> Q
+    M --> R
+    C --> S
+    L --> C
+```
 
 ### Component Structure
 
 ```
 src/
-├── app/
-│   ├── globals.css           # Global styles and Prism.js theme
-│   ├── layout.tsx            # Root layout with metadata
-│   ├── page.tsx              # Marketing homepage
-│   ├── editor/
-│   │   ├── page.tsx          # Editor main page
-│   │   └── EditorContent.tsx # Editor content component
-│   └── templates/
-│       └── page.tsx          # Template gallery page
-├── templates/                # Template system (NEW)
-│   ├── types.ts              # Template type definitions
-│   ├── registry.ts           # Template registry
-│   ├── two-column/           # Custom two-column template
-│   ├── modern-cv/            # Modern CV template
-│   ├── classic/              # Classic academic template
-│   └── awesome-cv/           # Awesome CV template
+├── app/                          # Next.js App Router
+│   ├── api/                      # API routes
+│   │   ├── copilotkit/          # CopilotKit runtime endpoint
+│   │   ├── compile/             # PDF compilation endpoint
+│   │   ├── resumes/             # Resume CRUD operations
+│   │   ├── share/               # Resume sharing endpoints
+│   │   └── ai/                   # AI assistant endpoints
+│   ├── dashboard/                # User dashboard page
+│   ├── editor/                   # Resume editor pages
+│   │   ├── page.tsx             # AI-powered editor
+│   │   └── manual/               # Manual form-based editor
+│   ├── templates/                # Template gallery page
+│   ├── share/[token]/            # Public resume sharing page
+│   ├── handler/[...stack]/      # Stack Auth handlers
+│   ├── globals.css               # Global styles (Neobrutalism)
+│   └── layout.tsx                # Root layout
+├── templates/                     # Template system
+│   ├── types.ts                  # Template type definitions
+│   ├── registry.ts               # Template registry (14+ templates)
+│   ├── two-column/               # Two-column template
+│   ├── modern-cv/                # Modern CV template
+│   ├── classic/                  # Classic academic template
+│   ├── awesome-cv/               # Awesome CV template
+│   ├── executive/                # Executive template
+│   ├── creative/                 # Creative portfolio template
+│   ├── compact/                   # Compact one-page template
+│   ├── banking/                  # Banking & finance template
+│   ├── academic/                 # Academic research template
+│   ├── sidebar-accent/           # Sidebar accent template
+│   ├── timeline-dual/            # Timeline dual template
+│   ├── reverse-two-column/       # Reverse two-column template
+│   ├── card-grid/                # Card grid template
+│   └── three-section/            # Three-section template
 ├── components/
-│   ├── shared/               # Shared components
-│   │   ├── Navbar.tsx        # Navigation bar
-│   │   └── Footer.tsx        # Footer component
-│   ├── editor/               # Visual resume editor components
-│   │   ├── ResumeEditor.tsx  # Main editor container
-│   │   ├── TemplateSelector.tsx  # Template selector (NEW)
-│   │   └── sections/         # Section-specific editors
+│   ├── shared/                   # Shared components
+│   │   ├── Navbar.tsx           # Navigation bar
+│   │   ├── Footer.tsx           # Footer component
+│   │   ├── GEOHead.tsx          # AI-friendly metadata
+│   │   └── StructuredData.tsx   # JSON-LD schemas
+│   ├── auth/                     # Authentication components
+│   │   ├── StackProvider.tsx   # Stack Auth provider
+│   │   ├── SignInButton.tsx      # Sign-in button
+│   │   └── UserButton.tsx        # User menu
+│   ├── editor/                   # Editor components
+│   │   ├── ResumeEditor.tsx     # Main editor container
+│   │   ├── TemplateSelector.tsx # Template selector
+│   │   ├── TopToolbar.tsx        # Editor toolbar
+│   │   ├── ProgressIndicator.tsx # Save progress indicator
+│   │   ├── WelcomeGuide.tsx     # Onboarding guide
+│   │   └── sections/             # Section editors
 │   │       ├── BasicsEditor.tsx
 │   │       ├── EducationEditor.tsx
 │   │       ├── WorkEditor.tsx
 │   │       ├── ProjectsEditor.tsx
 │   │       ├── SkillsEditor.tsx
 │   │       └── ListEditor.tsx
-│   ├── preview/              # LaTeX preview components
-│   │   ├── LatexPreview.tsx  # Syntax-highlighted code preview
-│   │   └── ExportButtons.tsx # Export action buttons
-│   └── ui/                   # shadcn/ui components
+│   ├── preview/                   # Preview components
+│   │   ├── PreviewTabs.tsx       # Tab switcher (Code/PDF)
+│   │   ├── LatexPreview.tsx      # Syntax-highlighted LaTeX
+│   │   ├── LivePdfPreview.tsx     # Real-time PDF preview
+│   │   ├── PdfViewer.tsx          # PDF viewer component
+│   │   └── ExportButtons.tsx      # Export actions
+│   ├── copilot/                   # AI components
+│   │   ├── AITextarea.tsx         # AI-enhanced textareas
+│   │   ├── RobustSuggestions.tsx  # Smart suggestions
+│   │   ├── SectionSelector.tsx   # Section navigation
+│   │   ├── TimeTravel.tsx         # Version history UI
+│   │   └── StreamingUI.tsx        # Streaming responses
+│   ├── dashboard/                 # Dashboard components
+│   │   ├── ResumeCard.tsx         # Resume card display
+│   │   ├── CreateResumeDialog.tsx # Create resume dialog
+│   │   └── ShareDialog.tsx        # Share settings dialog
+│   └── ui/                        # shadcn/ui components
 ├── lib/
-│   ├── latex/
-│   │   ├── generator.ts      # LaTeX code generation engine
-│   │   └── utils.ts          # LaTeX utility functions
-│   ├── overleaf/
-│   │   └── api.ts            # Overleaf integration (POST method)
-│   ├── validation/
-│   │   └── schema.ts         # Zod validation schemas
-│   └── utils.ts              # General utilities
+│   ├── db/                        # Database layer
+│   │   ├── client.ts              # Drizzle client
+│   │   └── schema.ts              # Database schemas
+│   ├── services/                  # Business logic services
+│   │   ├── resumeService.ts       # Resume CRUD operations
+│   │   ├── pdfService.ts          # PDF compilation service
+│   │   ├── shareService.ts        # Sharing service
+│   │   └── versionService.ts      # Version history service
+│   ├── auth/                      # Authentication
+│   │   └── stack.ts               # Stack Auth configuration
+│   ├── latex/                     # LaTeX utilities
+│   │   ├── generator.ts           # Legacy generator (deprecated)
+│   │   ├── compiler.ts           # PDF compilation client
+│   │   └── utils.ts               # LaTeX utilities
+│   ├── overleaf/                  # Overleaf integration
+│   │   └── api.ts                 # Overleaf POST form submission
+│   ├── copilot/                   # CopilotKit integration
+│   │   ├── tools.ts               # AI action tools
+│   │   ├── instructions.ts       # AI system instructions
+│   │   ├── schemas.ts             # AI parameter schemas
+│   │   └── suggestions.ts        # AI suggestion generation
+│   ├── validation/                # Data validation
+│   │   └── schema.ts              # Zod schemas
+│   ├── seo/                       # SEO & AI optimization
+│   │   ├── instructions.ts        # Page-specific AI instructions
+│   │   └── schemas.ts             # JSON-LD structured data
+│   ├── redis/                     # Redis caching
+│   │   └── client.ts              # Upstash Redis client
+│   └── utils.ts                   # General utilities
 ├── hooks/
-│   └── useResumeData.ts      # Resume data state management
+│   ├── useResumeData.ts           # Resume data state management
+│   └── usePdfCompilation.ts      # PDF compilation hook
 ├── data/
-│   └── resume.ts             # Default resume data
+│   └── resume.ts                  # Default resume data
 └── config/
-    └── content-config.ts     # Content configuration
+    └── content-config.ts          # Content configuration
 ```
 
 ### Data Flow
+
+#### User Journey Flow
 
 ```mermaid
 sequenceDiagram
@@ -324,23 +507,108 @@ sequenceDiagram
     participant H as Homepage
     participant T as Template Gallery
     participant E as Visual Editor
+    participant D as Dashboard
     participant R as Template Registry
-    participant S as State (localStorage)
-    participant G as LaTeX Generator
+    participant DB as Database
+    participant AI as CopilotKit
+    participant PDF as PDF Service
     participant O as Overleaf
 
     U->>H: Visit Homepage
     H->>T: Browse Templates
     U->>T: Select Template
     T->>E: Navigate to Editor (?template=xxx)
+    
+    alt Authenticated User
+        E->>DB: Load saved resume
+        DB-->>E: Resume data
+    else Guest User
+        E->>E: Load from localStorage
+    end
+    
     U->>E: Edit Resume Data
-    E->>S: Save to localStorage
-    U->>E: Switch Template (Optional)
+    E->>E: Auto-save to localStorage
     E->>R: Get Template by ID
-    R->>G: Call Template Generator
-    G->>E: Display LaTeX Preview
-    U->>O: Click "Open in Overleaf"
-    O->>U: Open PDF in New Tab
+    R->>E: Generate LaTeX Code
+    E->>PDF: Compile to PDF (real-time)
+    PDF-->>E: PDF Preview
+    
+    opt AI Editing
+        U->>AI: Chat with AI
+        AI->>E: Update resume data
+        E->>DB: Save changes (if authenticated)
+    end
+    
+    opt Export
+        U->>O: Click "Open in Overleaf"
+        O->>U: Open PDF in New Tab
+    end
+    
+    opt Save to Cloud
+        U->>D: Navigate to Dashboard
+        E->>DB: Save resume
+        DB-->>D: List all resumes
+    end
+```
+
+#### PDF Compilation Flow
+
+```mermaid
+sequenceDiagram
+    participant E as Editor
+    participant H as usePdfCompilation Hook
+    participant API as /api/compile
+    participant Cache as Redis Cache
+    participant Compiler as LaTeX Compiler
+    participant Blob as Vercel Blob
+    participant V as Viewer
+
+    E->>H: LaTeX code changes
+    H->>H: Debounce (1000ms)
+    H->>API: POST /api/compile
+    API->>Cache: Check cache (hash key)
+    
+    alt Cache Hit
+        Cache-->>API: Cached PDF URL
+        API-->>H: PDF blob URL
+    else Cache Miss
+        API->>Compiler: Compile LaTeX
+        Compiler-->>API: PDF blob
+        API->>Blob: Upload PDF
+        Blob-->>API: PDF URL
+        API->>Cache: Store in cache
+        API-->>H: PDF blob URL
+    end
+    
+    H->>V: Update PDF viewer
+    V->>E: Display PDF preview
+```
+
+#### AI-Powered Editing Flow
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant C as CopilotKit UI
+    participant R as CopilotKit Runtime
+    participant O as OpenAI GPT-4o
+    participant T as AI Tools
+    participant E as Editor
+    participant DB as Database
+
+    U->>C: Send message
+    C->>R: POST /api/copilotkit
+    R->>O: Forward message + context
+    O-->>R: Tool call request
+    R->>T: Execute tool (e.g., addWorkExperience)
+    T->>E: Update resume data
+    E->>DB: Save to database (if authenticated)
+    T-->>R: Tool result
+    R->>O: Send tool result
+    O-->>R: Final response
+    R-->>C: Stream response
+    C->>U: Display AI response
+    E->>U: Show updated resume
 ```
 
 ## ⚡️ Performance
@@ -403,12 +671,27 @@ Create a `.env.local` file in the project root:
 # Required for AI features (CopilotKit)
 OPENAI_API_KEY=sk-your-openai-api-key
 
-# Optional: Database and authentication (for cloud storage)
-# See .env.local.example for all available options
+# Required for cloud storage and authentication
+STACK_PROJECT_ID=your-stack-project-id
+STACK_API_KEY=your-stack-api-key
+DATABASE_URL=postgresql://user:password@host:5432/dbname
+
+# Required for PDF compilation
+BLOB_READ_WRITE_TOKEN=your-vercel-blob-token
+
+# Optional: Redis caching for PDF compilation
+UPSTASH_REDIS_REST_URL=your-redis-url
+UPSTASH_REDIS_REST_TOKEN=your-redis-token
+
+# Optional: Overleaf integration (works without config)
+# Uses POST form submission, no API key needed
 ```
 
 > [!NOTE]
-> AI features require an OpenAI API key. Without it, you can still use the manual editor at `/editor/manual`.
+> - **AI features** require an OpenAI API key. Without it, you can still use the manual editor at `/editor/manual`.
+> - **Cloud storage** requires Stack Auth and Neon PostgreSQL. Without it, resumes are stored locally in the browser.
+> - **PDF compilation** requires Vercel Blob Storage. Without it, only Overleaf export works.
+> - **Redis caching** is optional but recommended for better PDF compilation performance.
 
 **4. Start Development**
 
@@ -599,9 +882,82 @@ npx shadcn add <component-name>
 # Modify Tailwind config in tailwind.config.ts
 ```
 
+### Database Schema
+
+The application uses Neon PostgreSQL with Drizzle ORM. Key tables:
+
+```mermaid
+erDiagram
+    RESUMES ||--o{ COPILOT_THREADS : "has"
+    RESUMES ||--o{ RESUME_VERSIONS : "has"
+    COPILOT_THREADS ||--o{ COPILOT_MESSAGES : "contains"
+    COPILOT_THREADS ||--o{ RESUME_VERSIONS : "triggers"
+    
+    RESUMES {
+        uuid id PK
+        text user_id FK
+        varchar title
+        varchar template_id
+        jsonb data
+        boolean is_public
+        varchar share_slug UK
+        text pdf_blob_url
+        timestamp pdf_updated_at
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    COPILOT_THREADS {
+        uuid id PK
+        text user_id FK
+        uuid resume_id FK
+        varchar title
+        varchar status
+        jsonb agent_state
+        varchar last_agent_id
+        integer message_count
+        timestamp created_at
+        timestamp updated_at
+        timestamp last_message_at
+    }
+    
+    COPILOT_MESSAGES {
+        uuid id PK
+        uuid thread_id FK
+        varchar role
+        text content
+        varchar tool_name
+        jsonb tool_args
+        jsonb tool_result
+        varchar agent_id
+        integer sequence_num
+        timestamp created_at
+    }
+    
+    RESUME_VERSIONS {
+        uuid id PK
+        uuid resume_id FK
+        uuid thread_id FK
+        integer version
+        jsonb data
+        varchar template_id
+        text change_description
+        varchar changed_by
+        uuid message_id FK
+        timestamp created_at
+    }
+```
+
+**Key Features:**
+- **Resume Storage**: JSONB data column for flexible resume structure
+- **Version History**: Track all changes with resume versions
+- **AI Threads**: Persistent conversation threads for CopilotKit
+- **Sharing**: Public share links with unique slugs
+- **PDF Caching**: Store compiled PDF URLs in Vercel Blob
+
 ### Adding New Templates
 
-The application uses an extensible template registry system. Adding a new template requires 4 files:
+The application uses an extensible template registry system with 14+ professional templates. Adding a new template requires 4 files:
 
 **1. Create Template Directory:**
 
@@ -668,6 +1024,24 @@ constructor() {
 
 ✅ Done! Your template will automatically appear in the template gallery and editor selector.
 
+**Available Templates:**
+- **Two-Column** (default) - Modern asymmetric layout (60/40 split)
+- **Modern CV** - Clean single-column design
+- **Classic** - Traditional academic CV format
+- **Awesome CV** - Professional template with customizable colors
+- **Executive** - Corporate executive resume format
+- **Creative** - Portfolio-style creative resume
+- **Compact** - One-page condensed format
+- **Banking** - Finance and banking industry template
+- **Academic** - Research and academic CV format
+- **Sidebar Accent** - Sidebar with accent colors
+- **Timeline Dual** - Dual-column timeline layout
+- **Reverse Two-Column** - Reversed column layout (40/60 split)
+- **Card Grid** - Card-based grid layout
+- **Three-Section** - Three-section horizontal layout
+
+All templates use standard LaTeX packages for maximum compatibility.
+
 ## ⌨️ Development
 
 ### Local Development
@@ -700,16 +1074,33 @@ npm run lint         # Run ESLint
 
 **Key Files and Directories:**
 
+**Pages:**
 - `src/app/page.tsx` - Marketing homepage
-- `src/app/editor/page.tsx` - Editor page with template selector
+- `src/app/editor/page.tsx` - AI-powered editor page
+- `src/app/editor/manual/page.tsx` - Manual form-based editor
 - `src/app/templates/page.tsx` - Template gallery page
-- `src/templates/` - Template system (registry, types, and all templates)
-- `src/lib/latex/generator.ts` - Core LaTeX utilities (moved to templates)
-- `src/lib/overleaf/api.ts` - Overleaf integration with POST method
-- `src/hooks/useResumeData.ts` - Resume data state management
-- `src/components/shared/` - Shared components (Navbar, Footer)
+- `src/app/dashboard/page.tsx` - User dashboard
+- `src/app/share/[token]/page.tsx` - Public resume sharing page
+
+**Core Systems:**
+- `src/templates/` - Template system (14+ templates with registry)
+- `src/lib/db/schema.ts` - Database schemas (resumes, threads, versions)
+- `src/lib/services/` - Business logic services (resume, PDF, share, version)
+- `src/lib/copilot/` - CopilotKit integration (tools, instructions, schemas)
+- `src/lib/latex/compiler.ts` - PDF compilation client
+- `src/lib/overleaf/api.ts` - Overleaf integration (POST method)
+
+**Components:**
 - `src/components/editor/` - Visual editor components
-- `src/components/preview/` - LaTeX preview and export
+- `src/components/preview/` - LaTeX preview and PDF viewer
+- `src/components/copilot/` - AI chat and suggestion components
+- `src/components/dashboard/` - Dashboard UI components
+- `src/components/auth/` - Authentication components
+
+**Hooks & Utilities:**
+- `src/hooks/useResumeData.ts` - Resume data state management
+- `src/hooks/usePdfCompilation.ts` - PDF compilation hook
+- `src/lib/validation/schema.ts` - Zod validation schemas
 
 ### Adding Features
 
@@ -908,7 +1299,7 @@ For developers interested in implementing similar GEO strategies, see the implem
 [back-to-top]: https://img.shields.io/badge/-BACK_TO_TOP-151515?style=flat-square
 
 <!-- Project Links -->
-[demo-link]: https://easy-resume-theta.vercel.app/
+[demo-link]: https://www.vitex.org.nz/
 [docs-link]: https://github.com/ChanMeng666/easy-resume#readme
 
 <!-- GitHub Links -->
@@ -930,7 +1321,7 @@ For developers interested in implementing similar GEO strategies, see the implem
 
 <!-- Badge Variants -->
 [demo-shield-badge]: https://img.shields.io/badge/LIVE%20DEMO-ONLINE-55b467?labelColor=black&logo=vercel&style=for-the-badge
-[vercel-link]: https://easy-resume-theta.vercel.app/
+[vercel-link]: https://www.vitex.org.nz/
 
 <!-- Social Share Links -->
 [share-x-link]: https://x.com/intent/tweet?hashtags=vitex,resume,latex,nextjs&text=Check%20out%20Vitex%20-%20Your%20Career%2C%20Perfectly%20Composed&url=https%3A%2F%2Fgithub.com%2FChanMeng666%2Feasy-resume
