@@ -377,29 +377,38 @@ export default function HomePage() {
                 </motion.p>
               </div>
 
-              <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+              <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-4 max-w-5xl mx-auto">
                 {[
-                  { step: "01", title: "Chat with AI", desc: "\"I'm a software engineer with 5 years at Google...\" Just describe yourself naturally.", icon: MessageSquare, color: "bg-purple-500" },
-                  { step: "02", title: "Watch It Build", desc: "AI adds your experience, crafts bullet points, and formats everything instantly.", icon: Wand2, color: "bg-primary" },
-                  { step: "03", title: "Export to PDF", desc: "One click to Overleaf for instant PDF, or download the LaTeX source.", icon: Download, color: "bg-accent" },
+                  { title: "Chat with AI", desc: "\"I'm a software engineer with 5 years at Google...\" Just describe yourself naturally.", icon: MessageSquare, color: "bg-purple-500" },
+                  { title: "Watch It Build", desc: "AI adds your experience, crafts bullet points, and formats everything instantly.", icon: Wand2, color: "bg-primary" },
+                  { title: "Export to PDF", desc: "One click to Overleaf for instant PDF, or download the LaTeX source.", icon: Download, color: "bg-accent" },
                 ].map((item, idx) => (
-                  <motion.div
-                    key={idx}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: idx * 0.1 }}
-                    className="relative flex flex-col items-center text-center"
-                  >
-                    <div className={`w-24 h-24 ${item.color} rounded-xl flex items-center justify-center mb-6`}>
-                      <item.icon className="h-10 w-10 text-white" />
-                      <div className="absolute -top-2 -right-2 w-8 h-8 rounded-lg bg-white flex items-center justify-center font-black text-sm">
-                        {item.step}
+                  <div key={idx} className="flex items-center gap-4 md:gap-2">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: idx * 0.1 }}
+                      className="relative flex flex-col items-center text-center"
+                    >
+                      <div className={`w-24 h-24 ${item.color} rounded-xl flex items-center justify-center mb-6`}>
+                        <item.icon className="h-10 w-10 text-white" />
                       </div>
-                    </div>
-                    <h3 className="text-xl font-black mb-2">{item.title}</h3>
-                    <p className="text-muted-foreground font-medium max-w-xs">{item.desc}</p>
-                  </motion.div>
+                      <h3 className="text-xl font-black mb-2">{item.title}</h3>
+                      <p className="text-muted-foreground font-medium max-w-xs">{item.desc}</p>
+                    </motion.div>
+                    {idx < 2 && (
+                      <motion.div
+                        initial={{ opacity: 0, x: -10 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: idx * 0.1 + 0.15 }}
+                        className="hidden md:flex items-center justify-center flex-shrink-0"
+                      >
+                        <ChevronRight className="h-8 w-8 text-muted-foreground" />
+                      </motion.div>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
