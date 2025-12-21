@@ -105,7 +105,7 @@ export function ManualEditorContent({
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6 p-4 rounded-xl bg-gradient-to-r from-purple-100 to-cyan-100 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
+          className="mb-6 p-4 rounded-xl bg-gradient-to-r from-purple-100 to-cyan-100"
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -129,7 +129,7 @@ export function ManualEditorContent({
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-6 p-4 rounded-xl bg-red-50 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
+            className="mb-6 p-4 rounded-xl bg-red-50"
           >
             <p className="text-red-800 font-bold">{error}</p>
           </motion.div>
@@ -147,7 +147,7 @@ export function ManualEditorContent({
             transition={{ delay: 0.1 }}
             className="lg:col-span-2"
           >
-            <div className="rounded-xl bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] p-6">
+            <div className="rounded-xl bg-white p-6">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-lg font-black">Edit Resume</h2>
                 {isDbMode && (
@@ -193,7 +193,7 @@ export function ManualEditorContent({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="mt-8 rounded-xl bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] p-6"
+          className="mt-8 rounded-xl bg-white p-6"
         >
           <h2 className="mb-4 text-lg font-black">How to Use</h2>
           <ol className="space-y-3 text-sm">
@@ -204,7 +204,7 @@ export function ManualEditorContent({
               { title: 'Backup your data:', desc: 'Export your resume as JSON to save or share it. Import JSON to restore previous data.' },
             ].map((item, idx) => (
               <li key={idx} className="flex gap-3">
-                <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-primary text-xs font-black text-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]">
+                <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-primary text-xs font-black text-white">
                   {idx + 1}
                 </span>
                 <span className="font-medium">

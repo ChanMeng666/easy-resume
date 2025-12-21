@@ -79,7 +79,7 @@ export default function SharePage() {
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="p-6 bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
+          className="p-6 bg-white rounded-xl"
         >
           <p className="font-bold text-muted-foreground animate-pulse">
             Loading shared resume...
@@ -99,7 +99,7 @@ export default function SharePage() {
           <Card className="max-w-md">
             <CardContent className="pt-6">
               <div className="flex flex-col items-center gap-4 text-center">
-                <div className="p-4 bg-red-100 rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,0.9)]">
+                <div className="p-4 bg-red-100 rounded-xl">
                   <AlertCircle className="h-10 w-10 text-red-600" />
                 </div>
                 <div>
@@ -129,9 +129,9 @@ export default function SharePage() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <div className="flex items-center justify-between flex-wrap gap-4 p-6 bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
+          <div className="flex items-center justify-between flex-wrap gap-4 p-6 bg-white rounded-xl">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-primary rounded-lg border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]">
+              <div className="p-3 bg-primary rounded-lg">
                 <FileText className="h-6 w-6 text-white" />
               </div>
               <div>
@@ -197,7 +197,7 @@ export default function SharePage() {
           transition={{ delay: 0.3 }}
           className="mt-8 text-center"
         >
-          <div className="inline-block px-4 py-2 bg-white rounded-lg border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]">
+          <div className="inline-block px-4 py-2 bg-white rounded-lg">
             <p className="text-sm text-muted-foreground font-medium">
               This is a temporary share link that will expire on{" "}
               <strong>{new Date(shareData.expiresAt).toLocaleString()}</strong>

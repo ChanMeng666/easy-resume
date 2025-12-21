@@ -50,7 +50,7 @@ export function TimeTravelControls({
   onShowHistory,
 }: TimeTravelControlsProps) {
   return (
-    <div className="flex items-center gap-2 p-2 rounded-xl bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
+    <div className="flex items-center gap-2 p-2 rounded-xl bg-white">
       <Button
         variant="outline"
         size="sm"
@@ -248,7 +248,7 @@ export function ConversationReplay({
   const [selectedMessage, setSelectedMessage] = useState<string | null>(null);
 
   return (
-    <div className="p-4 rounded-xl bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
+    <div className="p-4 rounded-xl bg-white">
       <h4 className="font-bold text-sm mb-3 flex items-center gap-2">
         <Clock className="w-4 h-4" />
         Conversation Timeline
@@ -338,7 +338,7 @@ export function UndoNotification({
         exit={{ opacity: 0, y: 50 }}
         className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50"
       >
-        <div className="flex items-center gap-3 px-4 py-3 bg-gray-900 text-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
+        <div className="flex items-center gap-3 px-4 py-3 bg-gray-900 text-white rounded-xl">
           <span className="text-sm font-medium">{message}</span>
           <Button
             size="sm"

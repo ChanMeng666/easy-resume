@@ -44,7 +44,7 @@ export default function ManualEditorPage() {
       <Suspense fallback={
         <div className="container mx-auto px-4 py-8">
           <div className="flex items-center justify-center py-20">
-            <div className="p-6 bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
+            <div className="p-6 bg-white rounded-xl">
               <p className="font-bold text-muted-foreground animate-pulse">Loading...</p>
             </div>
           </div>

@@ -58,7 +58,7 @@ function BackgroundEffects() {
         return (
           <motion.div
             key={i}
-            className="absolute rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]"
+            className="absolute rounded-full"
             style={{
               left: `${bubble.left}%`,
               top: `${bubble.top}%`,
@@ -105,9 +105,9 @@ function FeatureCard({
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className={`${large ? 'md:col-span-2' : ''} bg-white rounded-xl p-6 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] transition-all duration-200 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px]`}
+      className={`${large ? 'md:col-span-2' : ''} bg-white rounded-xl p-6`}
     >
-      <div className={`h-12 w-12 ${color} rounded-lg flex items-center justify-center border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)] mb-4`}>
+      <div className={`h-12 w-12 ${color} rounded-lg flex items-center justify-center mb-4`}>
         <Icon className="h-6 w-6 text-white" />
       </div>
       <h3 className="text-xl font-black mb-2">{title}</h3>
@@ -127,7 +127,7 @@ function StatCard({ label, value, icon: Icon }: { label: string; value: string; 
       viewport={{ once: true }}
       className="flex flex-col items-center justify-center text-center p-4"
     >
-      <div className="mb-3 p-2 rounded-lg bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]">
+      <div className="mb-3 p-2 rounded-lg bg-white">
         <Icon className="h-5 w-5 text-primary" />
       </div>
       <div className="text-2xl font-black">{value}</div>
@@ -182,7 +182,7 @@ export default function HomePage() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="inline-flex items-center px-4 py-2 rounded-lg bg-gradient-to-r from-purple-100 to-cyan-100 border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,0.9)] text-sm font-bold"
+                    className="inline-flex items-center px-4 py-2 rounded-lg bg-gradient-to-r from-purple-100 to-cyan-100 text-sm font-bold"
                   >
                     <Bot className="h-4 w-4 mr-2 text-purple-600" />
                     AI-Native Resume Builder
@@ -217,15 +217,15 @@ export default function HomePage() {
 
                   {/* Trust Badges */}
                   <div className="flex items-center justify-center lg:justify-start gap-4 pt-4 flex-wrap">
-                    <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]">
+                    <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg">
                       <Bot className="h-4 w-4 text-purple-500" />
                       <span className="text-sm font-bold">GPT-4o Powered</span>
                     </div>
-                    <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]">
+                    <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg">
                       <Shield className="h-4 w-4 text-green-500" />
                       <span className="text-sm font-bold">Privacy First</span>
                     </div>
-                    <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]">
+                    <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg">
                       <CheckCircle className="h-4 w-4 text-green-500" />
                       <span className="text-sm font-bold">Free Forever</span>
                     </div>
@@ -255,10 +255,10 @@ export default function HomePage() {
                     <motion.div 
                       animate={{ y: [0, -8, 0] }}
                       transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                      className="absolute -right-8 top-20 p-4 bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
+                      className="absolute -right-8 top-20 p-4 bg-white rounded-xl"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="p-2 bg-purple-500 rounded-lg border-2 border-black">
+                        <div className="p-2 bg-purple-500 rounded-lg">
                           <Wand2 className="h-5 w-5 text-white" />
                         </div>
                         <div>
@@ -272,10 +272,10 @@ export default function HomePage() {
                     <motion.div 
                       animate={{ y: [0, -6, 0] }}
                       transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-                      className="absolute -left-6 bottom-32 p-4 bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
+                      className="absolute -left-6 bottom-32 p-4 bg-white rounded-xl"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="p-2 bg-accent rounded-lg border-2 border-black">
+                        <div className="p-2 bg-accent rounded-lg">
                           <MessageSquare className="h-5 w-5 text-white" />
                         </div>
                         <div>
@@ -391,9 +391,9 @@ export default function HomePage() {
                     transition={{ delay: idx * 0.1 }}
                     className="relative flex flex-col items-center text-center"
                   >
-                    <div className={`w-24 h-24 ${item.color} rounded-xl flex items-center justify-center mb-6 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]`}>
+                    <div className={`w-24 h-24 ${item.color} rounded-xl flex items-center justify-center mb-6`}>
                       <item.icon className="h-10 w-10 text-white" />
-                      <div className="absolute -top-2 -right-2 w-8 h-8 rounded-lg bg-white border-2 border-black flex items-center justify-center font-black text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]">
+                      <div className="absolute -top-2 -right-2 w-8 h-8 rounded-lg bg-white flex items-center justify-center font-black text-sm">
                         {item.step}
                       </div>
                     </div>

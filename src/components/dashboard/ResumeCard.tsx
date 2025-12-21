@@ -88,7 +88,7 @@ export function ResumeCard({
           <CardHeader className="pb-3">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-primary border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]">
+                <div className="p-2 rounded-lg bg-primary">
                   <FileText className="h-5 w-5 text-white" />
                 </div>
                 <div>

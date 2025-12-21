@@ -140,6 +140,19 @@ body {
   .text-gradient-vitex-brand {
     @apply font-brand bg-gradient-to-r from-purple-600 to-cyan-500 bg-clip-text text-transparent;
   }
+  
+  /* Non-interactive element styles (no shadow, no border) */
+  .neo-static {
+    @apply rounded-lg;
+  }
+  
+  .neo-static-card {
+    @apply bg-white rounded-xl;
+  }
+  
+  .neo-static-badge {
+    @apply inline-flex items-center rounded-lg px-3 py-1 text-xs font-bold;
+  }
 }
 
 /* ============================================

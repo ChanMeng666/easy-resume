@@ -4,10 +4,11 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 /**
- * Neobrutalism styled badge variants with bold borders and shadows.
+ * Neobrutalism styled badge variants (non-interactive style).
+ * Badges have no borders or shadows to distinguish from clickable elements.
  */
 const badgeVariants = cva(
-  "inline-flex items-center rounded-lg border-2 border-black px-3 py-1 text-xs font-bold transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]",
+  "inline-flex items-center rounded-lg px-3 py-1 text-xs font-bold transition-colors",
   {
     variants: {
       variant: {

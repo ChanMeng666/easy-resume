@@ -1,10 +1,10 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { Mail, Github, FileText, Palette, Download, Sparkles, Briefcase, MessageSquare } from 'lucide-react';
+import { Mail, Github, Sparkles, Briefcase, MessageSquare, Palette, PenTool, LayoutDashboard, Bot } from 'lucide-react';
 
 /**
  * Neobrutalism styled footer with brand identity and developer information.
- * Features bold borders, hard shadows, and clean grid layout.
+ * Features thin borders (1px) for non-interactive elements and clean grid layout.
  */
 export function Footer() {
   return (
@@ -13,36 +13,56 @@ export function Footer() {
         {/* Top Section: Brand Identity */}
         <div className="mb-16 text-center">
           <div className="mb-6 flex flex-col items-center justify-center gap-4">
-            <Image
-              src="/logo/vitex-logo-black.svg"
-              alt="Vitex"
-              width={200}
-              height={86}
-              className="h-auto"
-            />
+            <Link href="/">
+              <Image
+                src="/logo/vitex-logo-black.svg"
+                alt="Vitex"
+                width={200}
+                height={86}
+                className="h-auto hover:opacity-80 transition-opacity"
+              />
+            </Link>
           </div>
           <p className="mx-auto max-w-2xl text-base text-muted-foreground font-medium leading-relaxed">
-            Create beautiful, ATS-friendly resumes in minutes. No registration, no hassle, professional quality.
+            Your Career, Perfectly Composed. AI-powered resume builder with professional LaTeX templates.
           </p>
         </div>
 
         {/* Main Content Grid */}
-        <div className="mb-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {/* Product */}
-          <div className="p-6 bg-gray-50 rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
+        <div className="mb-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
+          {/* Product - Editors */}
+          <div className="p-6 bg-gray-50 rounded-xl">
             <h3 className="flex items-center gap-2 text-sm font-black uppercase tracking-wider mb-4">
-              <div className="p-1.5 bg-primary rounded-md border-2 border-black">
+              <div className="p-1.5 bg-primary rounded-md">
                 <Sparkles className="h-4 w-4 text-white" />
               </div>
-              Product
+              Editors
             </h3>
             <ul className="space-y-3">
               <li>
                 <Link href="/editor" className="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-all hover:text-foreground hover:translate-x-1">
-                  <FileText className="h-4 w-4" />
-                  Resume Editor
+                  <Bot className="h-4 w-4" />
+                  AI Editor
                 </Link>
               </li>
+              <li>
+                <Link href="/editor/manual" className="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-all hover:text-foreground hover:translate-x-1">
+                  <PenTool className="h-4 w-4" />
+                  Manual Editor
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Resources */}
+          <div className="p-6 bg-gray-50 rounded-xl">
+            <h3 className="flex items-center gap-2 text-sm font-black uppercase tracking-wider mb-4">
+              <div className="p-1.5 bg-accent rounded-md">
+                <Palette className="h-4 w-4 text-white" />
+              </div>
+              Resources
+            </h3>
+            <ul className="space-y-3">
               <li>
                 <Link href="/templates" className="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-all hover:text-foreground hover:translate-x-1">
                   <Palette className="h-4 w-4" />
@@ -50,25 +70,25 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <a href="#features" className="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-all hover:text-foreground hover:translate-x-1">
-                  <Download className="h-4 w-4" />
-                  Features
-                </a>
+                <Link href="/dashboard" className="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-all hover:text-foreground hover:translate-x-1">
+                  <LayoutDashboard className="h-4 w-4" />
+                  Dashboard
+                </Link>
               </li>
             </ul>
           </div>
 
           {/* Developer */}
-          <div className="p-6 bg-gray-50 rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
+          <div className="p-6 bg-gray-50 rounded-xl">
             <h3 className="flex items-center gap-2 text-sm font-black uppercase tracking-wider mb-4">
-              <div className="p-1.5 bg-purple-500 rounded-md border-2 border-black">
+              <div className="p-1.5 bg-purple-500 rounded-md">
                 <Briefcase className="h-4 w-4 text-white" />
               </div>
               Developer
             </h3>
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className="p-1 bg-white rounded-lg border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]">
+                <div className="p-1 bg-white rounded-lg">
                   <Image
                     src="/chan_logo.svg"
                     alt="Chan Meng"
@@ -82,29 +102,22 @@ export function Footer() {
                   <p className="text-xs text-muted-foreground font-medium">Full-Stack Developer</p>
                 </div>
               </div>
-              <p className="text-sm text-muted-foreground font-medium leading-relaxed">
-                AI/ML Infrastructure Engineer & Full-Stack Developer
-              </p>
-              <ul className="space-y-2">
-                <li>
-                  <a
-                    href="https://github.com/ChanMeng666"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-all hover:text-foreground hover:translate-x-1"
-                  >
-                    <Github className="h-4 w-4" />
-                    Portfolio & Projects
-                  </a>
-                </li>
-              </ul>
+              <a
+                href="https://github.com/ChanMeng666"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-all hover:text-foreground hover:translate-x-1"
+              >
+                <Github className="h-4 w-4" />
+                Portfolio & Projects
+              </a>
             </div>
           </div>
 
           {/* Contact */}
-          <div className="p-6 bg-gray-50 rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
+          <div className="p-6 bg-gray-50 rounded-xl">
             <h3 className="flex items-center gap-2 text-sm font-black uppercase tracking-wider mb-4">
-              <div className="p-1.5 bg-cyan-500 rounded-md border-2 border-black">
+              <div className="p-1.5 bg-cyan-500 rounded-md">
                 <MessageSquare className="h-4 w-4 text-white" />
               </div>
               Contact
@@ -136,7 +149,7 @@ export function Footer() {
             >
               Chan Meng
             </a>
-            . Professional resume builder for your career success.
+            . AI-powered resume builder for your career success.
           </p>
         </div>
       </div>

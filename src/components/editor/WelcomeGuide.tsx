@@ -30,7 +30,7 @@ export function WelcomeGuide() {
   if (!isVisible) return null;
 
   return (
-    <Card className="relative mb-6 overflow-hidden border-2 border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] p-6">
+    <Card className="relative mb-6 overflow-hidden bg-white p-6">
       {/* Close Button */}
       <button
         onClick={handleDismiss}
@@ -42,7 +42,7 @@ export function WelcomeGuide() {
 
       {/* Header */}
       <div className="mb-4 flex items-center gap-3">
-        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#6C3CE9] border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]">
+        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#6C3CE9]">
           <Rocket className="h-6 w-6 text-white" />
         </div>
         <div>
@@ -57,8 +57,8 @@ export function WelcomeGuide() {
 
       {/* Quick Start Steps */}
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
-        <div className="flex gap-3 rounded-lg bg-gray-50 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)] p-4">
-          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-[#6C3CE9] border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)] text-sm font-black text-white">
+        <div className="flex gap-3 rounded-lg bg-gray-50 p-4">
+          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-[#6C3CE9] text-sm font-black text-white">
             1
           </div>
           <div>
@@ -72,8 +72,8 @@ export function WelcomeGuide() {
           </div>
         </div>
 
-        <div className="flex gap-3 rounded-lg bg-gray-50 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)] p-4">
-          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-[#00D4AA] border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)] text-sm font-black text-white">
+        <div className="flex gap-3 rounded-lg bg-gray-50 p-4">
+          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-[#00D4AA] text-sm font-black text-white">
             2
           </div>
           <div>
@@ -87,8 +87,8 @@ export function WelcomeGuide() {
           </div>
         </div>
 
-        <div className="flex gap-3 rounded-lg bg-gray-50 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)] p-4">
-          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-green-600 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)] text-sm font-black text-white">
+        <div className="flex gap-3 rounded-lg bg-gray-50 p-4">
+          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-green-600 text-sm font-black text-white">
             3
           </div>
           <div>

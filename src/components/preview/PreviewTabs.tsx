@@ -100,9 +100,9 @@ export function PreviewTabs({ templateId = 'two-column', latexCode, filename = '
             />
           </div>
 
-          <div className="rounded-xl bg-blue-50 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)] p-4">
+          <div className="rounded-xl bg-blue-50 p-4">
             <div className="flex gap-3">
-              <div className="p-2 bg-blue-500 rounded-lg border-2 border-black">
+              <div className="p-2 bg-blue-500 rounded-lg">
                 <Info className="h-4 w-4 text-white" />
               </div>
               <div className="space-y-1 text-sm">

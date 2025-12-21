@@ -85,7 +85,7 @@ export default function DashboardPage() {
         <Navbar currentPath="/dashboard" />
         <div className="pt-20 container mx-auto px-4">
           <div className="flex items-center justify-center h-[60vh]">
-            <div className="p-6 bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
+            <div className="p-6 bg-white rounded-xl">
               <p className="font-bold text-muted-foreground animate-pulse">
                 Loading...
               </p>
@@ -181,7 +181,7 @@ export default function DashboardPage() {
                 animate={{ opacity: 1, y: 0 }}
                 className="flex flex-col items-center justify-center py-16 text-center"
               >
-                <div className="p-6 rounded-xl bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] mb-6">
+                <div className="p-6 rounded-xl bg-white mb-6">
                   <FileText className="h-12 w-12 text-muted-foreground" />
                 </div>
                 <h2 className="text-xl font-black mb-2">No resumes yet</h2>
@@ -210,7 +210,7 @@ export default function DashboardPage() {
                   Manage your profile, security, and connected accounts
                 </p>
               </div>
-              <div className="bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] p-6">
+              <div className="bg-white rounded-xl p-6">
                 <AccountSettings />
               </div>
             </motion.div>

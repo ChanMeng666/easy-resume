@@ -41,7 +41,7 @@ export function StreamingResumeBuilder({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="p-4 rounded-xl bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
+      className="p-4 rounded-xl bg-white"
     >
       <div className="flex items-center gap-2 mb-4">
         <Sparkles className="w-5 h-5 text-purple-600" />
@@ -217,7 +217,7 @@ export function ProgressiveSectionReveal({
               initial={{ opacity: 0, y: 20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -20, scale: 0.95 }}
-              className="p-4 rounded-xl bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
+              className="p-4 rounded-xl bg-white"
             >
               <h4 className="font-bold text-sm mb-2">{section.title}</h4>
               {section.content}

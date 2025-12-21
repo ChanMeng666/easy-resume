@@ -21,7 +21,7 @@ export function ToolProgressCard({
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="p-4 rounded-xl bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
+      className="p-4 rounded-xl bg-white"
     >
       <div className="flex items-center gap-3 mb-3">
         {status === "executing" && (
@@ -62,7 +62,7 @@ export function WorkEntryCard({
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="p-4 rounded-xl bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
+      className="p-4 rounded-xl bg-white"
     >
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-2">
@@ -118,7 +118,7 @@ export function EducationCard({
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="p-4 rounded-xl bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
+      className="p-4 rounded-xl bg-white"
     >
       <div className="flex items-start gap-2 mb-2">
         <div className="p-2 bg-cyan-100 rounded-lg border border-black">
@@ -154,7 +154,7 @@ export function ProjectCard({
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="p-4 rounded-xl bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
+      className="p-4 rounded-xl bg-white"
     >
       <div className="flex items-start gap-2 mb-2">
         <div className="p-2 bg-green-100 rounded-lg border border-black">
@@ -198,7 +198,7 @@ export function SkillsTagCloud({
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="p-4 rounded-xl bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
+      className="p-4 rounded-xl bg-white"
     >
       <h4 className="font-bold text-sm mb-2">{category}</h4>
       <div className="flex flex-wrap gap-1">
@@ -234,7 +234,7 @@ export function ATSScoreCard({
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="p-4 rounded-xl bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
+      className="p-4 rounded-xl bg-white"
     >
       <div className="flex items-center justify-between mb-3">
         <h4 className="font-bold text-sm">ATS Compatibility</h4>
@@ -299,7 +299,7 @@ export function AgentStatusDisplay({
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="p-4 rounded-xl bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
+      className="p-4 rounded-xl bg-white"
     >
       <div className="flex items-center gap-2 mb-3">
         <Sparkles className="w-4 h-4 text-purple-600" />
@@ -349,7 +349,7 @@ export function ConfirmationDialog({
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="p-4 rounded-xl bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
+      className="p-4 rounded-xl bg-white"
     >
       <div className="flex items-start gap-3 mb-4">
         <div className="p-2 bg-yellow-100 rounded-lg border border-black">
@@ -392,7 +392,7 @@ export function ContentDiffView({
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="p-4 rounded-xl bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
+      className="p-4 rounded-xl bg-white"
     >
       <h4 className="font-bold text-sm mb-3">Changes to {section}</h4>
       <div className="grid grid-cols-2 gap-3 mb-4">
@@ -437,7 +437,7 @@ export function TemplatePreviewMini({
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="p-3 rounded-xl bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all cursor-pointer"
+      className="p-3 rounded-xl bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200 cursor-pointer"
       onClick={onSelect}
     >
       <div className="flex items-center gap-3">
@@ -470,7 +470,7 @@ export function StreamingProgress({
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="p-4 rounded-xl bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
+      className="p-4 rounded-xl bg-white"
     >
       <h4 className="font-bold text-sm mb-3">Generating Resume...</h4>
       <div className="space-y-2">

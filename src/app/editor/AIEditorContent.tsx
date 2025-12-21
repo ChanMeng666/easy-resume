@@ -73,7 +73,7 @@ export function AIEditorContent({
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-6 p-4 rounded-xl bg-red-50 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
+            className="mb-6 p-4 rounded-xl bg-red-50"
           >
             <p className="text-red-800 font-bold">{error}</p>
           </motion.div>
@@ -83,7 +83,7 @@ export function AIEditorContent({
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6 p-4 rounded-xl bg-gradient-to-r from-purple-100 to-cyan-100 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
+          className="mb-6 p-4 rounded-xl bg-gradient-to-r from-purple-100 to-cyan-100"
         >
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-3">
@@ -116,7 +116,7 @@ export function AIEditorContent({
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="mb-6 p-4 rounded-xl bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
+          className="mb-6 p-4 rounded-xl bg-white"
         >
           <div className="flex items-start gap-3">
             <MessageSquare className="w-5 h-5 text-purple-600 mt-0.5" />
@@ -155,7 +155,7 @@ export function AIEditorContent({
             />
           ) : (
             <div className="flex items-center justify-center py-20">
-              <div className="p-6 bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
+              <div className="p-6 bg-white rounded-xl">
                 <p className="font-bold text-muted-foreground animate-pulse">Loading preview...</p>
               </div>
             </div>
@@ -167,7 +167,7 @@ export function AIEditorContent({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="mt-8 rounded-xl bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] p-6"
+          className="mt-8 rounded-xl bg-white p-6"
         >
           <h2 className="mb-4 text-lg font-black">How to Use AI Editor</h2>
           <ol className="space-y-3 text-sm">
@@ -178,7 +178,7 @@ export function AIEditorContent({
               { title: 'Export to Overleaf:', desc: 'Click the button to compile to PDF in Overleaf' },
             ].map((item, idx) => (
               <li key={idx} className="flex gap-3">
-                <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-purple-600 text-xs font-black text-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]">
+                <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-purple-600 text-xs font-black text-white">
                   {idx + 1}
                 </span>
                 <span className="font-medium">

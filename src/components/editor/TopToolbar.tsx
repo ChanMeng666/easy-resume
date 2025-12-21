@@ -147,7 +147,7 @@ export function TopToolbar({
                   />
 
                   {/* Dropdown Menu */}
-                  <div className="absolute right-0 top-full z-20 mt-2 w-56 rounded-xl bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
+                  <div className="absolute right-0 top-full z-20 mt-2 w-56 rounded-xl bg-white border border-black shadow-lg">
                     <div className="p-2">
                       <button
                         onClick={() => {
