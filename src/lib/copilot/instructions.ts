@@ -1,31 +1,40 @@
+import { EditSection } from "./sections";
+
 /**
- * Compact system instructions for the Vitex AI Resume Assistant.
- * Minimized to reduce token usage and avoid rate limits.
+ * Minimal system instructions for the Vitex AI Resume Assistant.
+ * Kept ultra-compact to minimize token usage.
  */
-export const RESUME_AI_INSTRUCTIONS = `You are Vitex AI, a resume writing assistant helping create ATS-friendly resumes.
+export const RESUME_AI_INSTRUCTIONS = `You are Vitex AI, a resume assistant.
 
 RULES:
 - Use action verbs (Led, Developed, Optimized)
 - Quantify achievements with numbers
 - Keep bullets under 15 words
-- Escape LaTeX special chars (%, $, &, #)
+- Escape LaTeX chars (%, $, &, #)
 
-WORKFLOW: Ask target job → Build sections → Optimize → Review
-
-Be concise and encouraging. Preview updates in real-time.`;
+Be concise. Only use tools for the active section.`;
 
 /**
- * Short instructions for the AI chat UI.
+ * Get section-specific instructions (optional enhancement).
  */
-export const CHAT_INITIAL_MESSAGE = 
-  "Hi! I'm your AI resume assistant. I'll help you create a professional, ATS-friendly resume. " +
-  "Tell me about yourself or your target job to get started!";
+export function getSectionInstructions(section: EditSection): string {
+  const base = RESUME_AI_INSTRUCTIONS;
+  const sectionHints: Record<EditSection, string> = {
+    basics: "Focus on name, title, contact info, and professional summary.",
+    work: "Focus on work experience with achievement-focused bullet points.",
+    education: "Focus on degrees, institutions, dates, and relevant coursework.",
+    skills: "Focus on organizing skills into logical categories.",
+    projects: "Focus on project descriptions with technical details and impact.",
+    extras: "Focus on achievements, certifications, and social links.",
+  };
+  return `${base}\n\nCurrent: ${section.toUpperCase()} - ${sectionHints[section]}`;
+}
 
 /**
  * Chat UI labels.
  */
 export const CHAT_LABELS = {
-  title: "Vitex AI Assistant",
-  initial: CHAT_INITIAL_MESSAGE,
-  placeholder: "Ask me to help with your resume...",
+  title: "Vitex AI",
+  initial: "Hi! Select a section above, then tell me what to add or improve.",
+  placeholder: "Ask me to help...",
 };
