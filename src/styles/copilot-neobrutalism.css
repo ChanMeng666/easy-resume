@@ -427,35 +427,48 @@
   height: 28px !important;
 }
 
-/* ===== Suggestions ===== */
+/* ===== Suggestions - Compact Style ===== */
+/* Minimalist suggestions to save chat space */
+.copilot-neobrutalism .copilotKitSuggestions,
+.copilot-neobrutalism .copilotkit-suggestions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+  padding: 8px 0 !important;
+}
+
 .copilot-neobrutalism .copilotKitSuggestion,
 .copilot-neobrutalism .copilotkit-suggestion,
 .copilot-neobrutalism .copilotkit-suggestions button {
-  border: 2px solid black !important;
-  border-radius: 10px !important;
-  background: white !important;
-  box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.9) !important;
-  padding: 10px 16px !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  color: #1a1a1a !important;
-  transition: all 0.2s !important;
+  border: 1px solid #d4d4d4 !important;
+  border-radius: 6px !important;
+  background: #fafafa !important;
+  box-shadow: none !important;
+  padding: 4px 10px !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  color: #525252 !important;
+  transition: all 0.15s !important;
   cursor: pointer !important;
+  line-height: 1.4 !important;
 }
 
 .copilot-neobrutalism .copilotKitSuggestion:hover,
 .copilot-neobrutalism .copilotkit-suggestion:hover,
 .copilot-neobrutalism .copilotkit-suggestions button:hover {
-  transform: translate(-2px, -2px) !important;
-  box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 0.9) !important;
+  transform: none !important;
+  box-shadow: none !important;
   background: #f0f0f0 !important;
+  border-color: #a3a3a3 !important;
+  color: #1a1a1a !important;
 }
 
 .copilot-neobrutalism .copilotKitSuggestion:active,
 .copilot-neobrutalism .copilotkit-suggestion:active,
 .copilot-neobrutalism .copilotkit-suggestions button:active {
-  transform: translate(1px, 1px) !important;
-  box-shadow: 1px 1px 0px 0px rgba(0, 0, 0, 0.9) !important;
+  transform: none !important;
+  box-shadow: none !important;
+  background: #e5e5e5 !important;
 }
 
 /* ===== Loading States ===== */

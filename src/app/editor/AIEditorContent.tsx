@@ -8,7 +8,7 @@ import { PreviewTabs } from '@/components/preview/PreviewTabs';
 import { ResumeData } from '@/lib/validation/schema';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Edit3, MessageSquare } from 'lucide-react';
+import { Sparkles, Edit3 } from 'lucide-react';
 import { useEditorScrollDirection } from './page';
 
 interface AIEditorContentProps {
@@ -107,36 +107,6 @@ export function AIEditorContent({
                   Manual Editor
                 </Link>
               </Button>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* AI Tips Card */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mb-6 p-4 rounded-xl bg-white"
-        >
-          <div className="flex items-start gap-3">
-            <MessageSquare className="w-5 h-5 text-purple-600 mt-0.5" />
-            <div>
-              <p className="font-bold text-sm mb-2">Try saying:</p>
-              <div className="flex flex-wrap gap-2">
-                {[
-                  "I'm a software engineer looking for senior roles",
-                  "Add my work experience at Google",
-                  "Improve my professional summary",
-                  "Switch to the Executive template",
-                ].map((tip, idx) => (
-                  <span
-                    key={idx}
-                    className="px-3 py-1 text-xs bg-gray-100 rounded-lg border border-gray-200"
-                  >
-                    &ldquo;{tip}&rdquo;
-                  </span>
-                ))}
-              </div>
             </div>
           </div>
         </motion.div>

@@ -5,38 +5,66 @@ import { ResumeData, Work, Education, Project, Skill } from "@/lib/validation/sc
 import { getAllTemplates } from "@/templates/registry";
 
 /**
+ * Create a compact summary of resume data to reduce token usage.
+ * Instead of full JSON, send only essential info.
+ */
+function createResumeSummary(data: ResumeData): string {
+  const lines: string[] = [];
+  
+  // Basics - compact format
+  lines.push(`Name: ${data.basics.name || '[empty]'}`);
+  lines.push(`Title: ${data.basics.label || '[empty]'}`);
+  lines.push(`Email: ${data.basics.email || '[empty]'}`);
+  if (data.basics.summary) {
+    lines.push(`Summary: ${data.basics.summary.substring(0, 100)}${data.basics.summary.length > 100 ? '...' : ''}`);
+  }
+  
+  // Work - just company and position
+  if (data.work.length > 0) {
+    lines.push(`Work (${data.work.length}): ${data.work.map(w => `${w.position}@${w.company}`).join(', ')}`);
+  }
+  
+  // Education - compact
+  if (data.education.length > 0) {
+    lines.push(`Education (${data.education.length}): ${data.education.map(e => `${e.studyType} ${e.area}@${e.institution}`).join(', ')}`);
+  }
+  
+  // Skills - just names
+  if (data.skills.length > 0) {
+    lines.push(`Skills (${data.skills.length} categories): ${data.skills.map(s => s.name).join(', ')}`);
+  }
+  
+  // Counts for other sections
+  if (data.projects.length > 0) lines.push(`Projects: ${data.projects.length}`);
+  if (data.achievements.length > 0) lines.push(`Achievements: ${data.achievements.length}`);
+  if (data.certifications.length > 0) lines.push(`Certifications: ${data.certifications.length}`);
+  
+  return lines.join('\n');
+}
+
+/**
  * Hook to register all resume-related readable context for CopilotKit.
- * Exposes current resume state, templates, and selected template to AI.
+ * Uses compact format to minimize token usage and avoid rate limits.
  */
 export function useResumeReadableContext(
   resumeData: ResumeData,
   selectedTemplateId: string
 ) {
-  // Expose current resume data to AI
+  // Expose compact resume summary (not full JSON to save tokens)
   useCopilotReadable({
-    description: "Current resume data including all sections (basics, work, education, skills, projects, achievements, certifications)",
-    value: JSON.stringify(resumeData, null, 2),
+    description: "Resume summary",
+    value: createResumeSummary(resumeData),
   });
 
-  // Expose available templates
+  // Expose template list compactly (just id:name)
   useCopilotReadable({
-    description: "Available resume templates with their characteristics",
-    value: JSON.stringify(
-      getAllTemplates().map((t) => ({
-        id: t.metadata.id,
-        name: t.metadata.name,
-        description: t.metadata.description,
-        category: t.metadata.category,
-        tags: t.metadata.tags,
-      })),
-      null,
-      2
-    ),
+    description: "Templates: id|name",
+    value: getAllTemplates().map((t) => `${t.metadata.id}|${t.metadata.name}`).join(', '),
   });
 
-  // Expose selected template
+  // Selected template
   useCopilotReadable({
-    description: "Currently selected template ID",
+    description: "Selected template",
     value: selectedTemplateId,
   });
 }

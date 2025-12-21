@@ -1,12 +1,24 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useRef, useEffect, useCallback, useState } from "react";
 import { useCopilotChatSuggestions } from "@copilotkit/react-ui";
 import { ResumeData } from "@/lib/validation/schema";
 
 /**
- * Static quick action prompts for resume editing.
- * These are displayed immediately without waiting for AI generation.
+ * Configuration for dynamic suggestions with rate limit handling.
+ */
+const SUGGESTION_CONFIG = {
+  /** Minimum delay between suggestion API calls (ms) */
+  MIN_DELAY_MS: 15000,
+  /** Maximum number of retry attempts */
+  MAX_RETRIES: 2,
+  /** Base delay for exponential backoff (ms) */
+  RETRY_BASE_DELAY_MS: 5000,
+};
+
+/**
+ * Static fallback suggestions for resume editing.
+ * These are displayed when dynamic suggestions fail or are loading.
  */
 export const STATIC_SUGGESTIONS = [
   {
@@ -14,7 +26,7 @@ export const STATIC_SUGGESTIONS = [
     message: "Help me write a professional summary for my resume based on my experience",
   },
   {
-    title: "💼 Add Work Experience",
+    title: "💼 Add Work",
     message: "Help me add my most recent work experience with achievement-focused bullet points",
   },
   {
@@ -22,15 +34,7 @@ export const STATIC_SUGGESTIONS = [
     message: "Help me add my educational background to the resume",
   },
   {
-    title: "⚡ Add Skills",
-    message: "Help me add my technical and soft skills organized by category",
-  },
-  {
-    title: "🚀 Add Project",
-    message: "Help me add a project that showcases my abilities",
-  },
-  {
-    title: "✨ Improve Content",
+    title: "✨ Improve Resume",
     message: "Review my resume and suggest improvements for better ATS compatibility",
   },
 ];
@@ -111,68 +115,97 @@ export function getContextAwareSuggestions(analysis: ResumeAnalysis): typeof STA
 
 /**
  * Generate dynamic chat suggestions based on resume completeness.
- * Provides context-aware actions to help users build their resume.
+ * Uses useCopilotChatSuggestions with throttling to avoid rate limits.
+ * Falls back to static suggestions when API calls fail.
  */
-export function useResumeSuggestions(resumeData: ResumeData, selectedTemplateId: string) {
+export function useResumeSuggestions(resumeData: ResumeData) {
   // Analyze resume completeness
   const analysis = useMemo(() => analyzeResumeCompleteness(resumeData), [resumeData]);
 
-  // Get context-aware static suggestions
+  // Get context-aware static suggestions as fallback
   const staticSuggestions = useMemo(
     () => getContextAwareSuggestions(analysis),
     [analysis]
   );
 
-  // Generate suggestion instructions based on analysis for dynamic AI suggestions
+  // Track if dynamic suggestions should be enabled
+  // Start disabled to avoid immediate API call on page load
+  const [isDynamicEnabled, setIsDynamicEnabled] = useState(false);
+  const lastApiCallRef = useRef<number>(0);
+  const retryCountRef = useRef<number>(0);
+
+  // Enable dynamic suggestions after a delay to avoid rate limits on page load
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const now = Date.now();
+      const timeSinceLastCall = now - lastApiCallRef.current;
+      
+      // Only enable if enough time has passed since last API call
+      if (timeSinceLastCall >= SUGGESTION_CONFIG.MIN_DELAY_MS) {
+        setIsDynamicEnabled(true);
+        lastApiCallRef.current = now;
+      }
+    }, SUGGESTION_CONFIG.MIN_DELAY_MS);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Generate minimal suggestion instructions to reduce token usage
   const suggestionInstructions = useMemo(() => {
-    const instructions: string[] = [
-      "Based on the current resume state, suggest helpful actions:",
-    ];
+    // Build compact instruction based on missing sections
+    const missing: string[] = [];
+    if (!analysis.hasBasicInfo) missing.push("contact");
+    if (!analysis.hasSummary) missing.push("summary");
+    if (analysis.workCount === 0) missing.push("work");
+    if (analysis.educationCount === 0) missing.push("education");
+    if (analysis.skillsCount === 0) missing.push("skills");
+    
+    // Keep instruction minimal to save tokens
+    if (missing.length > 0) {
+      return `Suggest adding: ${missing.join(", ")}`;
+    }
+    return "Suggest improvements for resume";
+  }, [analysis]);
 
-    // Missing sections
-    if (!analysis.hasBasicInfo) {
-      instructions.push("- Basic info is incomplete: suggest adding contact details");
+  // Throttled callback to handle rate limit errors
+  const handleSuggestionError = useCallback(() => {
+    retryCountRef.current += 1;
+    
+    if (retryCountRef.current <= SUGGESTION_CONFIG.MAX_RETRIES) {
+      // Disable and re-enable with exponential backoff
+      setIsDynamicEnabled(false);
+      const delay = SUGGESTION_CONFIG.RETRY_BASE_DELAY_MS * Math.pow(2, retryCountRef.current - 1);
+      
+      setTimeout(() => {
+        lastApiCallRef.current = Date.now();
+        setIsDynamicEnabled(true);
+      }, delay);
+    } else {
+      // Max retries exceeded, stay with static suggestions
+      setIsDynamicEnabled(false);
     }
-    if (!analysis.hasSummary) {
-      instructions.push("- Summary is empty: suggest writing a professional summary");
-    }
-    if (analysis.workCount === 0) {
-      instructions.push("- No work experience: suggest adding work history");
-    }
-    if (analysis.educationCount === 0) {
-      instructions.push("- No education: suggest adding educational background");
-    }
-    if (analysis.skillsCount === 0) {
-      instructions.push("- No skills: suggest adding relevant skills");
-    }
-    if (analysis.projectsCount === 0) {
-      instructions.push("- No projects: suggest adding portfolio projects");
-    }
+  }, []);
 
-    // Improvement suggestions
-    if (analysis.workCount > 0 && analysis.avgHighlightsPerWork < 3) {
-      instructions.push("- Work highlights are sparse: suggest improving bullet points");
-    }
-    if (analysis.skillsCount > 0 && analysis.avgSkillsPerCategory < 4) {
-      instructions.push("- Skills categories are light: suggest adding more skills");
-    }
+  // Register dynamic suggestions with CopilotKit
+  // When disabled, use minimal config to prevent API calls
+  // Reduced minSuggestions to 1 and maxSuggestions to 3 to save tokens
+  useCopilotChatSuggestions(
+    {
+      instructions: isDynamicEnabled 
+        ? suggestionInstructions 
+        : "No suggestions",
+      minSuggestions: isDynamicEnabled ? 1 : 0,
+      maxSuggestions: isDynamicEnabled ? 3 : 0,
+    },
+    [isDynamicEnabled, suggestionInstructions]
+  );
 
-    // Template suggestion
-    if (selectedTemplateId === "two-column") {
-      instructions.push("- Using default template: suggest exploring other templates");
-    }
-
-    return instructions.join("\n");
-  }, [analysis, selectedTemplateId]);
-
-  // Register dynamic suggestions with CopilotKit (AI-generated based on context)
-  useCopilotChatSuggestions({
-    instructions: suggestionInstructions,
-    minSuggestions: 2,
-    maxSuggestions: 4,
-  }, [resumeData, selectedTemplateId]);
-
-  return { analysis, staticSuggestions };
+  return { 
+    analysis, 
+    staticSuggestions, 
+    isDynamicEnabled,
+    handleSuggestionError,
+  };
 }
 
 /**

@@ -14,6 +14,7 @@ import { AIEditorContent } from './AIEditorContent';
 import { RESUME_AI_INSTRUCTIONS, CHAT_LABELS } from '@/lib/copilot/instructions';
 import { useResumeReadableContext, useResumeTools } from '@/lib/copilot/tools';
 import { useResumeSuggestions } from '@/lib/copilot/suggestions';
+import { RobustSuggestions } from '@/components/copilot/RobustSuggestions';
 import { getTemplateById, DEFAULT_TEMPLATE_ID } from '@/templates/registry';
 import { useElementScrollDirection } from '@/lib/hooks/useScrollDirection';
 
@@ -153,8 +154,8 @@ function AIEditorWrapper({
     onTemplateChange
   );
 
-  // Register chat suggestions for AI
-  useResumeSuggestions(resumeData.data, selectedTemplateId);
+  // Register chat suggestions for AI (with rate limit handling)
+  useResumeSuggestions(resumeData.data);
 
   return (
     <AIEditorContent
@@ -175,7 +176,8 @@ function AIEditorWrapper({
 
 /**
  * Wrapper component for CopilotSidebar.
- * The sidebar doesn't need hooks since they're already registered in AIEditorWrapper.
+ * Uses 'auto' suggestions mode with custom RobustSuggestions component
+ * that provides static fallback when dynamic suggestions fail (e.g., rate limit).
  */
 function CopilotSidebarWrapper() {
   return (
@@ -184,6 +186,8 @@ function CopilotSidebarWrapper() {
       instructions={RESUME_AI_INSTRUCTIONS}
       labels={CHAT_LABELS}
       className="copilot-neobrutalism"
+      suggestions="auto"
+      RenderSuggestionsList={RobustSuggestions}
     >
       {/* Empty content - actual content is in the left flex container */}
       <div />
