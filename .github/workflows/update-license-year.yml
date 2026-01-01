@@ -68,5 +68,5 @@ jobs:
             
             Please review the changes and merge if appropriate.
           branch: update-license-year
-          base: main
+          base: master
           delete-branch: true
