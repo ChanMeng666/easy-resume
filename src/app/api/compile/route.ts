@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     const cached = pdfCache.get(cacheKey);
 
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-      return new NextResponse(cached.pdf, {
+      return new NextResponse(new Uint8Array(cached.pdf), {
         headers: {
           'Content-Type': 'application/pdf',
           'X-Cache': 'HIT',
@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
       evictOldestEntries();
       pdfCache.set(cacheKey, { pdf: pdfBuffer, timestamp: Date.now() });
 
-      return new NextResponse(pdfBuffer, {
+      return new NextResponse(new Uint8Array(pdfBuffer), {
         headers: {
           'Content-Type': 'application/pdf',
           'X-Cache': 'MISS',
