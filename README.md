@@ -281,7 +281,7 @@ Beyond the core features, this project includes:
 - **Database**: Neon PostgreSQL (serverless Postgres)
 - **ORM**: Drizzle ORM for type-safe database queries
 - **Authentication**: Stack Auth for user management
-- **File Storage**: Vercel Blob Storage for PDF files
+- **File Storage**: Cloudinary for PDF files
 - **Caching**: Upstash Redis for compilation cache
 - **API Routes**: Next.js API routes for server-side logic
 
@@ -362,7 +362,7 @@ graph TB
     subgraph "External Services"
         N[Neon PostgreSQL]
         O[Stack Auth]
-        P[Vercel Blob]
+        P[Cloudinary]
         Q[Upstash Redis]
         R[OpenAI GPT-4o]
         S[Overleaf]
@@ -560,7 +560,7 @@ sequenceDiagram
     participant API as /api/compile
     participant Cache as Redis Cache
     participant Compiler as LaTeX Compiler
-    participant Blob as Vercel Blob
+    participant Blob as Cloudinary
     participant V as Viewer
 
     E->>H: LaTeX code changes
@@ -676,8 +676,10 @@ STACK_PROJECT_ID=your-stack-project-id
 STACK_API_KEY=your-stack-api-key
 DATABASE_URL=postgresql://user:password@host:5432/dbname
 
-# Required for PDF compilation
-BLOB_READ_WRITE_TOKEN=your-vercel-blob-token
+# Required for PDF compilation (Cloudinary)
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-api-key
+CLOUDINARY_API_SECRET=your-api-secret
 
 # Optional: Redis caching for PDF compilation
 UPSTASH_REDIS_REST_URL=your-redis-url
@@ -690,7 +692,7 @@ UPSTASH_REDIS_REST_TOKEN=your-redis-token
 > [!NOTE]
 > - **AI features** require an OpenAI API key. Without it, you can still use the manual editor at `/editor/manual`.
 > - **Cloud storage** requires Stack Auth and Neon PostgreSQL. Without it, resumes are stored locally in the browser.
-> - **PDF compilation** requires Vercel Blob Storage. Without it, only Overleaf export works.
+> - **PDF compilation** requires Cloudinary. Without it, only Overleaf export works.
 > - **Redis caching** is optional but recommended for better PDF compilation performance.
 
 **4. Start Development**
@@ -953,7 +955,7 @@ erDiagram
 - **Version History**: Track all changes with resume versions
 - **AI Threads**: Persistent conversation threads for CopilotKit
 - **Sharing**: Public share links with unique slugs
-- **PDF Caching**: Store compiled PDF URLs in Vercel Blob
+- **PDF Caching**: Store compiled PDF URLs in Cloudinary
 
 ### Adding New Templates
 
