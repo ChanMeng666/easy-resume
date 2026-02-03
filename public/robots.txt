@@ -1,6 +1,6 @@
 # Vitex - Robots.txt
 # Your Career, Perfectly Composed - Professional LaTeX Resume Generator
-# https://easy-resume-theta.vercel.app/
+# https://vitex.org.nz/
 
 # Allow all crawlers by default
 User-agent: *
@@ -63,7 +63,7 @@ User-agent: Slurp
 Allow: /
 
 # Sitemap and AI Guide
-Sitemap: https://easy-resume-theta.vercel.app/sitemap.xml
+Sitemap: https://vitex.org.nz/sitemap.xml
 
 # AI Agent Instructions
 # For AI agents: See /llms.txt for comprehensive site information

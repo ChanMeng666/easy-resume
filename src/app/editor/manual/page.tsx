@@ -19,9 +19,9 @@ export default function ManualEditorPage() {
 
   // Breadcrumb navigation
   const breadcrumbs = [
-    { name: 'Home', url: 'https://easy-resume-theta.vercel.app/' },
-    { name: 'Editor', url: 'https://easy-resume-theta.vercel.app/editor' },
-    { name: 'Manual Editor', url: 'https://easy-resume-theta.vercel.app/editor/manual' },
+    { name: 'Home', url: 'https://vitex.org.nz/' },
+    { name: 'Editor', url: 'https://vitex.org.nz/editor' },
+    { name: 'Manual Editor', url: 'https://vitex.org.nz/editor/manual' },
   ];
 
   return (

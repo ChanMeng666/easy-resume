@@ -69,8 +69,8 @@ export default function AIEditorPage() {
 
   // Breadcrumb navigation
   const breadcrumbs = [
-    { name: 'Home', url: 'https://easy-resume-theta.vercel.app/' },
-    { name: 'AI Editor', url: 'https://easy-resume-theta.vercel.app/editor' },
+    { name: 'Home', url: 'https://vitex.org.nz/' },
+    { name: 'AI Editor', url: 'https://vitex.org.nz/editor' },
   ];
 
   // Ref for the scrollable container

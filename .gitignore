@@ -44,3 +44,4 @@ next-env.d.ts
 # WSL/Windows security zone identifiers
 *:Zone.Identifier
 .env*.local
+.claude/settings.local.json

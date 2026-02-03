@@ -20,8 +20,8 @@ interface TemplateGalleryClientProps {
 export function TemplateGalleryClient({ templateMetadata }: TemplateGalleryClientProps) {
   // Create breadcrumb navigation
   const breadcrumbs = [
-    { name: 'Home', url: 'https://easy-resume-theta.vercel.app/' },
-    { name: 'Templates', url: 'https://easy-resume-theta.vercel.app/templates' },
+    { name: 'Home', url: 'https://vitex.org.nz/' },
+    { name: 'Templates', url: 'https://vitex.org.nz/templates' },
   ];
 
   return (
