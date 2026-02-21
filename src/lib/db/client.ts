@@ -3,9 +3,10 @@ import { drizzle } from "drizzle-orm/neon-http";
 import * as schema from "./schema";
 
 /**
- * Neon database client using HTTP for serverless environments.
- * Uses connection pooling for optimal performance.
+ * Create a per-request Neon database client.
+ * Workers require I/O bindings to be created within the request context.
  */
-const sql = neon(process.env.DATABASE_URL!);
-
-export const db = drizzle(sql, { schema });
+export function getDb() {
+  const sql = neon(process.env.DATABASE_URL!);
+  return drizzle(sql, { schema });
+}

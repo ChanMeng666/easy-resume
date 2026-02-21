@@ -35,6 +35,11 @@ npm run build        # Build production bundle
 npm run start        # Start production server
 npm run lint         # Run ESLint
 
+# Cloudflare Workers Deployment
+npm run preview      # Build and preview in local workerd runtime
+npm run deploy       # Build and deploy to Cloudflare Workers
+npm run cf-typegen   # Generate Cloudflare Worker types
+
 # Package management
 npm install          # Install all dependencies
 npx shadcn add <component>  # Add shadcn/ui components
@@ -363,12 +368,19 @@ This project underwent multiple architectural transformations:
    - **Benefits**: Distinctive, memorable design that avoids generic "AI slop" aesthetic
    - **Key files modified**: All UI components, globals.css, all pages
 
-4. **CopilotKit AI Integration (current)**:
-   - **Added**: CopilotKit for AI-powered resume editing
-   - **Features**: AI chat sidebar, conversational resume building, intelligent suggestions
-   - **API**: `/api/copilotkit` endpoint using OpenAI GPT-4o
-   - **Tools**: 20+ AI actions for resume manipulation
-   - **Fix**: React 19 type compatibility via `as unknown as` cast pattern
+4. **CopilotKit to Vercel AI SDK**:
+   - **Removed**: CopilotKit (large bundle size exceeded Cloudflare 25MB limit)
+   - **Added**: Vercel AI SDK for AI-powered resume editing
+   - **Result**: Server-side bundle ~1.3 MB gzipped, compatible with Cloudflare Workers
+
+5. **Railway to Cloudflare Workers (current)**:
+   - **Removed**: Railway deployment config (`.railway/`, `nixpacks.toml`), `output: "standalone"` from next.config
+   - **Added**: `@opennextjs/cloudflare` adapter, `wrangler.jsonc`, `open-next.config.ts`
+   - **Refactored**: All global singleton clients (DB, Redis, Stripe, Cloudinary, OpenAI) to per-request factory functions for Workers' per-request I/O context
+   - **Key patterns**: `getDb()`, `getRedis()`, `getStripe()` — each creates a fresh client per request
+   - **Stripe**: Uses `Stripe.createFetchHttpClient()` and `constructEventAsync()` with `SubtleCryptoProvider` for Workers compatibility
+   - **Cloudinary**: Replaced Node.js `Readable` streams with base64 data URI upload
+   - **Config files**: `wrangler.jsonc` (worker config), `.dev.vars` (local secrets, gitignored)
 
 **Legacy reference**: `A4_RESUME_USAGE.md` documents the original HTML/CSS approach (not currently used)
 

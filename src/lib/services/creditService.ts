@@ -1,4 +1,4 @@
-import { db } from "@/lib/db/client";
+import { getDb } from "@/lib/db/client";
 import { credits, creditTransactions } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
@@ -11,6 +11,7 @@ export const creditService = {
    * New users get 3 free credits.
    */
   async getOrCreate(userId: string) {
+    const db = getDb();
     const [existing] = await db
       .select()
       .from(credits)
@@ -59,11 +60,11 @@ export const creditService = {
     referenceType?: string,
     referenceId?: string
   ) {
+    const db = getDb();
     const record = await this.getOrCreate(userId);
 
     // Check for unlimited subscription
     if (record.subscriptionTier === "unlimited") {
-      // Log usage but don't deduct
       await db.insert(creditTransactions).values({
         userId,
         type: "usage",
@@ -111,6 +112,7 @@ export const creditService = {
     description: string,
     stripePaymentId?: string
   ) {
+    const db = getDb();
     const record = await this.getOrCreate(userId);
 
     await db
@@ -137,6 +139,7 @@ export const creditService = {
     stripeCustomerId?: string,
     stripeSubscriptionId?: string
   ) {
+    const db = getDb();
     await db
       .update(credits)
       .set({
@@ -150,6 +153,7 @@ export const creditService = {
 
   /** Get transaction history. */
   async getTransactions(userId: string, limit = 20) {
+    const db = getDb();
     return db
       .select()
       .from(creditTransactions)

@@ -1,7 +1,12 @@
 import type { NextConfig } from "next";
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
+
+initOpenNextCloudflareForDev();
 
 const nextConfig: NextConfig = {
-  output: "standalone", // Optimized for Docker/Railway deployment
+  images: {
+    unoptimized: true,
+  },
 };
 
 export default nextConfig;

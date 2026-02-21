@@ -744,9 +744,9 @@ vercel --prod
 
 <div align="center">
 
-|           Deploy with Netlify            |                     Deploy with Railway                      |
-| :-------------------------------------: | :---------------------------------------------------------: |
-| [![][deploy-netlify-button]][deploy-netlify-link] | [![][deploy-railway-button]][deploy-railway-link] |
+|           Deploy with Netlify            |                     Deploy with Cloudflare Workers                      |
+| :-------------------------------------: | :--------------------------------------------------------------------: |
+| [![][deploy-netlify-button]][deploy-netlify-link] | [Deploy to Cloudflare](https://developers.cloudflare.com/workers/) |
 
 </div>
 
@@ -1336,10 +1336,7 @@ For developers interested in implementing similar GEO strategies, see the implem
 
 <!-- Deployment Links -->
 [deploy-netlify-link]: https://app.netlify.com/start/deploy?repository=https://github.com/ChanMeng666/easy-resume
-[deploy-railway-link]: https://railway.app/new/template?template=https://github.com/ChanMeng666/easy-resume
-
 [deploy-netlify-button]: https://www.netlify.com/img/deploy/button.svg
-[deploy-railway-button]: https://railway.app/button.svg
 
 <!-- Images -->
 [image-star]: https://via.placeholder.com/800x200/FFD700/000000?text=Star+Us+on+GitHub

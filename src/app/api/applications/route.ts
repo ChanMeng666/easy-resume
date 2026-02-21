@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stackServerApp } from "@/lib/auth/stack";
-import { db } from "@/lib/db/client";
+import { getDb } from "@/lib/db/client";
 import { applications } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 
@@ -10,6 +10,7 @@ export async function GET() {
     const user = await stackServerApp.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+    const db = getDb();
     const apps = await db
       .select()
       .from(applications)
@@ -34,6 +35,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "company and position are required" }, { status: 400 });
     }
 
+    const db = getDb();
     const [app] = await db
       .insert(applications)
       .values({

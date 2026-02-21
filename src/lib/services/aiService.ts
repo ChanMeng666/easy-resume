@@ -1,20 +1,13 @@
 import OpenAI from "openai";
 
 /**
- * Lazy-loaded OpenAI client to avoid build-time errors.
- */
-let openaiClient: OpenAI | null = null;
-
-/**
- * Get the OpenAI client instance (lazy initialization).
+ * Create a per-request OpenAI client.
+ * Workers require I/O bindings to be created within the request context.
  */
 function getOpenAI(): OpenAI {
-  if (!openaiClient) {
-    openaiClient = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
-  }
-  return openaiClient;
+  return new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
 }
 
 /**
@@ -44,10 +37,6 @@ interface SuggestionContext {
 export const aiService = {
   /**
    * Improve existing resume content.
-   * @param contentType - The type of content being improved
-   * @param content - The existing content to improve
-   * @param context - Additional context for better suggestions
-   * @returns Improved version of the content
    */
   async improveContent(
     contentType: ContentType,
@@ -72,10 +61,6 @@ export const aiService = {
 
   /**
    * Generate multiple suggestions for a content type.
-   * @param contentType - The type of content to generate
-   * @param context - Context for generating relevant suggestions
-   * @param count - Number of suggestions to generate
-   * @returns Array of suggested content
    */
   async generateSuggestions(
     contentType: ContentType,
@@ -101,10 +86,6 @@ export const aiService = {
 
   /**
    * Generate bullet points for work experience.
-   * @param jobTitle - The job title
-   * @param company - The company name
-   * @param description - Brief description of responsibilities
-   * @returns Array of achievement-focused bullet points
    */
   async generateWorkHighlights(
     jobTitle: string,
@@ -146,9 +127,6 @@ Generate professional achievement-focused bullet points.`,
 
   /**
    * Suggest relevant skills based on job title and industry.
-   * @param jobTitle - The target job title
-   * @param industry - The industry or domain
-   * @returns Array of suggested skills
    */
   async suggestSkills(
     jobTitle: string,
@@ -185,9 +163,7 @@ Include 3-4 categories with 4-6 skills each.`,
     }
   },
 
-  /**
-   * Get the system prompt for a content type.
-   */
+  /** Get the system prompt for a content type. */
   getSystemPrompt(contentType: ContentType): string {
     const prompts: Record<ContentType, string> = {
       summary: `You are an expert resume writer specializing in professional summaries.
@@ -210,9 +186,7 @@ Focus on in-demand skills and industry-specific terminology.`,
     return prompts[contentType];
   },
 
-  /**
-   * Build the user prompt for content improvement.
-   */
+  /** Build the user prompt for content improvement. */
   buildUserPrompt(
     contentType: ContentType,
     content: string,
@@ -234,9 +208,7 @@ Focus on in-demand skills and industry-specific terminology.`,
     return prompt;
   },
 
-  /**
-   * Build the user prompt for content generation.
-   */
+  /** Build the user prompt for content generation. */
   buildGenerationPrompt(
     contentType: ContentType,
     context: SuggestionContext,
@@ -264,15 +236,12 @@ Focus on in-demand skills and industry-specific terminology.`,
     return prompt;
   },
 
-  /**
-   * Parse numbered suggestions from AI response.
-   */
+  /** Parse numbered suggestions from AI response. */
   parseSuggestions(content: string, expectedCount: number): string[] {
     const lines = content.split("\n").filter((line) => line.trim());
     const suggestions: string[] = [];
 
     for (const line of lines) {
-      // Remove numbering like "1.", "1)", "- ", etc.
       const cleaned = line.replace(/^[\d]+[.)]\s*|-\s*/, "").trim();
       if (cleaned.length > 0) {
         suggestions.push(cleaned);

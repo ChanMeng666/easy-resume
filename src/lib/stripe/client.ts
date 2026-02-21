@@ -1,27 +1,16 @@
 import Stripe from "stripe";
 
 /**
- * Lazy-initialized Stripe SDK client instance.
- * Deferred to avoid build-time errors when STRIPE_SECRET_KEY is not set.
+ * Create a per-request Stripe client compatible with Workers runtime.
+ * Uses fetch-based HTTP client instead of Node.js http module.
  */
-let _stripe: Stripe | null = null;
-
 export function getStripe(): Stripe {
-  if (!_stripe) {
-    const key = process.env.STRIPE_SECRET_KEY;
-    if (!key) {
-      throw new Error("STRIPE_SECRET_KEY environment variable is not set");
-    }
-    _stripe = new Stripe(key, {
-      apiVersion: "2026-01-28.clover",
-    });
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) {
+    throw new Error("STRIPE_SECRET_KEY environment variable is not set");
   }
-  return _stripe;
+  return new Stripe(key, {
+    apiVersion: "2026-01-28.clover",
+    httpClient: Stripe.createFetchHttpClient(),
+  });
 }
-
-/** @deprecated Use getStripe() for lazy initialization. */
-export const stripe = new Proxy({} as Stripe, {
-  get(_, prop) {
-    return (getStripe() as unknown as Record<string | symbol, unknown>)[prop];
-  },
-});

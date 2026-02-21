@@ -1,4 +1,4 @@
-import { db } from "@/lib/db/client";
+import { getDb } from "@/lib/db/client";
 import { resumeVersions, resumes } from "@/lib/db/schema";
 import { eq, desc, and } from "drizzle-orm";
 
@@ -7,9 +7,7 @@ import { eq, desc, and } from "drizzle-orm";
  * Enables time travel and undo/redo for resume edits.
  */
 export const versionService = {
-  /**
-   * Create a version snapshot of a resume.
-   */
+  /** Create a version snapshot of a resume. */
   async createVersion(
     resumeId: string,
     data: Record<string, unknown>,
@@ -21,7 +19,7 @@ export const versionService = {
       changedBy?: "user" | "ai" | "system";
     }
   ) {
-    // Get current version number
+    const db = getDb();
     const [latest] = await db
       .select()
       .from(resumeVersions)
@@ -48,10 +46,9 @@ export const versionService = {
     return newVersion;
   },
 
-  /**
-   * Get version history for a resume.
-   */
+  /** Get version history for a resume. */
   async getVersionHistory(resumeId: string, limit = 20) {
+    const db = getDb();
     return db
       .select()
       .from(resumeVersions)
@@ -60,10 +57,9 @@ export const versionService = {
       .limit(limit);
   },
 
-  /**
-   * Get a specific version of a resume.
-   */
+  /** Get a specific version of a resume. */
   async getVersion(resumeId: string, version: number) {
+    const db = getDb();
     const [v] = await db
       .select()
       .from(resumeVersions)
@@ -77,10 +73,9 @@ export const versionService = {
     return v;
   },
 
-  /**
-   * Get the latest version of a resume.
-   */
+  /** Get the latest version of a resume. */
   async getLatestVersion(resumeId: string) {
+    const db = getDb();
     const [latest] = await db
       .select()
       .from(resumeVersions)
@@ -95,13 +90,12 @@ export const versionService = {
    * Creates a new version snapshot with the restored data.
    */
   async restoreToVersion(resumeId: string, version: number) {
-    // Get the version to restore
+    const db = getDb();
     const targetVersion = await this.getVersion(resumeId, version);
     if (!targetVersion) {
       throw new Error(`Version ${version} not found for resume ${resumeId}`);
     }
 
-    // Update the resume with the restored data
     const [updatedResume] = await db
       .update(resumes)
       .set({
@@ -112,7 +106,6 @@ export const versionService = {
       .where(eq(resumes.id, resumeId))
       .returning();
 
-    // Create a new version snapshot for the restore action
     const newVersion = await this.createVersion(
       resumeId,
       targetVersion.data as Record<string, unknown>,
@@ -126,10 +119,9 @@ export const versionService = {
     return { resume: updatedResume, version: newVersion };
   },
 
-  /**
-   * Get the count of versions for a resume.
-   */
+  /** Get the count of versions for a resume. */
   async getVersionCount(resumeId: string) {
+    const db = getDb();
     const versions = await db
       .select()
       .from(resumeVersions)
@@ -137,10 +129,9 @@ export const versionService = {
     return versions.length;
   },
 
-  /**
-   * Delete old versions, keeping only the most recent N versions.
-   */
+  /** Delete old versions, keeping only the most recent N versions. */
   async pruneVersions(resumeId: string, keepCount = 50) {
+    const db = getDb();
     const allVersions = await db
       .select()
       .from(resumeVersions)

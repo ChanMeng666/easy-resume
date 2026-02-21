@@ -45,3 +45,8 @@ next-env.d.ts
 *:Zone.Identifier
 .env*.local
 .claude/settings.local.json
+
+# cloudflare
+.open-next
+.wrangler
+.dev.vars

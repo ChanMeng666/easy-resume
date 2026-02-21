@@ -1,4 +1,4 @@
-import { db } from "@/lib/db/client";
+import { getDb } from "@/lib/db/client";
 import { agentThreads, agentMessages, NewAgentMessage } from "@/lib/db/schema";
 import { eq, desc, and, lte } from "drizzle-orm";
 
@@ -6,10 +6,9 @@ import { eq, desc, and, lte } from "drizzle-orm";
  * Service for managing AI agent conversation threads.
  */
 export const threadService = {
-  /**
-   * Create a new conversation thread.
-   */
+  /** Create a new conversation thread. */
   async createThread(userId: string, resumeId?: string, title?: string) {
+    const db = getDb();
     const [thread] = await db
       .insert(agentThreads)
       .values({
@@ -21,10 +20,9 @@ export const threadService = {
     return thread;
   },
 
-  /**
-   * Get a user's conversation threads.
-   */
+  /** Get a user's conversation threads. */
   async getUserThreads(userId: string, limit = 10) {
+    const db = getDb();
     return db
       .select()
       .from(agentThreads)
@@ -33,10 +31,9 @@ export const threadService = {
       .limit(limit);
   },
 
-  /**
-   * Get threads associated with a specific resume.
-   */
+  /** Get threads associated with a specific resume. */
   async getResumeThreads(resumeId: string, limit = 10) {
+    const db = getDb();
     return db
       .select()
       .from(agentThreads)
@@ -45,10 +42,9 @@ export const threadService = {
       .limit(limit);
   },
 
-  /**
-   * Get a thread by ID.
-   */
+  /** Get a thread by ID. */
   async getThread(threadId: string) {
+    const db = getDb();
     const [thread] = await db
       .select()
       .from(agentThreads)
@@ -57,11 +53,14 @@ export const threadService = {
     return thread;
   },
 
-  /**
-   * Get a thread with all its messages.
-   */
+  /** Get a thread with all its messages. */
   async getThreadWithMessages(threadId: string) {
-    const thread = await this.getThread(threadId);
+    const db = getDb();
+    const [thread] = await db
+      .select()
+      .from(agentThreads)
+      .where(eq(agentThreads.id, threadId))
+      .limit(1);
     if (!thread) return null;
 
     const messages = await db
@@ -73,14 +72,17 @@ export const threadService = {
     return { thread, messages };
   },
 
-  /**
-   * Add a message to a thread.
-   */
+  /** Add a message to a thread. */
   async addMessage(
     threadId: string,
     message: Omit<NewAgentMessage, "id" | "threadId" | "createdAt" | "sequenceNum">
   ) {
-    const thread = await this.getThread(threadId);
+    const db = getDb();
+    const [thread] = await db
+      .select()
+      .from(agentThreads)
+      .where(eq(agentThreads.id, threadId))
+      .limit(1);
     if (!thread) throw new Error("Thread not found");
 
     const sequenceNum = (thread.messageCount || 0) + 1;
@@ -106,10 +108,9 @@ export const threadService = {
     return newMessage;
   },
 
-  /**
-   * Get messages up to a specific sequence number.
-   */
+  /** Get messages up to a specific sequence number. */
   async getMessagesUpTo(threadId: string, sequenceNum: number) {
+    const db = getDb();
     return db
       .select()
       .from(agentMessages)
@@ -122,13 +123,12 @@ export const threadService = {
       .orderBy(agentMessages.sequenceNum);
   },
 
-  /**
-   * Update thread status.
-   */
+  /** Update thread status. */
   async updateThreadStatus(
     threadId: string,
     status: "active" | "completed" | "archived"
   ) {
+    const db = getDb();
     const [updated] = await db
       .update(agentThreads)
       .set({ status, updatedAt: new Date() })
@@ -137,10 +137,9 @@ export const threadService = {
     return updated;
   },
 
-  /**
-   * Update thread title.
-   */
+  /** Update thread title. */
   async updateThreadTitle(threadId: string, title: string) {
+    const db = getDb();
     const [updated] = await db
       .update(agentThreads)
       .set({ title, updatedAt: new Date() })
@@ -149,10 +148,9 @@ export const threadService = {
     return updated;
   },
 
-  /**
-   * Delete a thread and all its messages (cascade).
-   */
+  /** Delete a thread and all its messages (cascade). */
   async deleteThread(threadId: string) {
+    const db = getDb();
     await db.delete(agentThreads).where(eq(agentThreads.id, threadId));
   },
 };

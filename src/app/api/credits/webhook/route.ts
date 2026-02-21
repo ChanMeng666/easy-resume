@@ -1,10 +1,11 @@
+import Stripe from "stripe";
 import { NextRequest, NextResponse } from "next/server";
-import { stripe } from "@/lib/stripe/client";
+import { getStripe } from "@/lib/stripe/client";
 import { creditService } from "@/lib/services/creditService";
 
 /**
  * POST /api/credits/webhook - Stripe webhook handler.
- * Processes checkout completions and subscription events.
+ * Uses async webhook verification for Workers compatibility.
  */
 export async function POST(request: NextRequest) {
   const body = await request.text();
@@ -14,12 +15,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Missing signature" }, { status: 400 });
   }
 
+  const stripe = getStripe();
+
   let event;
   try {
-    event = stripe.webhooks.constructEvent(
+    event = await stripe.webhooks.constructEventAsync(
       body,
       signature,
-      process.env.STRIPE_WEBHOOK_SECRET || ""
+      process.env.STRIPE_WEBHOOK_SECRET || "",
+      undefined,
+      Stripe.createSubtleCryptoProvider()
     );
   } catch (err) {
     console.error("Webhook signature verification failed:", err);
@@ -59,9 +64,6 @@ export async function POST(request: NextRequest) {
       case "customer.subscription.deleted": {
         const subscription = event.data.object;
         const customerId = subscription.customer as string;
-
-        // Find user by stripe customer ID and downgrade
-        // This is a simplified approach - in production, store customer ID mapping
         console.log(`Subscription cancelled for customer: ${customerId}`);
         break;
       }
@@ -69,7 +71,6 @@ export async function POST(request: NextRequest) {
       case "invoice.payment_succeeded": {
         const invoice = event.data.object;
         if (invoice.billing_reason === "subscription_cycle") {
-          // Recurring payment - refresh monthly credits for pro users
           const customerId = invoice.customer as string;
           console.log(`Monthly renewal for customer: ${customerId}`);
         }

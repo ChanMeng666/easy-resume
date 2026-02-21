@@ -1,4 +1,4 @@
-import { db } from "@/lib/db/client";
+import { getDb } from "@/lib/db/client";
 import { resumes, type NewResume, type Resume } from "@/lib/db/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { nanoid } from "nanoid";
@@ -12,7 +12,7 @@ export const resumeService = {
    * Get all resumes for a user.
    */
   async getAll(userId: string): Promise<Resume[]> {
-    return db
+    return getDb()
       .select()
       .from(resumes)
       .where(eq(resumes.userId, userId))
@@ -24,7 +24,7 @@ export const resumeService = {
    * Returns null if not found or not owned by user.
    */
   async getById(id: string, userId: string): Promise<Resume | null> {
-    const result = await db
+    const result = await getDb()
       .select()
       .from(resumes)
       .where(and(eq(resumes.id, id), eq(resumes.userId, userId)))
@@ -36,7 +36,7 @@ export const resumeService = {
    * Get a resume by share slug (for public viewing).
    */
   async getByShareSlug(slug: string): Promise<Resume | null> {
-    const result = await db
+    const result = await getDb()
       .select()
       .from(resumes)
       .where(and(eq(resumes.shareSlug, slug), eq(resumes.isPublic, true)))
@@ -48,7 +48,7 @@ export const resumeService = {
    * Create a new resume.
    */
   async create(data: Omit<NewResume, "id" | "createdAt" | "updatedAt">): Promise<Resume> {
-    const result = await db.insert(resumes).values(data).returning();
+    const result = await getDb().insert(resumes).values(data).returning();
     return result[0];
   },
 
@@ -60,7 +60,7 @@ export const resumeService = {
     userId: string,
     data: Partial<Omit<NewResume, "id" | "userId" | "createdAt">>
   ): Promise<Resume | null> {
-    const result = await db
+    const result = await getDb()
       .update(resumes)
       .set({ ...data, updatedAt: new Date() })
       .where(and(eq(resumes.id, id), eq(resumes.userId, userId)))
@@ -72,7 +72,7 @@ export const resumeService = {
    * Delete a resume.
    */
   async delete(id: string, userId: string): Promise<boolean> {
-    const result = await db
+    const result = await getDb()
       .delete(resumes)
       .where(and(eq(resumes.id, id), eq(resumes.userId, userId)))
       .returning();
@@ -84,7 +84,7 @@ export const resumeService = {
    */
   async generateShareSlug(id: string, userId: string): Promise<string | null> {
     const slug = nanoid(10);
-    const result = await db
+    const result = await getDb()
       .update(resumes)
       .set({ shareSlug: slug, isPublic: true, updatedAt: new Date() })
       .where(and(eq(resumes.id, id), eq(resumes.userId, userId)))
@@ -96,7 +96,7 @@ export const resumeService = {
    * Remove share slug and make resume private.
    */
   async removeShareSlug(id: string, userId: string): Promise<boolean> {
-    const result = await db
+    const result = await getDb()
       .update(resumes)
       .set({ shareSlug: null, isPublic: false, updatedAt: new Date() })
       .where(and(eq(resumes.id, id), eq(resumes.userId, userId)))

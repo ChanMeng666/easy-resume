@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stackServerApp } from "@/lib/auth/stack";
-import { db } from "@/lib/db/client";
+import { getDb } from "@/lib/db/client";
 import { applications } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 
@@ -11,6 +11,7 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { id } = await params;
+    const db = getDb();
     const [app] = await db
       .select()
       .from(applications)
@@ -34,6 +35,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const { id } = await params;
     const body = await request.json();
 
+    const db = getDb();
     const [updated] = await db
       .update(applications)
       .set({ ...body, updatedAt: new Date() })
@@ -55,6 +57,7 @@ export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id:
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { id } = await params;
+    const db = getDb();
     await db
       .delete(applications)
       .where(and(eq(applications.id, id), eq(applications.userId, user.id)));

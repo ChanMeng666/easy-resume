@@ -1,4 +1,4 @@
-import { db } from "@/lib/db/client";
+import { getDb } from "@/lib/db/client";
 import { tailoredResumes, NewTailoredResume } from "@/lib/db/schema";
 import { eq, desc, and } from "drizzle-orm";
 
@@ -8,12 +8,14 @@ import { eq, desc, and } from "drizzle-orm";
 export const tailorService = {
   /** Create a new tailored resume. */
   async create(data: Omit<NewTailoredResume, "id" | "createdAt" | "updatedAt">) {
+    const db = getDb();
     const [tailored] = await db.insert(tailoredResumes).values(data).returning();
     return tailored;
   },
 
   /** Get all tailored resumes for a user. */
   async getByUser(userId: string) {
+    const db = getDb();
     return db
       .select()
       .from(tailoredResumes)
@@ -23,6 +25,7 @@ export const tailorService = {
 
   /** Get a single tailored resume by ID. */
   async getById(id: string) {
+    const db = getDb();
     const [tailored] = await db
       .select()
       .from(tailoredResumes)
@@ -33,6 +36,7 @@ export const tailorService = {
 
   /** Update a tailored resume. */
   async update(id: string, userId: string, data: Partial<NewTailoredResume>) {
+    const db = getDb();
     const [updated] = await db
       .update(tailoredResumes)
       .set({ ...data, updatedAt: new Date() })
@@ -43,6 +47,7 @@ export const tailorService = {
 
   /** Delete a tailored resume. */
   async delete(id: string, userId: string) {
+    const db = getDb();
     await db
       .delete(tailoredResumes)
       .where(and(eq(tailoredResumes.id, id), eq(tailoredResumes.userId, userId)));
@@ -50,6 +55,7 @@ export const tailorService = {
 
   /** Get tailored resumes for a specific base resume. */
   async getByBaseResume(baseResumeId: string) {
+    const db = getDb();
     return db
       .select()
       .from(tailoredResumes)
