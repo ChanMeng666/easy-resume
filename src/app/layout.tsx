@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Titan_One } from "next/font/google";
 import { StackAuthProvider } from "@/components/auth/StackProvider";
-import { CopilotKit } from "@copilotkit/react-core";
-import "@copilotkit/react-ui/styles.css";
-import "@copilotkit/react-textarea/styles.css";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -28,8 +25,8 @@ const titanOne = Titan_One({
 });
 
 export const metadata: Metadata = {
-  title: "Vitex | AI-powered Resume Builder",
-  description: "Your Career, Perfectly Composed - AI-powered resume builder with professional LaTeX templates. Create ATS-friendly resumes in minutes with AI assistance.",
+  title: "Vitex | AI Career Agent",
+  description: "Your AI Career Agent - Job-targeted resumes, ATS optimization, and cover letters powered by AI. Transform your job search with intelligent resume tailoring.",
   icons: {
     icon: '/logo/vitex-logo-white-with-bg.svg',
     shortcut: '/logo/vitex-logo-white-with-bg.svg',
@@ -48,9 +45,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${titanOne.variable} antialiased`}
       >
         <StackAuthProvider>
-          <CopilotKit runtimeUrl="/api/copilotkit">
-            {children}
-          </CopilotKit>
+          {children}
         </StackAuthProvider>
       </body>
     </html>

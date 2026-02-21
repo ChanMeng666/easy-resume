@@ -12,10 +12,8 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@copilotkit/react-core": "^1.50.1",
-    "@copilotkit/react-textarea": "^1.50.1",
-    "@copilotkit/react-ui": "^1.50.1",
-    "@copilotkit/runtime": "^1.50.1",
+    "@ai-sdk/openai": "^3.0.30",
+    "@ai-sdk/react": "^3.0.99",
     "@hookform/resolvers": "^5.2.2",
     "@neondatabase/serverless": "^1.0.2",
     "@radix-ui/react-accordion": "^1.2.12",
@@ -27,6 +25,7 @@
     "@radix-ui/react-tabs": "^1.1.13",
     "@stackframe/stack": "^2.8.54",
     "@upstash/redis": "^1.35.7",
+    "ai": "^6.0.97",
     "class-variance-authority": "^0.7.1",
     "cloudinary": "^2.9.0",
     "clsx": "^2.1.1",
@@ -41,6 +40,7 @@
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
     "react-hook-form": "^7.64.0",
+    "stripe": "^20.3.1",
     "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7",
     "use-debounce": "^10.0.6",
