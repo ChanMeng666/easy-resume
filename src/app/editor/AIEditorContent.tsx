@@ -8,10 +8,7 @@ import { PreviewTabs } from '@/components/preview/PreviewTabs';
 import { ResumeData } from '@/lib/validation/schema';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Edit3, Zap } from 'lucide-react';
-import { useEditorScrollDirection } from '@/lib/copilot/editor-context';
-import { SectionSelector } from '@/components/copilot/SectionSelector';
-import { EditSection } from '@/lib/copilot/sections';
+import { Sparkles, Edit3 } from 'lucide-react';
 
 interface AIEditorContentProps {
   data: ResumeData;
@@ -25,13 +22,11 @@ interface AIEditorContentProps {
   latexCode: string;
   onExportJSON: () => void;
   onImportJSON: (file: File) => Promise<void>;
-  activeSection: EditSection;
-  onSectionChange: (section: EditSection) => void;
 }
 
 /**
- * AI Editor content component with section-based editing.
- * Shows section selector for focused AI editing and live preview.
+ * AI Editor content component.
+ * Shows live preview and toolbar. Chat interaction happens in the AgentChatPanel sidebar.
  */
 export function AIEditorContent({
   data: currentData,
@@ -44,14 +39,8 @@ export function AIEditorContent({
   latexCode,
   onExportJSON,
   onImportJSON,
-  activeSection,
-  onSectionChange,
 }: AIEditorContentProps) {
-  // Track last saved time
   const [lastSaved, setLastSaved] = useState<Date>(new Date());
-  
-  // Get scroll direction from context (for flex layout scroll container)
-  const scrollDirection = useEditorScrollDirection();
 
   useEffect(() => {
     setLastSaved(new Date());
@@ -70,7 +59,6 @@ export function AIEditorContent({
         onExportJSON={onExportJSON}
         onImportJSON={onImportJSON}
         navbarFixed={false}
-        externalScrollDirection={scrollDirection}
       />
 
       <main className="container mx-auto px-4 py-8">
@@ -85,36 +73,16 @@ export function AIEditorContent({
           </motion.div>
         )}
 
-        {/* Section Selector Card */}
+        {/* AI Mode Banner */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6 p-4 rounded-xl bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
-        >
-          <div className="flex items-center gap-2 mb-3">
-            <Zap className="w-5 h-5 text-purple-600" />
-            <span className="font-bold text-sm">Select Section to Edit</span>
-            <span className="text-xs text-muted-foreground ml-auto hidden sm:block">
-              Focused editing = faster AI responses
-            </span>
-          </div>
-          <SectionSelector
-            activeSection={activeSection}
-            onSectionChange={onSectionChange}
-          />
-        </motion.div>
-
-        {/* AI Mode Banner - Compact */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
           className="mb-6 p-3 rounded-xl bg-gradient-to-r from-purple-100 to-cyan-100"
         >
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-purple-600" />
-              <p className="font-bold text-sm">Chat with AI in sidebar →</p>
+              <p className="font-bold text-sm">Chat with AI Agent in sidebar</p>
             </div>
             <div className="flex items-center gap-2">
               {isDbMode && (
@@ -132,11 +100,11 @@ export function AIEditorContent({
           </div>
         </motion.div>
 
-        {/* Preview Area - Full Width */}
+        {/* Preview Area */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
+          transition={{ delay: 0.1 }}
         >
           {isLoaded ? (
             <PreviewTabs
@@ -153,20 +121,20 @@ export function AIEditorContent({
           )}
         </motion.div>
 
-        {/* Instructions - Compact */}
+        {/* Quick Start Instructions */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
+          transition={{ delay: 0.2 }}
           className="mt-8 rounded-xl bg-white p-5"
         >
           <h2 className="mb-3 text-base font-black">Quick Start</h2>
           <div className="grid sm:grid-cols-2 gap-3 text-sm">
             {[
-              { num: '1', text: 'Select a section above' },
-              { num: '2', text: 'Chat with AI in sidebar' },
-              { num: '3', text: 'Watch resume update live' },
-              { num: '4', text: 'Export to Overleaf' },
+              { num: '1', text: 'Chat with AI in sidebar' },
+              { num: '2', text: 'Paste a job description to tailor' },
+              { num: '3', text: 'Watch your resume update live' },
+              { num: '4', text: 'Export to Overleaf or download' },
             ].map((item) => (
               <div key={item.num} className="flex items-center gap-2">
                 <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md bg-purple-600 text-xs font-black text-white">

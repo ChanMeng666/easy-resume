@@ -1,10 +1,9 @@
 import { db } from "@/lib/db/client";
-import { copilotThreads, copilotMessages, NewCopilotMessage } from "@/lib/db/schema";
+import { agentThreads, agentMessages, NewAgentMessage } from "@/lib/db/schema";
 import { eq, desc, and, lte } from "drizzle-orm";
 
 /**
- * Service for managing CopilotKit conversation threads.
- * Supports thread persistence and time travel features (v1.50).
+ * Service for managing AI agent conversation threads.
  */
 export const threadService = {
   /**
@@ -12,7 +11,7 @@ export const threadService = {
    */
   async createThread(userId: string, resumeId?: string, title?: string) {
     const [thread] = await db
-      .insert(copilotThreads)
+      .insert(agentThreads)
       .values({
         userId,
         resumeId,
@@ -28,9 +27,9 @@ export const threadService = {
   async getUserThreads(userId: string, limit = 10) {
     return db
       .select()
-      .from(copilotThreads)
-      .where(eq(copilotThreads.userId, userId))
-      .orderBy(desc(copilotThreads.updatedAt))
+      .from(agentThreads)
+      .where(eq(agentThreads.userId, userId))
+      .orderBy(desc(agentThreads.updatedAt))
       .limit(limit);
   },
 
@@ -40,9 +39,9 @@ export const threadService = {
   async getResumeThreads(resumeId: string, limit = 10) {
     return db
       .select()
-      .from(copilotThreads)
-      .where(eq(copilotThreads.resumeId, resumeId))
-      .orderBy(desc(copilotThreads.updatedAt))
+      .from(agentThreads)
+      .where(eq(agentThreads.resumeId, resumeId))
+      .orderBy(desc(agentThreads.updatedAt))
       .limit(limit);
   },
 
@@ -52,8 +51,8 @@ export const threadService = {
   async getThread(threadId: string) {
     const [thread] = await db
       .select()
-      .from(copilotThreads)
-      .where(eq(copilotThreads.id, threadId))
+      .from(agentThreads)
+      .where(eq(agentThreads.id, threadId))
       .limit(1);
     return thread;
   },
@@ -67,9 +66,9 @@ export const threadService = {
 
     const messages = await db
       .select()
-      .from(copilotMessages)
-      .where(eq(copilotMessages.threadId, threadId))
-      .orderBy(copilotMessages.sequenceNum);
+      .from(agentMessages)
+      .where(eq(agentMessages.threadId, threadId))
+      .orderBy(agentMessages.sequenceNum);
 
     return { thread, messages };
   },
@@ -79,17 +78,15 @@ export const threadService = {
    */
   async addMessage(
     threadId: string,
-    message: Omit<NewCopilotMessage, "id" | "threadId" | "createdAt" | "sequenceNum">
+    message: Omit<NewAgentMessage, "id" | "threadId" | "createdAt" | "sequenceNum">
   ) {
-    // Get current message count for sequence number
     const thread = await this.getThread(threadId);
     if (!thread) throw new Error("Thread not found");
 
     const sequenceNum = (thread.messageCount || 0) + 1;
 
-    // Insert message
     const [newMessage] = await db
-      .insert(copilotMessages)
+      .insert(agentMessages)
       .values({
         threadId,
         sequenceNum,
@@ -97,33 +94,32 @@ export const threadService = {
       })
       .returning();
 
-    // Update thread metadata
     await db
-      .update(copilotThreads)
+      .update(agentThreads)
       .set({
         messageCount: sequenceNum,
         lastMessageAt: new Date(),
         updatedAt: new Date(),
       })
-      .where(eq(copilotThreads.id, threadId));
+      .where(eq(agentThreads.id, threadId));
 
     return newMessage;
   },
 
   /**
-   * Get messages up to a specific sequence number (for time travel).
+   * Get messages up to a specific sequence number.
    */
   async getMessagesUpTo(threadId: string, sequenceNum: number) {
     return db
       .select()
-      .from(copilotMessages)
+      .from(agentMessages)
       .where(
         and(
-          eq(copilotMessages.threadId, threadId),
-          lte(copilotMessages.sequenceNum, sequenceNum)
+          eq(agentMessages.threadId, threadId),
+          lte(agentMessages.sequenceNum, sequenceNum)
         )
       )
-      .orderBy(copilotMessages.sequenceNum);
+      .orderBy(agentMessages.sequenceNum);
   },
 
   /**
@@ -134,9 +130,9 @@ export const threadService = {
     status: "active" | "completed" | "archived"
   ) {
     const [updated] = await db
-      .update(copilotThreads)
+      .update(agentThreads)
       .set({ status, updatedAt: new Date() })
-      .where(eq(copilotThreads.id, threadId))
+      .where(eq(agentThreads.id, threadId))
       .returning();
     return updated;
   },
@@ -146,29 +142,9 @@ export const threadService = {
    */
   async updateThreadTitle(threadId: string, title: string) {
     const [updated] = await db
-      .update(copilotThreads)
+      .update(agentThreads)
       .set({ title, updatedAt: new Date() })
-      .where(eq(copilotThreads.id, threadId))
-      .returning();
-    return updated;
-  },
-
-  /**
-   * Update agent state for multi-agent coordination.
-   */
-  async updateAgentState(
-    threadId: string,
-    agentState: Record<string, unknown>,
-    lastAgentId?: string
-  ) {
-    const [updated] = await db
-      .update(copilotThreads)
-      .set({
-        agentState,
-        lastAgentId,
-        updatedAt: new Date(),
-      })
-      .where(eq(copilotThreads.id, threadId))
+      .where(eq(agentThreads.id, threadId))
       .returning();
     return updated;
   },
@@ -177,6 +153,6 @@ export const threadService = {
    * Delete a thread and all its messages (cascade).
    */
   async deleteThread(threadId: string) {
-    await db.delete(copilotThreads).where(eq(copilotThreads.id, threadId));
+    await db.delete(agentThreads).where(eq(agentThreads.id, threadId));
   },
 };
