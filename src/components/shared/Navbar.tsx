@@ -7,7 +7,7 @@ import { UserButton } from '@/components/auth/UserButton';
 import { ReactNode, Suspense, useState } from 'react';
 import { useScrollDirection } from '@/lib/hooks/useScrollDirection';
 import { useUser } from "@stackframe/stack";
-import { Sparkles, Menu, X, LayoutDashboard, Palette, PenTool } from 'lucide-react';
+import { Sparkles, Menu, X, LayoutDashboard, Palette, Target, CreditCard } from 'lucide-react';
 
 interface NavbarProps {
   currentPath?: string;
@@ -63,16 +63,22 @@ function NavLinksInner({ currentPath }: { currentPath: string }) {
         </Link>
       )}
 
+      {/* Tailor - Job targeting */}
+      <Link href="/tailor" className={getNavLinkStyles(currentPath, '/tailor')}>
+        <Target className="w-4 h-4" />
+        Tailor
+      </Link>
+
       {/* Templates - Always visible */}
       <Link href="/templates" className={getNavLinkStyles(currentPath, '/templates')}>
         <Palette className="w-4 h-4" />
         Templates
       </Link>
 
-      {/* Manual Editor - Secondary option */}
-      <Link href="/editor/manual" className={getNavLinkStyles(currentPath, '/editor/manual')}>
-        <PenTool className="w-4 h-4" />
-        Manual Editor
+      {/* Pricing */}
+      <Link href="/pricing" className={getNavLinkStyles(currentPath, '/pricing')}>
+        <CreditCard className="w-4 h-4" />
+        Pricing
       </Link>
     </>
   );
@@ -126,9 +132,19 @@ function MobileMenu({
             </Link>
           )}
 
+          {/* Tailor */}
+          <Link
+            href="/tailor"
+            onClick={onClose}
+            className={`${getNavLinkStyles(currentPath, '/tailor')} w-full`}
+          >
+            <Target className="w-4 h-4" />
+            Tailor
+          </Link>
+
           {/* Templates */}
-          <Link 
-            href="/templates" 
+          <Link
+            href="/templates"
             onClick={onClose}
             className={`${getNavLinkStyles(currentPath, '/templates')} w-full`}
           >
@@ -136,14 +152,14 @@ function MobileMenu({
             Templates
           </Link>
 
-          {/* Manual Editor */}
-          <Link 
-            href="/editor/manual" 
+          {/* Pricing */}
+          <Link
+            href="/pricing"
             onClick={onClose}
-            className={`${getNavLinkStyles(currentPath, '/editor/manual')} w-full`}
+            className={`${getNavLinkStyles(currentPath, '/pricing')} w-full`}
           >
-            <PenTool className="w-4 h-4" />
-            Manual Editor
+            <CreditCard className="w-4 h-4" />
+            Pricing
           </Link>
 
           {/* AI Editor - Primary CTA */}
