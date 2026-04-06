@@ -139,26 +139,28 @@ The UI follows a **Neobrutalism** design aesthetic with these key characteristic
 ### Page Structure
 
 #### Homepage (`src/app/page.tsx`)
-- **Hero section**: Large headline with gradient text, animated floating badges
-- **Features grid**: 3-column card grid with hover effects
-- **Statistics section**: White banner with bordered stats
-- **CTA section**: Final call-to-action with primary button
-
-#### Templates Page (`src/app/templates/page.tsx`)
-- Filter buttons with active state styling
-- Template cards with preview iframe and hover overlay
-
-#### Dashboard Page (`src/app/dashboard/page.tsx`)
-- Tab navigation with Neobrutalism styling
-- Resume cards grid with creation dialog
+- **Product entry point**: JD textarea + background textarea + "Generate My Resume" button
+- **How It Works**: 3-card grid (Paste JD → AI Generates → Download PDF)
+- Uses sessionStorage to pass data to /editor
 
 #### Editor Page (`src/app/editor/page.tsx`)
-- Two-column layout (editor left, preview right)
-- Toolbar with export buttons and template selector
+- **Result review page**: Shows AI generation progress, then PDF preview with actions
+- **Progress state**: 7-step animated progress synced with backend SSE pipeline
+- **Result state**: PDF preview + ATS score badge + matched skills + cover letter
+- **Export actions**: Download PDF, Download .typ, Copy Code, Show Cover Letter
+- **Refinement input**: Natural language feedback → re-runs pipeline
+
+#### Dashboard Page (`src/app/dashboard/page.tsx`)
+- **2-tab layout**: Resumes (card grid with CRUD) + Credits (balance, transactions, buy)
+- Requires authentication
+
+#### Pricing Page (`src/app/pricing/page.tsx`)
+- Subscription tiers and credit packs
 
 ### Preview Components
-- **TypstPreview** (`src/components/preview/TypstPreview.tsx`): Displays generated Typst code with syntax highlighting
-- **ExportButtons** (`src/components/preview/ExportButtons.tsx`): Three export actions (Compile PDF, Copy, Download)
+- **LivePdfPreview** (`src/components/preview/LivePdfPreview.tsx`): Compiles Typst and displays PDF in iframe
+- **LatexPreview** (`src/components/preview/LatexPreview.tsx`): Displays Typst source code with monospace formatting
+- **ExportButtons** (`src/components/preview/ExportButtons.tsx`): Download .typ and Copy Code actions
 
 ### UI Library
 - **shadcn/ui**: Pre-built components in `src/components/ui/` customized for Neobrutalism
@@ -182,41 +184,63 @@ The UI follows a **Neobrutalism** design aesthetic with these key characteristic
 ```
 src/
 ├── app/
-│   ├── page.tsx              # Marketing homepage
+│   ├── page.tsx              # Product entry point (JD + background → generate)
 │   ├── layout.tsx            # Root layout with metadata
 │   ├── globals.css           # Global styles and CSS variables
 │   ├── api/
-│   │   ├── copilotkit/route.ts  # CopilotKit runtime endpoint
-│   │   └── ...               # Other API routes
+│   │   ├── generate/route.ts # AI generation pipeline (SSE streaming)
+│   │   ├── agent/chat/route.ts # Agent chat endpoint (Vercel AI SDK)
+│   │   ├── compile/route.ts  # Local Typst → PDF compilation
+│   │   ├── ai/suggest/route.ts # AI content suggestions
+│   │   ├── resumes/          # Resume CRUD endpoints
+│   │   ├── jd/               # Job description parsing endpoints
+│   │   ├── tailor/           # Resume tailoring endpoints
+│   │   ├── ats/              # ATS scoring endpoint
+│   │   ├── cover-letter/     # Cover letter generation
+│   │   ├── credits/          # Credit management + Stripe webhook
+│   │   ├── applications/     # Application tracking
+│   │   └── share/            # Public resume sharing
 │   ├── editor/
-│   │   ├── page.tsx          # AI Editor page (with CopilotKit)
-│   │   ├── AIEditorContent.tsx  # AI editor content component
-│   │   └── manual/page.tsx   # Manual editor page (form-based)
-│   └── templates/page.tsx    # Template gallery
+│   │   ├── page.tsx          # Editor page wrapper
+│   │   └── AIEditorContent.tsx # Result review + refinement UI
+│   ├── dashboard/page.tsx    # Resumes + Credits management
+│   ├── pricing/page.tsx      # Pricing tiers
+│   ├── share/[token]/page.tsx # Public shared resume view
+│   └── handler/[...stack]/   # Stack Auth pages
 ├── components/
-│   ├── copilot/              # CopilotKit AI components
-│   │   └── AITextarea.tsx    # AI-enhanced textareas (React 19 compatible)
-│   ├── editor/               # Resume editor components
-│   ├── preview/              # Typst preview and export buttons
+│   ├── agent/                # AI agent chat components
+│   ├── auth/                 # Authentication components
+│   ├── dashboard/            # Resume cards, create dialog, share dialog
+│   ├── preview/              # PDF preview, Typst code view, export buttons
+│   ├── shared/               # Navbar, Footer
 │   └── ui/                   # shadcn/ui components
 ├── lib/
-│   ├── copilot/              # CopilotKit integration
-│   │   ├── tools.ts          # AI actions (useCopilotAction hooks)
-│   │   ├── instructions.ts   # AI system instructions
-│   │   └── schemas.ts        # AI parameter schemas
+│   ├── agent/                # AI agent modules
+│   │   ├── jd-parser.ts      # Job description → structured ParsedJD
+│   │   ├── background-parser.ts # Free text → structured ResumeData
+│   │   ├── matching-engine.ts # Resume ↔ JD compatibility analysis
+│   │   ├── resume-tailor.ts  # Tailors resume to match JD
+│   │   ├── ats-scorer.ts     # ATS compatibility scoring
+│   │   ├── cover-letter.ts   # Cover letter generation
+│   │   └── template-selector.ts # Rule-based template selection
 │   ├── typst/
-│   │   ├── generator.ts      # Main Typst code generation logic
+│   │   ├── generator.ts      # Main Typst code generation
 │   │   ├── utils.ts          # Typst formatting utilities
 │   │   └── compiler.ts       # Client-side PDF compilation and export
+│   ├── services/             # Database service layer
+│   ├── db/                   # Drizzle ORM client + schema
+│   ├── redis/                # Upstash Redis client
+│   ├── stripe/               # Stripe client + checkout
+│   ├── auth/                 # Stack Auth configuration
 │   ├── validation/
 │   │   └── schema.ts         # Zod schemas for type validation
-│   └── utils.ts              # General utilities (cn for className merging)
-├── templates/                # Typst template system
+│   └── utils.ts              # General utilities
+├── templates/                # 14 Typst resume templates
 │   ├── registry.ts           # Template registry
 │   ├── types.ts              # Template type definitions
-│   └── [template-name]/      # Individual templates
+│   └── [template-name]/      # Individual templates (metadata + generator)
 └── data/
-    └── resume.ts             # Resume content data (main editing file)
+    └── resume.ts             # Sample resume data
 ```
 
 ## Important Implementation Notes
@@ -256,82 +280,37 @@ Typst does not use external packages for basic functionality. All layout, color,
 - `cv-tag(keyword)`: Colored box for skill tags
 - `cv-subsection(heading)`: Uppercase subsection headers
 
-## CopilotKit Integration
+## AI Generation Pipeline
 
-The project integrates **CopilotKit** to provide AI-powered resume editing capabilities.
+The project uses a **full AI pipeline** for end-to-end resume generation.
 
-### Architecture
+### Pipeline Endpoint (`src/app/api/generate/route.ts`)
+SSE streaming endpoint that runs 7 sequential steps:
+1. **Parse JD** → `parseJobDescription()` extracts structured job requirements
+2. **Parse Background** → `parseBackground()` converts free text to ResumeData
+3. **Analyze Match** → `analyzeMatch()` scores resume↔JD compatibility
+4. **Tailor Resume** → `tailorResume()` optimizes resume for the target role
+5. **Score ATS** → `scoreATS()` evaluates ATS compatibility (0-100)
+6. **Generate Cover Letter** → `generateCoverLetter()` creates tailored cover letter
+7. **Generate Document** → `selectTemplate()` + template generator → Typst code
 
-```
-src/
-├── app/api/copilotkit/route.ts    # CopilotKit runtime endpoint (GPT-4o)
-├── lib/copilot/
-│   ├── tools.ts                   # AI actions for resume manipulation
-│   ├── instructions.ts            # AI system instructions
-│   ├── schemas.ts                 # Zod schemas for AI parameters
-│   ├── suggestions.ts             # AI suggestion generation
-│   └── ...                        # Other AI utilities
-├── components/copilot/
-│   ├── AITextarea.tsx             # AI-enhanced textarea components
-│   └── ...                        # Other AI UI components
-```
+### Agent Modules (`src/lib/agent/`)
+- **jd-parser.ts**: GPT-4o `generateObject` → ParsedJD (title, company, skills, keywords, requirements)
+- **background-parser.ts**: GPT-4o `generateObject` → ResumeData from free-text description
+- **matching-engine.ts**: Deterministic skill overlap + GPT-4o nuanced analysis → MatchAnalysis
+- **resume-tailor.ts**: GPT-4o rewrites resume bullets, reorders skills, adjusts summary for JD
+- **ats-scorer.ts**: GPT-4o evaluates formatting, keywords, experience, skills → ATSReport (0-100)
+- **cover-letter.ts**: GPT-4o generates 3-4 paragraph professional cover letter
+- **template-selector.ts**: Rule-based mapping of industry/level → template ID
 
-### CopilotKit Features
-
-1. **AI Chat Sidebar**: Users interact with AI to build/edit their resume conversationally
-2. **Resume Manipulation Tools**: AI can add/update/remove work, education, skills, projects
-3. **Template Switching**: AI can change templates based on user preference
-4. **Readable Context**: AI has access to current resume data and available templates
-
-### AI Tools (src/lib/copilot/tools.ts)
-
-The following `useCopilotAction` hooks are registered:
-- **updateBasicInfo**: Update name, title, email, phone, location, summary
-- **addWorkExperience / updateWorkExperience / removeWorkExperience**: Manage work entries
-- **addEducation / updateEducation / removeEducation**: Manage education entries
-- **addSkillCategory / updateSkillCategory / removeSkillCategory**: Manage skill categories
-- **addProject / updateProject / removeProject**: Manage project entries
-- **addAchievement / removeAchievement**: Manage achievements
-- **addCertification / removeCertification**: Manage certifications
-- **selectTemplate**: Change the resume template
-- **addSocialProfile / removeSocialProfile**: Manage social/professional profiles
-
-### AI-Enhanced Textareas (src/components/copilot/AITextarea.tsx)
-
-Provides intelligent autocomplete suggestions for:
-- `AISummaryTextarea`: Professional summary writing
-- `AIWorkHighlightTextarea`: Achievement bullet points with action verbs
-- `AIProjectDescriptionTextarea`: Technical project descriptions
-- `AIEducationNotesTextarea`: Coursework, honors, activities
-- `AIGenericTextarea`: Generic AI-assisted text input
-
-### Editor Modes
-
-The editor has two modes accessible via different routes:
-- **AI Editor** (`/editor`): Full AI-powered editing with chat sidebar
-- **Manual Editor** (`/editor/manual`): Traditional form-based editing without AI
-
-### React 19 Compatibility Fix
-
-**Important**: The `@copilotkit/react-textarea` package was built for React 18 and has type incompatibilities with React 19. The fix is in `src/components/copilot/AITextarea.tsx`:
-
-```typescript
-// The CopilotTextarea component uses ForwardRefExoticComponent types
-// that are incompatible with React 19's stricter JSX element types.
-// Solution: Cast through 'unknown' to bypass type checking
-
-import { CopilotTextarea as CopilotTextareaOriginal, CopilotTextareaProps } from "@copilotkit/react-textarea";
-
-const CopilotTextarea = CopilotTextareaOriginal as unknown as React.FC<CopilotTextareaProps>;
-```
-
-This pattern is required whenever using `@copilotkit/react-textarea` with React 19.
+### Agent Chat (`src/app/api/agent/chat/route.ts`)
+- Uses Vercel AI SDK v6 with OpenAI GPT-4o
+- 6 tools: updateResume, parseJobDescription, analyzeJobMatch, tailorResumeToJob, scoreATSCompatibility, generateCoverLetter
+- Streaming UI message response with 5-step limit
 
 ### Environment Variables
-
-CopilotKit requires:
 ```env
-OPENAI_API_KEY=sk-...  # OpenAI API key for GPT-4o
+OPENAI_API_KEY=sk-...  # Required for all AI features
 ```
 
 ## Migration Context
@@ -366,20 +345,27 @@ This project underwent multiple architectural transformations:
    - **Added**: Vercel AI SDK for AI-powered resume editing
    - **Result**: Server-side bundle ~1.3 MB gzipped, compatible with Cloudflare Workers
 
-5. **Railway to Cloudflare Workers (current)**:
-   - **Removed**: Railway deployment config (`.railway/`, `nixpacks.toml`), `output: "standalone"` from next.config
-   - **Added**: `@opennextjs/cloudflare` adapter, `wrangler.jsonc`, `open-next.config.ts`
-   - **Refactored**: All global singleton clients (DB, Redis, Stripe, Cloudinary, OpenAI) to per-request factory functions for Workers' per-request I/O context
-   - **Key patterns**: `getDb()`, `getRedis()`, `getStripe()` — each creates a fresh client per request
-   - **Stripe**: Uses `Stripe.createFetchHttpClient()` and `constructEventAsync()` with `SubtleCryptoProvider` for Workers compatibility
-   - **Cloudinary**: Replaced Node.js `Readable` streams with base64 data URI upload
-   - **Config files**: `wrangler.jsonc` (worker config), `.dev.vars` (local secrets, gitignored)
+5. **Railway to Cloudflare Workers to DigitalOcean VPS**:
+   - **Removed**: Railway config, then Cloudflare Workers config (`wrangler.jsonc`, `@opennextjs/cloudflare`)
+   - **Added**: Docker + GitHub Actions CI/CD to DigitalOcean VPS
+   - **Refactored**: Per-request client factories back to singletons
+   - **Key files**: `Dockerfile`, `.github/workflows/deploy.yml`
 
 6. **LaTeX to Typst (current)**:
    - **Removed**: Entire LaTeX generation system, Overleaf integration, prismjs
    - **Added**: Typst generation system with local compilation
    - **Benefits**: < 100ms compilation (vs 5-15s LaTeX), single binary dependency, no external API, AI-friendlier syntax
    - **Key files**: `src/lib/typst/generator.ts`, `src/lib/typst/utils.ts`, `src/lib/typst/compiler.ts`
+
+7. **UI/UX "Sell Results" Overhaul**:
+   - **Removed**: Manual editor, template gallery, standalone tailor page, 20+ components
+   - **Added**: Product-first homepage (JD+background input), result review editor (PDF preview + refinement)
+   - **Benefits**: 3-step user flow (paste JD → generate → download PDF)
+
+8. **AI Generation Pipeline**:
+   - **Added**: Full 7-step SSE streaming pipeline, background parser, template selector
+   - **Benefits**: End-to-end automated resume generation from free-text input
+   - **Key files**: `src/app/api/generate/route.ts`, `src/lib/agent/background-parser.ts`, `src/lib/agent/template-selector.ts`
 
 **Legacy reference**: `A4_RESUME_USAGE.md` documents the original HTML/CSS approach (not currently used)
 
