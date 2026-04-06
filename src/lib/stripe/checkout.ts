@@ -1,4 +1,4 @@
-import { getStripe } from "./client";
+import { stripe } from "./client";
 
 /** Stripe price IDs for credit packages. */
 const PRICES = {
@@ -17,7 +17,6 @@ export async function createCreditCheckout(
   successUrl: string,
   cancelUrl: string
 ) {
-  const stripe = getStripe();
   const priceId = PRICES[priceType];
   const isSubscription = priceType !== "credits_5";
 
@@ -40,7 +39,6 @@ export async function createPortalSession(
   stripeCustomerId: string,
   returnUrl: string
 ) {
-  const stripe = getStripe();
   const session = await stripe.billingPortal.sessions.create({
     customer: stripeCustomerId,
     return_url: returnUrl,

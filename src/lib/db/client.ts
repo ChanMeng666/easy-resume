@@ -2,11 +2,11 @@ import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 import * as schema from "./schema";
 
-/**
- * Create a per-request Neon database client.
- * Workers require I/O bindings to be created within the request context.
- */
+/** Singleton Neon database client. */
+const sql = neon(process.env.DATABASE_URL!);
+export const db = drizzle(sql, { schema });
+
+/** @deprecated Use `db` directly. Kept for migration compatibility. */
 export function getDb() {
-  const sql = neon(process.env.DATABASE_URL!);
-  return drizzle(sql, { schema });
+  return db;
 }

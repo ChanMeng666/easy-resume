@@ -1,16 +1,11 @@
 import { v2 as cloudinary } from "cloudinary";
 
-/**
- * Configure Cloudinary per-request for Workers compatibility.
- */
-function getCloudinary() {
-  cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-  });
-  return cloudinary;
-}
+/** Configure Cloudinary once at module load. */
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 /**
  * Extract the public_id from a Cloudinary URL.
@@ -35,24 +30,19 @@ function extractPublicId(url: string): string {
 
 /**
  * Service for managing PDF files in Cloudinary storage.
- * Uses base64 data URI upload instead of Node.js streams for Workers compatibility.
  */
 export const blobService = {
-  /**
-   * Upload a PDF file to Cloudinary storage.
-   */
+  /** Upload a PDF file to Cloudinary storage. */
   async uploadPdf(
     resumeId: string,
     userId: string,
     pdfBuffer: Buffer
   ): Promise<{ url: string; size: number }> {
-    const cld = getCloudinary();
     const publicId = `resumes/${userId}/${resumeId}`;
-
     const base64 = pdfBuffer.toString("base64");
     const dataUri = `data:application/pdf;base64,${base64}`;
 
-    const result = await cld.uploader.upload(dataUri, {
+    const result = await cloudinary.uploader.upload(dataUri, {
       public_id: publicId,
       resource_type: "raw",
       overwrite: true,
@@ -65,14 +55,11 @@ export const blobService = {
     };
   },
 
-  /**
-   * Delete a PDF file from Cloudinary storage.
-   */
+  /** Delete a PDF file from Cloudinary storage. */
   async deletePdf(cloudinaryUrl: string): Promise<boolean> {
     try {
-      const cld = getCloudinary();
       const publicId = extractPublicId(cloudinaryUrl);
-      const result = await cld.uploader.destroy(publicId, {
+      const result = await cloudinary.uploader.destroy(publicId, {
         resource_type: "raw",
       });
       return result.result === "ok";
@@ -82,18 +69,15 @@ export const blobService = {
     }
   },
 
-  /**
-   * Check if a PDF exists in Cloudinary storage and get its metadata.
-   */
+  /** Check if a PDF exists in Cloudinary storage and get its metadata. */
   async getPdfMetadata(cloudinaryUrl: string): Promise<{
     url: string;
     size: number;
     uploadedAt: Date;
   } | null> {
     try {
-      const cld = getCloudinary();
       const publicId = extractPublicId(cloudinaryUrl);
-      const result = await cld.api.resource(publicId, {
+      const result = await cloudinary.api.resource(publicId, {
         resource_type: "raw",
       });
       return {
@@ -106,9 +90,7 @@ export const blobService = {
     }
   },
 
-  /**
-   * Generate a unique path for a resume PDF.
-   */
+  /** Generate a unique path for a resume PDF. */
   generatePath(resumeId: string, userId: string): string {
     return `resumes/${userId}/${resumeId}`;
   },

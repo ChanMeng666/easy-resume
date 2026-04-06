@@ -1,11 +1,9 @@
-import Stripe from "stripe";
 import { NextRequest, NextResponse } from "next/server";
-import { getStripe } from "@/lib/stripe/client";
+import { stripe } from "@/lib/stripe/client";
 import { creditService } from "@/lib/services/creditService";
 
 /**
  * POST /api/credits/webhook - Stripe webhook handler.
- * Uses async webhook verification for Workers compatibility.
  */
 export async function POST(request: NextRequest) {
   const body = await request.text();
@@ -15,16 +13,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Missing signature" }, { status: 400 });
   }
 
-  const stripe = getStripe();
-
   let event;
   try {
-    event = await stripe.webhooks.constructEventAsync(
+    event = stripe.webhooks.constructEvent(
       body,
       signature,
-      process.env.STRIPE_WEBHOOK_SECRET || "",
-      undefined,
-      Stripe.createSubtleCryptoProvider()
+      process.env.STRIPE_WEBHOOK_SECRET || ""
     );
   } catch (err) {
     console.error("Webhook signature verification failed:", err);

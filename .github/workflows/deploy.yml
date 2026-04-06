@@ -1,0 +1,136 @@
+name: Build & Deploy
+
+on:
+  push:
+    branches: [master]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE: ghcr.io/chanmeng666/easy-resume/web
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Web image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:${{ github.sha }}
+            ${{ env.IMAGE }}:latest
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+          build-args: |
+            NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL }}
+            NEXT_PUBLIC_STACK_PROJECT_ID=${{ secrets.NEXT_PUBLIC_STACK_PROJECT_ID }}
+            NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY=${{ secrets.NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY }}
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+            STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY }}
+            STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET }}
+            STRIPE_PRICE_CREDITS_5=${{ secrets.STRIPE_PRICE_CREDITS_5 }}
+            STRIPE_PRICE_PRO_MONTHLY=${{ secrets.STRIPE_PRICE_PRO_MONTHLY }}
+            STRIPE_PRICE_UNLIMITED_MONTHLY=${{ secrets.STRIPE_PRICE_UNLIMITED_MONTHLY }}
+            KV_REST_API_URL=${{ secrets.KV_REST_API_URL }}
+            KV_REST_API_TOKEN=${{ secrets.KV_REST_API_TOKEN }}
+            CLOUDINARY_CLOUD_NAME=${{ secrets.CLOUDINARY_CLOUD_NAME }}
+            CLOUDINARY_API_KEY=${{ secrets.CLOUDINARY_API_KEY }}
+            CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}
+            STACK_SECRET_SERVER_KEY=${{ secrets.STACK_SECRET_SERVER_KEY }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to VPS via SSH
+        uses: appleboy/ssh-action@v1
+        env:
+          IMAGE_TAG: ${{ env.IMAGE }}:${{ github.sha }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_ACTOR: ${{ github.actor }}
+          NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          STRIPE_PRICE_CREDITS_5: ${{ secrets.STRIPE_PRICE_CREDITS_5 }}
+          STRIPE_PRICE_PRO_MONTHLY: ${{ secrets.STRIPE_PRICE_PRO_MONTHLY }}
+          STRIPE_PRICE_UNLIMITED_MONTHLY: ${{ secrets.STRIPE_PRICE_UNLIMITED_MONTHLY }}
+          KV_REST_API_URL: ${{ secrets.KV_REST_API_URL }}
+          KV_REST_API_TOKEN: ${{ secrets.KV_REST_API_TOKEN }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          STACK_SECRET_SERVER_KEY: ${{ secrets.STACK_SECRET_SERVER_KEY }}
+          NEXT_PUBLIC_STACK_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_STACK_PROJECT_ID }}
+          NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY: ${{ secrets.NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: 20m
+          envs: IMAGE_TAG,GH_TOKEN,GH_ACTOR,NEXT_PUBLIC_APP_URL,DATABASE_URL,OPENAI_API_KEY,STRIPE_SECRET_KEY,STRIPE_WEBHOOK_SECRET,STRIPE_PRICE_CREDITS_5,STRIPE_PRICE_PRO_MONTHLY,STRIPE_PRICE_UNLIMITED_MONTHLY,KV_REST_API_URL,KV_REST_API_TOKEN,CLOUDINARY_CLOUD_NAME,CLOUDINARY_API_KEY,CLOUDINARY_API_SECRET,STACK_SECRET_SERVER_KEY,NEXT_PUBLIC_STACK_PROJECT_ID,NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY
+          script: |
+            set -e
+
+            # Login to GHCR
+            echo "$GH_TOKEN" | docker login ghcr.io -u "$GH_ACTOR" --password-stdin
+
+            # Pull new image (old container keeps running)
+            docker pull "$IMAGE_TAG"
+
+            # Stop old container gracefully
+            docker stop web-vitex 2>/dev/null || true
+            docker rm web-vitex 2>/dev/null || true
+
+            # Start web with Traefik labels for reverse proxy
+            docker run -d \
+              --name web-vitex \
+              --network coolify \
+              --restart unless-stopped \
+              -l "traefik.enable=true" \
+              -l "traefik.http.routers.vitex.rule=Host(\`vitex.org.nz\`) || Host(\`www.vitex.org.nz\`)" \
+              -l "traefik.http.routers.vitex.entrypoints=https" \
+              -l "traefik.http.routers.vitex.tls.certresolver=letsencrypt" \
+              -l "traefik.http.services.vitex.loadbalancer.server.port=3000" \
+              -e NODE_ENV=production \
+              -e NEXT_PUBLIC_APP_URL="${NEXT_PUBLIC_APP_URL}" \
+              -e DATABASE_URL="${DATABASE_URL}" \
+              -e OPENAI_API_KEY="${OPENAI_API_KEY}" \
+              -e STRIPE_SECRET_KEY="${STRIPE_SECRET_KEY}" \
+              -e STRIPE_WEBHOOK_SECRET="${STRIPE_WEBHOOK_SECRET}" \
+              -e STRIPE_PRICE_CREDITS_5="${STRIPE_PRICE_CREDITS_5}" \
+              -e STRIPE_PRICE_PRO_MONTHLY="${STRIPE_PRICE_PRO_MONTHLY}" \
+              -e STRIPE_PRICE_UNLIMITED_MONTHLY="${STRIPE_PRICE_UNLIMITED_MONTHLY}" \
+              -e KV_REST_API_URL="${KV_REST_API_URL}" \
+              -e KV_REST_API_TOKEN="${KV_REST_API_TOKEN}" \
+              -e CLOUDINARY_CLOUD_NAME="${CLOUDINARY_CLOUD_NAME}" \
+              -e CLOUDINARY_API_KEY="${CLOUDINARY_API_KEY}" \
+              -e CLOUDINARY_API_SECRET="${CLOUDINARY_API_SECRET}" \
+              -e STACK_SECRET_SERVER_KEY="${STACK_SECRET_SERVER_KEY}" \
+              -e NEXT_PUBLIC_STACK_PROJECT_ID="${NEXT_PUBLIC_STACK_PROJECT_ID}" \
+              -e NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY="${NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY}" \
+              "$IMAGE_TAG"
+
+            echo "Vitex deployment complete!"
