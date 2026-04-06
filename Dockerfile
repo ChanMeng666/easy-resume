@@ -70,12 +70,16 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
-# Install Typst binary and common fonts for PDF generation
+# Install common fonts for PDF generation
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl xz-utils fonts-liberation fonts-dejavu-core && \
-    curl -fsSL https://github.com/typst/typst/releases/download/v0.13.1/typst-x86_64-unknown-linux-musl.tar.xz | tar xJ --strip-components=1 -C /usr/local/bin typst-x86_64-unknown-linux-musl/typst && \
-    apt-get purge -y curl xz-utils && apt-get autoremove -y && \
+    fonts-liberation fonts-dejavu-core && \
     rm -rf /var/lib/apt/lists/*
+
+# Install Typst binary (separate layer for caching)
+ADD https://github.com/typst/typst/releases/download/v0.13.1/typst-x86_64-unknown-linux-musl.tar.xz /tmp/typst.tar.xz
+RUN tar xJf /tmp/typst.tar.xz --strip-components=1 -C /usr/local/bin typst-x86_64-unknown-linux-musl/typst && \
+    rm /tmp/typst.tar.xz && \
+    typst --version
 
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
