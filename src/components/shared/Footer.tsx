@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { Mail, Github, Sparkles, Briefcase, MessageSquare, Palette, PenTool, LayoutDashboard, Bot } from 'lucide-react';
+import { Mail, Github, Sparkles, Briefcase, MessageSquare, LayoutDashboard, CreditCard } from 'lucide-react';
 
 /**
  * Neobrutalism styled footer with brand identity and developer information.
@@ -24,55 +24,37 @@ export function Footer() {
             </Link>
           </div>
           <p className="mx-auto max-w-2xl text-base text-muted-foreground font-medium leading-relaxed">
-            Your Career, Perfectly Composed. AI-powered resume builder with professional Typst templates.
+            Your Career, Perfectly Composed. AI-powered resume builder with professional resume templates.
           </p>
         </div>
 
         {/* Main Content Grid */}
         <div className="mb-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
-          {/* Product - Editors */}
+          {/* Product */}
           <div className="p-6 bg-gray-50 rounded-xl">
             <h3 className="flex items-center gap-2 text-sm font-black uppercase tracking-wider mb-4">
               <div className="p-1.5 bg-primary rounded-md">
                 <Sparkles className="h-4 w-4 text-white" />
               </div>
-              Editors
+              Product
             </h3>
             <ul className="space-y-3">
               <li>
-                <Link href="/editor" className="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-all hover:text-foreground hover:translate-x-1">
-                  <Bot className="h-4 w-4" />
-                  AI Editor
-                </Link>
-              </li>
-              <li>
-                <Link href="/editor/manual" className="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-all hover:text-foreground hover:translate-x-1">
-                  <PenTool className="h-4 w-4" />
-                  Manual Editor
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Resources */}
-          <div className="p-6 bg-gray-50 rounded-xl">
-            <h3 className="flex items-center gap-2 text-sm font-black uppercase tracking-wider mb-4">
-              <div className="p-1.5 bg-accent rounded-md">
-                <Palette className="h-4 w-4 text-white" />
-              </div>
-              Resources
-            </h3>
-            <ul className="space-y-3">
-              <li>
-                <Link href="/templates" className="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-all hover:text-foreground hover:translate-x-1">
-                  <Palette className="h-4 w-4" />
-                  Templates
+                <Link href="/" className="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-all hover:text-foreground hover:translate-x-1">
+                  <Sparkles className="h-4 w-4" />
+                  Home
                 </Link>
               </li>
               <li>
                 <Link href="/dashboard" className="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-all hover:text-foreground hover:translate-x-1">
                   <LayoutDashboard className="h-4 w-4" />
                   Dashboard
+                </Link>
+              </li>
+              <li>
+                <Link href="/pricing" className="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-all hover:text-foreground hover:translate-x-1">
+                  <CreditCard className="h-4 w-4" />
+                  Pricing
                 </Link>
               </li>
             </ul>

@@ -1,479 +1,177 @@
 'use client';
 
-import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { FileText, Download, CheckCircle, Shield, ChevronRight, Target, Bot, Wand2, BarChart3, Mail } from 'lucide-react';
+import { Sparkles, Target, Bot, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { Navbar } from '@/components/shared/Navbar';
 import { Footer } from '@/components/shared/Footer';
-import { GEOHead } from '@/components/shared/GEOHead';
-import { MultipleStructuredData } from '@/components/shared/StructuredData';
-import { getPageInstructions } from '@/lib/seo/instructions';
-import { webApplicationSchema, softwareApplicationSchema, howToCreateResumeSchema, faqSchema } from '@/lib/seo/schemas';
-import { getAllTemplates } from '@/templates/registry';
 
 /**
- * Neobrutalism styled background with animated colored bubbles.
+ * Product-first homepage that lets users immediately start generating a resume.
  */
-function BackgroundEffects() {
-  const bubbleColors = [
-    { hex: '#6C3CE9', name: 'Vitex Purple' },
-    { hex: '#00D4AA', name: 'Electric Cyan' },
-    { hex: '#22C55E', name: 'Success Green' },
-    { hex: '#FACC15', name: 'Warning Yellow' },
-    { hex: '#EF4444', name: 'Error Red' },
-    { hex: '#3B82F6', name: 'Info Blue' },
-  ];
-
-  const bubbleConfigs = [
-    { left: 5, top: 10, size: 80, colorIndex: 0, duration: 3.2, delay: 0.1, borderWidth: 2 },
-    { left: 15, top: 25, size: 96, colorIndex: 1, duration: 4.1, delay: 0.5, borderWidth: 3 },
-    { left: 25, top: 45, size: 64, colorIndex: 2, duration: 3.5, delay: 1.2, borderWidth: 2 },
-    { left: 35, top: 15, size: 112, colorIndex: 0, duration: 4.8, delay: 0.3, borderWidth: 3 },
-    { left: 45, top: 70, size: 80, colorIndex: 3, duration: 3.8, delay: 1.8, borderWidth: 2 },
-    { left: 55, top: 35, size: 96, colorIndex: 4, duration: 4.2, delay: 0.7, borderWidth: 2 },
-    { left: 65, top: 85, size: 64, colorIndex: 5, duration: 3.3, delay: 1.5, borderWidth: 2 },
-    { left: 75, top: 55, size: 128, colorIndex: 1, duration: 4.5, delay: 0.2, borderWidth: 3 },
-    { left: 85, top: 20, size: 80, colorIndex: 0, duration: 3.7, delay: 1.0, borderWidth: 2 },
-    { left: 95, top: 65, size: 96, colorIndex: 2, duration: 4.0, delay: 1.3, borderWidth: 2 },
-    { left: 10, top: 80, size: 64, colorIndex: 3, duration: 3.4, delay: 0.8, borderWidth: 2 },
-    { left: 30, top: 90, size: 112, colorIndex: 5, duration: 4.3, delay: 1.6, borderWidth: 3 },
-    { left: 50, top: 5, size: 80, colorIndex: 1, duration: 3.6, delay: 0.4, borderWidth: 2 },
-    { left: 70, top: 40, size: 96, colorIndex: 4, duration: 4.7, delay: 1.9, borderWidth: 2 },
-    { left: 90, top: 75, size: 64, colorIndex: 0, duration: 3.9, delay: 0.6, borderWidth: 2 },
-  ];
-
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      <div className="absolute inset-0 neo-grid-bg" />
-      {bubbleConfigs.map((bubble, i) => {
-        const color = bubbleColors[bubble.colorIndex];
-        return (
-          <motion.div
-            key={i}
-            className="absolute rounded-full"
-            style={{
-              left: `${bubble.left}%`,
-              top: `${bubble.top}%`,
-              width: `${bubble.size}px`,
-              height: `${bubble.size}px`,
-              backgroundColor: color.hex,
-              border: `${bubble.borderWidth}px solid #000000`,
-            }}
-            animate={{ y: [0, -20, 0], x: [0, 5, 0] }}
-            transition={{
-              duration: bubble.duration,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: bubble.delay,
-            }}
-          />
-        );
-      })}
-    </div>
-  );
-}
-
-function FeatureCard({
-  icon: Icon,
-  title,
-  description,
-  color = "bg-primary",
-  large = false
-}: {
-  icon: React.ElementType;
-  title: string;
-  description: string;
-  color?: string;
-  large?: boolean;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      className={`${large ? 'md:col-span-2' : ''} bg-white rounded-xl p-6`}
-    >
-      <div className={`h-12 w-12 ${color} rounded-lg flex items-center justify-center mb-4`}>
-        <Icon className="h-6 w-6 text-white" />
-      </div>
-      <h3 className="text-xl font-black mb-2">{title}</h3>
-      <p className="text-muted-foreground font-medium">{description}</p>
-    </motion.div>
-  );
-}
-
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      whileInView={{ opacity: 1, scale: 1 }}
-      viewport={{ once: true }}
-      className="flex flex-col items-center justify-center text-center p-4"
-    >
-      <div className="text-2xl font-black">{value}</div>
-      <div className="text-sm text-muted-foreground font-bold">{label}</div>
-    </motion.div>
-  );
-}
-
 export default function HomePage() {
-  const templates = getAllTemplates();
-  const [isMounted, setIsMounted] = useState(false);
+  const router = useRouter();
+  const [jobDescription, setJobDescription] = useState('');
+  const [background, setBackground] = useState('');
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  /** Navigate to the editor with JD and background stored in sessionStorage. */
+  function handleGenerate() {
+    sessionStorage.setItem('vitex_jd', jobDescription);
+    sessionStorage.setItem('vitex_bg', background);
+    router.push('/editor');
+  }
 
   return (
-    <div className="relative min-h-screen bg-[#f0f0f0] font-sans text-foreground overflow-hidden">
-      <GEOHead instructions={getPageInstructions('home')} />
-      <MultipleStructuredData
-        schemas={[webApplicationSchema, softwareApplicationSchema, howToCreateResumeSchema, faqSchema]}
-      />
-      <BackgroundEffects />
-
-      <div className="relative z-10 flex flex-col min-h-screen">
+    <div className="relative min-h-screen bg-[#f0f0f0] font-sans text-foreground">
+      <div className="flex flex-col min-h-screen">
         <Navbar currentPath="/" />
 
         <main className="flex-grow pt-20">
           {/* Hero Section */}
-          <section className="relative py-20 md:py-32 overflow-visible">
-            <div className="container mx-auto px-4">
-              <div className="grid lg:grid-cols-2 gap-12 items-center">
-                <motion.div
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6 }}
-                  className="text-center lg:text-left space-y-8"
-                >
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="inline-flex items-center px-4 py-2 rounded-lg bg-gradient-to-r from-purple-100 to-cyan-100 text-sm font-bold"
+          <section className="py-16 md:py-20">
+            <div className="container mx-auto px-4 text-center">
+              <motion.h1
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.1] mb-4"
+              >
+                Your Resume, Perfected by AI
+              </motion.h1>
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                className="text-lg text-muted-foreground font-medium max-w-2xl mx-auto"
+              >
+                Paste a job description. Get a tailored, ATS-optimized resume in 30 seconds.
+              </motion.p>
+            </div>
+          </section>
+
+          {/* Main Action Area */}
+          <section className="pb-20">
+            <div className="container mx-auto px-4 max-w-5xl">
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="bg-white rounded-xl border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,0.9)] p-6 md:p-10"
+              >
+                <div className="grid md:grid-cols-[55fr_45fr] gap-6 md:gap-8">
+                  {/* Left: Job Description */}
+                  <div className="space-y-2">
+                    <Label htmlFor="jd" className="text-base">
+                      Job Description
+                    </Label>
+                    <Textarea
+                      id="jd"
+                      rows={8}
+                      placeholder="Paste the job description here..."
+                      value={jobDescription}
+                      onChange={(e) => setJobDescription(e.target.value)}
+                      className="min-h-[200px]"
+                    />
+                    <p className="text-xs text-muted-foreground font-medium">
+                      We&apos;ll analyze the requirements and tailor your resume automatically.
+                    </p>
+                  </div>
+
+                  {/* Right: Background */}
+                  <div className="space-y-2">
+                    <Label htmlFor="bg" className="text-base">
+                      Your Background
+                    </Label>
+                    <Textarea
+                      id="bg"
+                      rows={8}
+                      placeholder="Briefly describe your experience, skills, and education..."
+                      value={background}
+                      onChange={(e) => setBackground(e.target.value)}
+                      className="min-h-[200px]"
+                    />
+                    <p className="text-xs text-muted-foreground font-medium">
+                      Or upload an existing resume (coming soon)
+                    </p>
+                  </div>
+                </div>
+
+                {/* Generate Button */}
+                <div className="mt-8 flex flex-col items-center gap-3">
+                  <Button
+                    size="lg"
+                    onClick={handleGenerate}
+                    className="h-14 px-12 text-lg gap-2 w-full sm:w-auto"
                   >
-                    <Bot className="h-4 w-4 mr-2 text-purple-600" />
-                    AI Career Agent
-                  </motion.div>
-
-                  <h1 className="text-5xl font-brand tracking-tight sm:text-6xl lg:text-7xl leading-[1.1]">
-                    Your AI Career <br />
-                    <span className="text-gradient-vitex-brand">Agent That Delivers</span>
-                    <br />
-                    Results
-                  </h1>
-
-                  <p className="text-lg text-muted-foreground sm:text-xl max-w-2xl mx-auto lg:mx-0 leading-relaxed font-medium">
-                    Stop sending generic resumes. Vitex tailors your resume to every job, scores it for ATS, and generates cover letters—so you land more interviews.
+                    <Sparkles className="h-5 w-5" />
+                    Generate My Resume
+                  </Button>
+                  <p className="text-xs text-muted-foreground font-medium">
+                    First resume is free. No account required.
                   </p>
-
-                  <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                    <Link href="/editor">
-                      <Button size="lg" className="h-14 px-8 text-lg gap-2">
-                        <Target className="h-5 w-5" />
-                        Start Free
-                      </Button>
-                    </Link>
-                    <Link href="/tailor">
-                      <Button size="lg" variant="outline" className="h-14 px-8 text-lg">
-                        Tailor My Resume
-                      </Button>
-                    </Link>
-                  </div>
-
-                  <div className="flex items-center justify-center lg:justify-start gap-4 pt-4 flex-wrap">
-                    <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg">
-                      <Bot className="h-4 w-4 text-purple-500" />
-                      <span className="text-sm font-bold">GPT-4o Powered</span>
-                    </div>
-                    <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg">
-                      <Shield className="h-4 w-4 text-green-500" />
-                      <span className="text-sm font-bold">3 Free Credits</span>
-                    </div>
-                    <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      <span className="text-sm font-bold">14 Templates</span>
-                    </div>
-                  </div>
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9, rotateY: -15 }}
-                  animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-                  transition={{ duration: 0.8, delay: 0.3 }}
-                  className="relative hidden lg:block"
-                >
-                  <div className="relative w-full aspect-[3/4] max-w-md mx-auto">
-                    <div className="absolute inset-0 rounded-xl bg-white border-3 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,0.9)] overflow-hidden">
-                      {isMounted && (
-                        <iframe
-                          src="/template/banking-finance-preview.pdf"
-                          className="w-full h-full scale-100 pointer-events-none select-none"
-                          tabIndex={-1}
-                        />
-                      )}
-                    </div>
-
-                    <motion.div
-                      animate={{ y: [0, -8, 0] }}
-                      transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                      className="absolute -right-8 top-20 p-4 bg-white rounded-xl"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-green-500 rounded-lg">
-                          <Target className="h-5 w-5 text-white" />
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground font-bold">Match Score</p>
-                          <p className="text-lg font-black">92/100</p>
-                        </div>
-                      </div>
-                    </motion.div>
-
-                    <motion.div
-                      animate={{ y: [0, -6, 0] }}
-                      transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-                      className="absolute -left-6 bottom-32 p-4 bg-white rounded-xl"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-purple-500 rounded-lg">
-                          <BarChart3 className="h-5 w-5 text-white" />
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground font-bold">ATS Optimized</p>
-                          <p className="text-lg font-black">Top 5%</p>
-                        </div>
-                      </div>
-                    </motion.div>
-                  </div>
-                </motion.div>
-              </div>
+                </div>
+              </motion.div>
             </div>
           </section>
 
-          {/* Stats Section */}
-          <section className="py-12 bg-white border-y-2 border-black">
-            <div className="container mx-auto px-4">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-                <StatCard label="LaTeX Templates" value="14" />
-                <StatCard label="ATS Score Boost" value="+40%" />
-                <StatCard label="Tailoring Time" value="30 sec" />
-                <StatCard label="Free Credits" value="3" />
-              </div>
-            </div>
-          </section>
-
-          {/* Features Section - AI Career Agent Capabilities */}
-          <section className="container mx-auto px-4 py-24 lg:py-32">
-            <div className="text-center max-w-2xl mx-auto mb-16">
+          {/* How It Works */}
+          <section className="py-20 bg-white border-y-2 border-black">
+            <div className="container mx-auto px-4 max-w-5xl">
               <motion.h2
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                className="text-3xl md:text-4xl font-black mb-4"
+                className="text-3xl md:text-4xl font-black text-center mb-14"
               >
-                More Than a Resume Builder
+                How It Works
               </motion.h2>
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.1 }}
-                className="text-muted-foreground text-lg font-medium"
-              >
-                An AI agent that actively helps you land interviews—not just build documents.
-              </motion.p>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-              <FeatureCard
-                icon={Target}
-                title="Job-Targeted Tailoring"
-                description="Paste any job description. AI analyzes requirements, matches your experience, and rewrites your resume to maximize ATS scores."
-                color="bg-purple-500"
-                large
-              />
-              <FeatureCard
-                icon={BarChart3}
-                title="ATS Optimization"
-                description="Get a detailed ATS compatibility report with keyword analysis, formatting checks, and prioritized improvement actions."
-                color="bg-primary"
-              />
-              <FeatureCard
-                icon={Mail}
-                title="Cover Letters"
-                description="Generate tailored cover letters that reference specific job requirements and highlight your most relevant experience."
-                color="bg-accent"
-              />
-              <FeatureCard
-                icon={FileText}
-                title="LaTeX Quality, Zero Learning"
-                description="14 professional LaTeX templates. Get publication-grade typography without touching code—AI generates it, you just export."
-                color="bg-cyan-500"
-                large
-              />
-            </div>
-          </section>
-
-          {/* How It Works Section */}
-          <section className="bg-white border-y-2 border-black py-24">
-            <div className="container mx-auto px-4">
-              <div className="text-center max-w-2xl mx-auto mb-16">
-                <motion.h2
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  className="text-3xl md:text-4xl font-black mb-4"
-                >
-                  Land More Interviews in 3 Steps
-                </motion.h2>
-              </div>
-
-              <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-4 max-w-5xl mx-auto">
+              <div className="grid md:grid-cols-3 gap-8">
                 {[
-                  { title: "Paste Job Description", desc: "Copy any job posting. Our AI parses it into skills, keywords, and requirements instantly.", icon: FileText, color: "bg-purple-500" },
-                  { title: "AI Tailors Your Resume", desc: "Your resume is rewritten to match the job—keywords optimized, bullets sharpened, ATS score boosted.", icon: Wand2, color: "bg-primary" },
-                  { title: "Export & Apply", desc: "Download your tailored resume + cover letter. One click to Overleaf for perfect PDF output.", icon: Download, color: "bg-accent" },
-                ].map((item, idx) => (
-                  <div key={idx} className="flex items-center gap-4 md:gap-2">
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: idx * 0.1 }}
-                      className="relative flex flex-col items-center text-center"
+                  {
+                    icon: Target,
+                    title: 'Paste JD',
+                    description: 'We analyze job requirements and keywords',
+                    color: 'bg-purple-500',
+                  },
+                  {
+                    icon: Bot,
+                    title: 'AI Generates',
+                    description: 'Tailored resume with optimal ATS score',
+                    color: 'bg-primary',
+                  },
+                  {
+                    icon: Download,
+                    title: 'Download PDF',
+                    description: 'Professional PDF ready in seconds',
+                    color: 'bg-accent',
+                  },
+                ].map((step, idx) => (
+                  <motion.div
+                    key={idx}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: idx * 0.1 }}
+                    className="bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] p-6 text-center hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
+                  >
+                    <div
+                      className={`w-14 h-14 ${step.color} rounded-lg flex items-center justify-center mx-auto mb-4`}
                     >
-                      <div className={`w-24 h-24 ${item.color} rounded-xl flex items-center justify-center mb-6`}>
-                        <item.icon className="h-10 w-10 text-white" />
-                      </div>
-                      <h3 className="text-xl font-black mb-2">{item.title}</h3>
-                      <p className="text-muted-foreground font-medium max-w-xs">{item.desc}</p>
-                    </motion.div>
-                    {idx < 2 && (
-                      <motion.div
-                        initial={{ opacity: 0, x: -10 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: idx * 0.1 + 0.15 }}
-                        className="hidden md:flex items-center justify-center flex-shrink-0"
-                      >
-                        <ChevronRight className="h-8 w-8 text-muted-foreground" />
-                      </motion.div>
-                    )}
-                  </div>
+                      <step.icon className="h-7 w-7 text-white" />
+                    </div>
+                    <h3 className="text-xl font-black mb-2">{step.title}</h3>
+                    <p className="text-muted-foreground font-medium">
+                      {step.description}
+                    </p>
+                  </motion.div>
                 ))}
               </div>
             </div>
-          </section>
-
-          {/* Template Gallery */}
-          <section className="container mx-auto px-4 py-24">
-            <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-4">
-              <div>
-                <motion.h2
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  className="text-3xl md:text-4xl font-black mb-4"
-                >
-                  Featured Templates
-                </motion.h2>
-                <motion.p
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.1 }}
-                  className="text-muted-foreground text-lg font-medium"
-                >
-                  Professionally designed templates for every career path.
-                </motion.p>
-              </div>
-              <Link href="/templates">
-                <Button variant="outline" className="gap-2">
-                  View All <ChevronRight className="h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {templates.slice(0, 3).map((template, idx) => (
-                <motion.div
-                  key={template.metadata.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: idx * 0.1 }}
-                >
-                  <Link href={`/editor?template=${template.metadata.id}`}>
-                    <div className="group relative rounded-xl bg-white overflow-hidden border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] transition-all duration-200 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px]">
-                      <div className="relative aspect-[3/4] bg-gray-100 overflow-hidden">
-                        <iframe
-                          src={`/template/${template.metadata.id}-preview.pdf`}
-                          className="h-full w-full scale-100 transition-transform duration-500 group-hover:scale-105 pointer-events-none"
-                          tabIndex={-1}
-                          title={`${template.metadata.name} Preview`}
-                        />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                          <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button>Use Template</Button>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="p-4 border-t-2 border-black bg-white">
-                        <div className="flex justify-between items-start mb-2">
-                          <h3 className="font-black text-lg">{template.metadata.name}</h3>
-                          <div className="flex gap-1">
-                            {template.metadata.tags.slice(0, 2).map(tag => (
-                              <span key={tag} className="text-[10px] px-2 py-1 bg-gray-100 rounded-md border border-black font-bold uppercase tracking-wide">{tag}</span>
-                            ))}
-                          </div>
-                        </div>
-                        <p className="text-sm text-muted-foreground font-medium line-clamp-2">
-                          {template.metadata.description}
-                        </p>
-                      </div>
-                    </div>
-                  </Link>
-                </motion.div>
-              ))}
-            </div>
-          </section>
-
-          {/* CTA Section */}
-          <section className="container mx-auto px-4 py-20 mb-10">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="rounded-2xl bg-gradient-to-br from-purple-600 to-primary p-8 md:p-16 text-center text-white border-3 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,0.9)] relative overflow-hidden"
-            >
-              <div className="absolute inset-0 neo-dots-bg opacity-10 pointer-events-none" />
-              <div className="relative z-10 max-w-2xl mx-auto">
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 text-sm font-bold mb-6">
-                  <Bot className="h-4 w-4" />
-                  AI Career Agent
-                </div>
-                <h2 className="text-3xl md:text-4xl font-brand mb-6">Stop Sending Generic Resumes</h2>
-                <p className="text-lg md:text-xl opacity-90 mb-10 font-medium">
-                  Every job deserves a tailored resume. Let AI do the work while you focus on what matters—landing the interview.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Link href="/tailor">
-                    <Button size="lg" variant="secondary" className="h-14 px-8 text-lg w-full sm:w-auto text-primary font-black gap-2">
-                      <Target className="h-5 w-5" />
-                      Tailor My Resume
-                    </Button>
-                  </Link>
-                  <Link href="/pricing">
-                    <Button size="lg" variant="outline" className="h-14 px-8 text-lg bg-white/10 border-white text-white w-full sm:w-auto font-bold hover:bg-white/20">
-                      View Pricing
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-            </motion.div>
           </section>
         </main>
 

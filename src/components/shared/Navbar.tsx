@@ -7,7 +7,7 @@ import { UserButton } from '@/components/auth/UserButton';
 import { ReactNode, Suspense, useState } from 'react';
 import { useScrollDirection } from '@/lib/hooks/useScrollDirection';
 import { useUser } from "@stackframe/stack";
-import { Sparkles, Menu, X, LayoutDashboard, Palette, Target, CreditCard } from 'lucide-react';
+import { Sparkles, Menu, X, LayoutDashboard, CreditCard } from 'lucide-react';
 
 interface NavbarProps {
   currentPath?: string;
@@ -62,18 +62,6 @@ function NavLinksInner({ currentPath }: { currentPath: string }) {
           Dashboard
         </Link>
       )}
-
-      {/* Tailor - Job targeting */}
-      <Link href="/tailor" className={getNavLinkStyles(currentPath, '/tailor')}>
-        <Target className="w-4 h-4" />
-        Tailor
-      </Link>
-
-      {/* Templates - Always visible */}
-      <Link href="/templates" className={getNavLinkStyles(currentPath, '/templates')}>
-        <Palette className="w-4 h-4" />
-        Templates
-      </Link>
 
       {/* Pricing */}
       <Link href="/pricing" className={getNavLinkStyles(currentPath, '/pricing')}>
@@ -132,26 +120,6 @@ function MobileMenu({
             </Link>
           )}
 
-          {/* Tailor */}
-          <Link
-            href="/tailor"
-            onClick={onClose}
-            className={`${getNavLinkStyles(currentPath, '/tailor')} w-full`}
-          >
-            <Target className="w-4 h-4" />
-            Tailor
-          </Link>
-
-          {/* Templates */}
-          <Link
-            href="/templates"
-            onClick={onClose}
-            className={`${getNavLinkStyles(currentPath, '/templates')} w-full`}
-          >
-            <Palette className="w-4 h-4" />
-            Templates
-          </Link>
-
           {/* Pricing */}
           <Link
             href="/pricing"
@@ -162,11 +130,11 @@ function MobileMenu({
             Pricing
           </Link>
 
-          {/* AI Editor - Primary CTA */}
-          <Link href="/editor" onClick={onClose}>
+          {/* Get Started - Primary CTA */}
+          <Link href="/" onClick={onClose}>
             <Button className="w-full gap-2 mt-2">
               <Sparkles className="w-4 h-4" />
-              AI Editor
+              Get Started
             </Button>
           </Link>
         </nav>
@@ -227,21 +195,21 @@ export function Navbar({ currentPath = '/', rightContent, position, fixed, exter
                 <div className="hidden md:flex items-center gap-4">
                   <Suspense fallback={
                     <Link
-                      href="/templates"
+                      href="/pricing"
                       className="text-sm font-bold transition-all hover:bg-gray-100 px-3 py-2 rounded-lg flex items-center gap-2"
                     >
-                      <Palette className="w-4 h-4" />
-                      Templates
+                      <CreditCard className="w-4 h-4" />
+                      Pricing
                     </Link>
                   }>
                     <NavLinksInner currentPath={currentPath} />
                   </Suspense>
                   
-                  {/* AI Editor - Primary CTA */}
-                  <Link href="/editor">
+                  {/* Get Started - Primary CTA */}
+                  <Link href="/">
                     <Button size="sm" className="gap-1">
                       <Sparkles className="w-4 h-4" />
-                      AI Editor
+                      Get Started
                     </Button>
                   </Link>
                   

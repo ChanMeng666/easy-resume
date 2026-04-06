@@ -1,114 +1,55 @@
 'use client';
 
-import { Suspense, useMemo, useState, useRef } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { useResumeData } from '@/hooks/useResumeData';
+import { Suspense, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Navbar } from '@/components/shared/Navbar';
 import { Footer } from '@/components/shared/Footer';
-import { GEOHead } from '@/components/shared/GEOHead';
-import { MultipleStructuredData } from '@/components/shared/StructuredData';
-import { getPageInstructions } from '@/lib/seo/instructions';
-import { howToCreateResumeSchema, getBreadcrumbSchema } from '@/lib/seo/schemas';
-import { AIEditorContent } from './AIEditorContent';
-import { AgentChatPanel } from '@/components/agent/AgentChatPanel';
-import { getTemplateById, DEFAULT_TEMPLATE_ID } from '@/templates/registry';
 import { useElementScrollDirection } from '@/lib/hooks/useScrollDirection';
+import { AIEditorContent } from './AIEditorContent';
 
 /**
- * AI-powered editor page with agent chat panel.
- * Uses Vercel AI SDK for chat-based resume editing.
+ * Editor page — result review page.
+ * Users arrive here after clicking "Generate My Resume" on the homepage.
+ * Reads JD and background info from URL search params or sessionStorage.
  */
 export default function AIEditorPage() {
-  const resumeData = useResumeData();
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const urlTemplateId = searchParams.get('template');
+  const jd = searchParams.get('jd') || '';
+  const bg = searchParams.get('bg') || '';
 
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>(
-    urlTemplateId || DEFAULT_TEMPLATE_ID
-  );
-
-  // Handle template change
-  const handleTemplateChange = (templateId: string) => {
-    setSelectedTemplateId(templateId);
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('template', templateId);
-    router.replace(`/editor?${params.toString()}`, { scroll: false });
-  };
-
-  // Generate Typst code
-  const typstCode = useMemo(() => {
-    const template = getTemplateById(selectedTemplateId);
-    if (!template) {
-      const defaultTemplate = getTemplateById(DEFAULT_TEMPLATE_ID);
-      return defaultTemplate?.generator(resumeData.data) || '';
-    }
-    return template.generator(resumeData.data);
-  }, [resumeData.data, selectedTemplateId]);
-
-  // Breadcrumb navigation
-  const breadcrumbs = [
-    { name: 'Home', url: 'https://vitex.org.nz/' },
-    { name: 'AI Editor', url: 'https://vitex.org.nz/editor' },
-  ];
-
-  // Ref for the scrollable container
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const scrollDirection = useElementScrollDirection(scrollContainerRef);
 
   return (
-    <div className="flex h-screen bg-[#f0f0f0]">
-      {/* GEO: AI Agent Instructions */}
-      <GEOHead instructions={getPageInstructions('editor')} />
-
-      {/* SEO: Structured Data */}
-      <MultipleStructuredData
-        schemas={[
-          howToCreateResumeSchema,
-          getBreadcrumbSchema(breadcrumbs),
-        ]}
-      />
-
-      {/* Left Content Area */}
+    <div className="flex min-h-screen flex-col bg-[#f0f0f0]">
       <div
         ref={scrollContainerRef}
-        className="flex-1 overflow-auto bg-[#f0f0f0]"
+        className="flex-1 overflow-auto"
       >
-        <Navbar currentPath="/editor" position="sticky" externalScrollDirection={scrollDirection} />
+        <Navbar
+          currentPath="/editor"
+          position="sticky"
+          externalScrollDirection={scrollDirection}
+        />
 
-        <Suspense fallback={
-          <div className="container mx-auto px-4 py-8">
-            <div className="flex items-center justify-center py-20">
-              <div className="p-6 bg-white rounded-xl">
-                <p className="font-bold text-muted-foreground animate-pulse">Loading AI Editor...</p>
+        <Suspense
+          fallback={
+            <div className="container mx-auto px-4 py-8">
+              <div className="flex items-center justify-center py-20">
+                <div className="rounded-xl border-2 border-black bg-white p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
+                  <p className="font-bold text-muted-foreground animate-pulse">
+                    Loading editor...
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-        }>
-          <AIEditorContent
-            data={resumeData.data}
-            isLoaded={resumeData.isLoaded}
-            isSaving={resumeData.isSaving}
-            error={resumeData.error}
-            isDbMode={resumeData.isDbMode}
-            updateData={resumeData.updateData}
-            selectedTemplateId={selectedTemplateId}
-            onTemplateChange={handleTemplateChange}
-            typstCode={typstCode}
-            onExportJSON={resumeData.exportData}
-            onImportJSON={resumeData.importData}
-          />
+          }
+        >
+          <AIEditorContent jd={jd} bg={bg} />
         </Suspense>
 
         <Footer />
       </div>
-
-      {/* Right Sidebar - Agent Chat Panel */}
-      <AgentChatPanel
-        resumeData={resumeData.data}
-        templateId={selectedTemplateId}
-        onResumeUpdate={resumeData.updateData}
-      />
     </div>
   );
 }
