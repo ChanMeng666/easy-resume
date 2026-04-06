@@ -1,17 +1,17 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { ExternalLink, ChevronDown, Download, Copy, Upload } from 'lucide-react';
+import { ChevronDown, Download, Copy, Upload } from 'lucide-react';
 import { TemplateSelector } from './TemplateSelector';
 import { SaveStatusIndicator } from './SaveStatusIndicator';
 import { useState } from 'react';
-import { openInOverleaf, copyToClipboard, downloadTexFile } from '@/lib/overleaf/api';
+import { copyToClipboard, downloadTypFile } from '@/lib/typst/compiler';
 import { useScrollDirection } from '@/lib/hooks/useScrollDirection';
 
 interface TopToolbarProps {
   currentTemplateId: string;
   onTemplateChange: (templateId: string) => void;
-  latexCode: string;
+  typstCode: string;
   resumeName: string;
   lastSaved?: Date;
   isSaving?: boolean;
@@ -30,7 +30,7 @@ interface TopToolbarProps {
 export function TopToolbar({
   currentTemplateId,
   onTemplateChange,
-  latexCode,
+  typstCode,
   resumeName,
   lastSaved,
   isSaving,
@@ -41,36 +41,28 @@ export function TopToolbar({
 }: TopToolbarProps) {
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const windowScrollDirection = useScrollDirection();
-  
+
   // Use external scroll direction if provided, otherwise use window scroll
-  const scrollDirection = externalScrollDirection !== undefined 
-    ? externalScrollDirection 
+  const scrollDirection = externalScrollDirection !== undefined
+    ? externalScrollDirection
     : windowScrollDirection;
-  
+
   // Navbar height: py-4 (32px) + logo (~52px) + border (2px) ≈ 86px
   // When navbar is not fixed (e.g., in flex layouts), use 0 as top offset
   const navbarHeight = navbarFixed ? 86 : 0;
 
-  const handleOpenInOverleaf = () => {
-    try {
-      openInOverleaf(latexCode, { engine: 'pdflatex' });
-    } catch {
-      alert('Failed to open in Overleaf. The content might be too large.');
-    }
-  };
-
   const handleCopyCode = async () => {
     try {
-      await copyToClipboard(latexCode);
-      alert('LaTeX code copied to clipboard!');
+      await copyToClipboard(typstCode);
+      alert('Typst code copied to clipboard!');
     } catch {
       alert('Failed to copy to clipboard');
     }
   };
 
-  const handleDownloadTex = () => {
+  const handleDownloadTyp = () => {
     try {
-      downloadTexFile(latexCode, resumeName);
+      downloadTypFile(typstCode, resumeName);
     } catch {
       alert('Failed to download file');
     }
@@ -94,7 +86,7 @@ export function TopToolbar({
   };
 
   return (
-    <div 
+    <div
       className="sticky z-30 bg-white border-b-2 border-black transition-[top] duration-300"
       style={{ top: scrollDirection === 'down' ? 0 : navbarHeight }}
     >
@@ -111,20 +103,8 @@ export function TopToolbar({
             <SaveStatusIndicator isSaving={isSaving} lastSaved={lastSaved} />
           </div>
 
-          {/* Right: Primary CTA and Export Menu */}
+          {/* Right: Export Menu */}
           <div className="flex items-center gap-3">
-            {/* Primary CTA - Open in Overleaf */}
-            <Button
-              onClick={handleOpenInOverleaf}
-              size="lg"
-              variant="accent"
-              className="gap-2"
-            >
-              <ExternalLink className="h-4 w-4" />
-              <span className="hidden sm:inline">Open in Overleaf</span>
-              <span className="sm:hidden">Overleaf</span>
-            </Button>
-
             {/* Export Options Dropdown */}
             <div className="relative">
               <Button
@@ -151,13 +131,13 @@ export function TopToolbar({
                     <div className="p-2">
                       <button
                         onClick={() => {
-                          handleDownloadTex();
+                          handleDownloadTyp();
                           setIsExportMenuOpen(false);
                         }}
                         className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium hover:bg-gray-100 transition-colors"
                       >
                         <Download className="h-4 w-4" />
-                        <span>Download .tex file</span>
+                        <span>Download .typ file</span>
                       </button>
 
                       <button
@@ -168,7 +148,7 @@ export function TopToolbar({
                         className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium hover:bg-gray-100 transition-colors"
                       >
                         <Copy className="h-4 w-4" />
-                        <span>Copy LaTeX code</span>
+                        <span>Copy Typst code</span>
                       </button>
 
                       <div className="my-1 h-0.5 bg-black" />

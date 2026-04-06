@@ -6,15 +6,13 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
-import { compilePdf, revokePdfUrl, CompileError, CompileOptions } from '@/lib/latex/compiler';
+import { compilePdf, revokePdfUrl, CompileError } from '@/lib/typst/compiler';
 
 export interface UsePdfCompilationOptions {
   /** Debounce delay in milliseconds */
   debounceMs?: number;
   /** Auto-compile when code changes */
   autoCompile?: boolean;
-  /** LaTeX engine to use */
-  engine?: CompileOptions['engine'];
 }
 
 export interface UsePdfCompilationReturn {
@@ -27,13 +25,13 @@ export interface UsePdfCompilationReturn {
   /** Whether the result came from cache */
   isCached: boolean;
   /** Trigger manual compilation */
-  compile: (latexCode: string) => void;
+  compile: (typstCode: string) => void;
   /** Clear the current PDF and error state */
   reset: () => void;
 }
 
 /**
- * Hook for managing PDF compilation from LaTeX code
+ * Hook for managing PDF compilation from Typst code
  * @param options - Configuration options
  */
 export function usePdfCompilation(
@@ -41,7 +39,6 @@ export function usePdfCompilation(
 ): UsePdfCompilationReturn {
   const {
     debounceMs = 800,
-    engine = 'pdflatex',
   } = options;
 
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -67,8 +64,8 @@ export function usePdfCompilation(
   /**
    * Core compilation function
    */
-  const doCompile = useCallback(async (latexCode: string) => {
-    if (!latexCode.trim()) {
+  const doCompile = useCallback(async (typstCode: string) => {
+    if (!typstCode.trim()) {
       return;
     }
 
@@ -76,7 +73,7 @@ export function usePdfCompilation(
     setError(null);
 
     try {
-      const result = await compilePdf(latexCode, { engine });
+      const result = await compilePdf(typstCode);
 
       // Check if component is still mounted
       if (!isMountedRef.current) return;
@@ -108,7 +105,7 @@ export function usePdfCompilation(
         setIsCompiling(false);
       }
     }
-  }, [engine, cleanupUrl]);
+  }, [cleanupUrl]);
 
   /**
    * Debounced compile function
@@ -118,8 +115,8 @@ export function usePdfCompilation(
   /**
    * Public compile function that uses debouncing
    */
-  const compile = useCallback((latexCode: string) => {
-    debouncedCompile(latexCode);
+  const compile = useCallback((typstCode: string) => {
+    debouncedCompile(typstCode);
   }, [debouncedCompile]);
 
   /**

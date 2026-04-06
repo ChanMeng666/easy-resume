@@ -36,8 +36,8 @@ export default function AIEditorPage() {
     router.replace(`/editor?${params.toString()}`, { scroll: false });
   };
 
-  // Generate LaTeX code
-  const latexCode = useMemo(() => {
+  // Generate Typst code
+  const typstCode = useMemo(() => {
     const template = getTemplateById(selectedTemplateId);
     if (!template) {
       const defaultTemplate = getTemplateById(DEFAULT_TEMPLATE_ID);
@@ -94,7 +94,7 @@ export default function AIEditorPage() {
             updateData={resumeData.updateData}
             selectedTemplateId={selectedTemplateId}
             onTemplateChange={handleTemplateChange}
-            latexCode={latexCode}
+            typstCode={typstCode}
             onExportJSON={resumeData.exportData}
             onImportJSON={resumeData.importData}
           />

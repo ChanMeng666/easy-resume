@@ -74,7 +74,7 @@ export function PdfPreview({ templateId = 'two-column' }: PdfPreviewProps) {
               <p>
                 This PDF shows the <strong>template style</strong> only and does not reflect your current data.
                 After editing your resume content in the <strong>&quot;Edit Resume&quot;</strong> section,
-                click the <strong>&quot;Open in Overleaf&quot;</strong> button below to see your customized resume.
+                use the <strong>Live PDF</strong> tab to see your customized resume compiled in real-time.
               </p>
             </div>
           </div>

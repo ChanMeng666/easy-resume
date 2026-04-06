@@ -24,7 +24,7 @@ export function Footer() {
             </Link>
           </div>
           <p className="mx-auto max-w-2xl text-base text-muted-foreground font-medium leading-relaxed">
-            Your Career, Perfectly Composed. AI-powered resume builder with professional LaTeX templates.
+            Your Career, Perfectly Composed. AI-powered resume builder with professional Typst templates.
           </p>
         </div>
 

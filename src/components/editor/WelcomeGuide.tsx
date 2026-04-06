@@ -50,7 +50,7 @@ export function WelcomeGuide() {
             Welcome to Vitex!
           </h2>
           <p className="text-sm text-muted-foreground font-medium">
-            Create your professional LaTeX resume in minutes
+            Create your professional resume in minutes
           </p>
         </div>
       </div>
@@ -97,7 +97,7 @@ export function WelcomeGuide() {
               <h3 className="font-bold">Export to PDF</h3>
             </div>
             <p className="text-sm text-muted-foreground font-medium">
-              Click &quot;Open in Overleaf&quot; in the toolbar
+              Use the Live PDF tab or download .typ file
             </p>
           </div>
         </div>

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Vitex is a LaTeX-based resume generator built with Next.js 15, React 19, and TypeScript. The application generates professional LaTeX code from structured resume data and integrates with Overleaf for PDF compilation. It uses a **custom two-column layout** built with standard LaTeX packages for maximum compatibility.
+Vitex is a Typst-based resume generator built with Next.js 15, React 19, and TypeScript. The application generates professional Typst code from structured resume data and compiles PDFs locally using Typst. It uses a **custom two-column layout** built with Typst's grid system for maximum compatibility.
 
 **Brand**: Vitex (formerly Easy Resume) - "Your Career, Perfectly Composed"
 
@@ -24,7 +24,7 @@ Vitex is a LaTeX-based resume generator built with Next.js 15, React 19, and Typ
 - Logo usage guidelines
 - Brand voice and tone
 
-**Key Architecture Decision**: This project migrated from an HTML/CSS A4 resume builder to a LaTeX code generator. It uses the article document class with custom commands to create a professional two-column layout (60% left / 40% right) that works on all LaTeX platforms including Overleaf without requiring additional template files.
+**Key Architecture Decision**: This project migrated from an HTML/CSS A4 resume builder to a Typst code generator. It uses Typst's built-in grid layout to create a professional two-column layout (60% left / 40% right) that compiles locally via the `typst` binary without requiring any external services.
 
 ## Common Commands
 
@@ -35,10 +35,9 @@ npm run build        # Build production bundle
 npm run start        # Start production server
 npm run lint         # Run ESLint
 
-# Cloudflare Workers Deployment
-npm run preview      # Build and preview in local workerd runtime
-npm run deploy       # Build and deploy to Cloudflare Workers
-npm run cf-typegen   # Generate Cloudflare Worker types
+# Docker / VPS Deployment
+# Docker build and GitHub Actions CI/CD deploy to DigitalOcean VPS
+# See .github/workflows/deploy.yml and Dockerfile
 
 # Package management
 npm install          # Install all dependencies
@@ -61,45 +60,44 @@ npx shadcn add <component>  # Add shadcn/ui components
 - `achievements`: Notable awards and recognitions
 - `certifications`: Professional certifications (automatically categorized)
 
-## LaTeX Generation System
+## Typst Generation System
 
-### Core Generator (`src/lib/latex/generator.ts`)
-- **Main function**: `generateLatexCode(data: ResumeData): string`
-- **Document class**: Uses standard `article` class with custom formatting
+### Core Generator (`src/lib/typst/generator.ts`)
+- **Main function**: `generateTypstCode(data: ResumeData): string`
 - **Layout structure**:
   - Left column (60%): Introduction, Experience, Projects
   - Right column (40%): Education, Skills, Achievements, Certifications
-  - Uses `paracol` package with `\columnratio{0.6}` for asymmetric columns
+  - Uses Typst `grid` with `columns: (60%, 40%)` for asymmetric columns
 - **Sections generated**: Personal info with icons, summary, education, experience, projects, skills, achievements, certifications
-- **Custom commands**: `\cvname`, `\cvtitle`, `\cvcontact`, `\cvevent`, `\cvdivider`, `\cvtag`, `\cvsubsection`
+- **Custom functions**: `cv-section`, `cv-event`, `cv-tag`, `cv-divider`, `cv-subsection`
 - **Special handling**:
-  - FontAwesome icons for contact info and social profiles
+  - Unicode symbols for contact info and social profiles
   - Blue color scheme (PrimaryColor: #0E5484, AccentColor: #2E86AB)
   - Date formatting from resume data to human-readable ranges
-  - Array-to-itemize conversion for bullet points
+  - Array-to-list conversion for bullet points
   - Skill tags displayed as colored boxes
   - Automatic certification categorization by keywords
 
-### LaTeX Utilities (`src/lib/latex/utils.ts`)
-- `escapeLaTeX()`: Critical function to escape special LaTeX characters (`&`, `%`, `$`, `#`, `_`, `{`, `}`, `~`, `^`, `\`)
-- `formatDateRange()`: Converts start/end dates to display format
-- `splitName()`: Handles name parsing for LaTeX formatting
-- `arrayToLatexItemize()`: Converts string arrays to LaTeX itemize environments
-- `arrayToCompactItemize()`: Creates compact bullet lists with custom spacing
+### Typst Utilities (`src/lib/typst/utils.ts`)
+- `escapeTypst()`: Critical function to escape special Typst characters (`\`, `*`, `_`, `` ` ``, `$`, `#`, `<`, `>`, `@`)
+- `formatDateRange()`: Converts start/end dates to display format (uses en dash `–` instead of LaTeX `--`)
+- `splitName()`: Handles name parsing for Typst formatting
 - `cleanURL()`: Removes protocol from URLs for cleaner display
 
-## Overleaf Integration
+## PDF Compilation
 
-### Core API (`src/lib/overleaf/api.ts`)
-- **Primary method**: `openInOverleaf(latexCode, options)` - Uses POST form submission to avoid 414 URL length errors
-- **Form submission approach**: Creates hidden form with `encoded_snip` parameter, submits to `https://www.overleaf.com/docs`
-- **Engine options**: `pdflatex` (default), `xelatex`, `lualatex`, `latex_dvipdf`
-- **Alternative exports**:
-  - `downloadTexFile()`: Download .tex file locally
-  - `copyToClipboard()`: Copy LaTeX code to clipboard
+### Local Typst Compilation (`src/app/api/compile/route.ts`)
+- Compiles Typst code to PDF locally using the `typst` binary
+- No external API dependencies — runs entirely on the VPS
+- Compilation time: < 100ms per resume
+- Temp files in `os.tmpdir()/vitex-typst/`, cleaned up after each request
+- LRU cache for compiled PDFs (100 entries, 1-hour TTL)
+- Typst binary path configurable via `TYPST_BIN` env var
 
-### Why POST Instead of GET
-The previous GET URL approach (`snip_uri` with data URL) failed with 414 errors for large resumes. The POST form method with `encoded_snip` parameter successfully handles documents of any size.
+### Client-side Export (`src/lib/typst/compiler.ts`)
+- `compilePdf()`: Calls `/api/compile`, returns PDF blob with client-side caching
+- `downloadTypFile()`: Download .typ source file
+- `copyToClipboard()`: Copy Typst code to clipboard
 
 ## UI Components
 
@@ -159,8 +157,8 @@ The UI follows a **Neobrutalism** design aesthetic with these key characteristic
 - Toolbar with export buttons and template selector
 
 ### Preview Components
-- **LatexPreview** (`src/components/preview/LatexPreview.tsx`): Displays generated LaTeX with Prism.js syntax highlighting
-- **ExportButtons** (`src/components/preview/ExportButtons.tsx`): Three export actions (Overleaf, Copy, Download)
+- **TypstPreview** (`src/components/preview/TypstPreview.tsx`): Displays generated Typst code with syntax highlighting
+- **ExportButtons** (`src/components/preview/ExportButtons.tsx`): Three export actions (Compile PDF, Copy, Download)
 
 ### UI Library
 - **shadcn/ui**: Pre-built components in `src/components/ui/` customized for Neobrutalism
@@ -199,22 +197,21 @@ src/
 │   ├── copilot/              # CopilotKit AI components
 │   │   └── AITextarea.tsx    # AI-enhanced textareas (React 19 compatible)
 │   ├── editor/               # Resume editor components
-│   ├── preview/              # LaTeX preview and export buttons
+│   ├── preview/              # Typst preview and export buttons
 │   └── ui/                   # shadcn/ui components
 ├── lib/
 │   ├── copilot/              # CopilotKit integration
 │   │   ├── tools.ts          # AI actions (useCopilotAction hooks)
 │   │   ├── instructions.ts   # AI system instructions
 │   │   └── schemas.ts        # AI parameter schemas
-│   ├── latex/
-│   │   ├── generator.ts      # Main LaTeX code generation logic
-│   │   └── utils.ts          # LaTeX formatting utilities
-│   ├── overleaf/
-│   │   └── api.ts            # Overleaf integration (POST form method)
+│   ├── typst/
+│   │   ├── generator.ts      # Main Typst code generation logic
+│   │   ├── utils.ts          # Typst formatting utilities
+│   │   └── compiler.ts       # Client-side PDF compilation and export
 │   ├── validation/
 │   │   └── schema.ts         # Zod schemas for type validation
 │   └── utils.ts              # General utilities (cn for className merging)
-├── templates/                # LaTeX template system
+├── templates/                # Typst template system
 │   ├── registry.ts           # Template registry
 │   ├── types.ts              # Template type definitions
 │   └── [template-name]/      # Individual templates
@@ -224,44 +221,40 @@ src/
 
 ## Important Implementation Notes
 
-### LaTeX Special Character Escaping
-Always use `escapeLaTeX()` from `src/lib/latex/utils.ts` when inserting user data into LaTeX code. This prevents compilation errors from special characters.
+### Typst Special Character Escaping
+Always use `escapeTypst()` from `src/lib/typst/utils.ts` when inserting user data into Typst code. This prevents compilation errors from special characters.
 
 ### Date Handling
 Work and education entries use string dates (`"Mar 2025"`, `"PRESENT"`) rather than ISO format. The `formatDateRange()` function handles the display formatting.
 
 ### Social Profile Mapping
-The generator maps common network names to FontAwesome icons:
-- `"LinkedIn"` → `\faLinkedin`
-- `"GitHub"` → `\faGithub`
-- `"Portfolio"` / other → `\faGlobe`
+The generator maps common network names to Unicode symbols:
+- `"LinkedIn"` → Unicode LinkedIn icon
+- `"GitHub"` → Unicode GitHub icon
+- `"Portfolio"` / other → Unicode globe icon
 
-### LaTeX Template Customization
-- Document class: `\documentclass[10pt,a4paper]{article}`
-- Layout: Two-column with `\columnratio{0.6}` (60/40 split) using `paracol` package
-- Fonts: Latin Modern (lmodern package)
+### Typst Template Customization
+- Page setup: `#set page(paper: "a4")` with 10pt font size
+- Layout: Two-column with `grid(columns: (60%, 40%))` for asymmetric layout
 - Color scheme: Custom blue colors (PrimaryColor: #0E5484, AccentColor: #2E86AB)
-- Margins: `left=1.25cm, right=1.25cm, top=1.5cm, bottom=1.5cm`
-- Icons: FontAwesome 5 for social profiles and contact info
-- Section formatting: Custom `titlesec` settings with colored headers and horizontal rules
+- Margins: `left: 1.25cm, right: 1.25cm, top: 1.5cm, bottom: 1.5cm`
+- Icons: Unicode symbols for social profiles and contact info
+- Section formatting: Custom Typst functions with colored headers and horizontal rules
 
-### Key Packages Used
-- `geometry`: Page margins and layout
-- `xcolor`: Color definitions and usage
-- `fontawesome5`: Icons for contact info and social profiles
-- `hyperref`: Clickable links
-- `paracol`: Two-column layout with asymmetric widths
-- `enumitem`: Customized list formatting
-- `titlesec`: Custom section header styling
+### Typst Built-in Features Used
+Typst does not use external packages for basic functionality. All layout, color, typography, and linking features are built into the language:
+- `grid`: Two-column layout with asymmetric widths
+- `page`/`text`: Page margins, font size, and typography
+- `link`: Clickable hyperlinks
+- `list`: Bullet point lists
+- `rect`/`box`: Colored boxes for skill tags
 
-### Custom Commands Defined
-- `\cvname{name}`: Large bold name in header
-- `\cvtitle{title}`: Professional title below name
-- `\cvcontact{info}`: Contact information line with icons
-- `\cvevent{title}{subtitle}{date}{location}`: Work/education entries
-- `\cvdivider`: Horizontal line separator between entries
-- `\cvtag{keyword}`: Colored box for skill tags
-- `\cvsubsection{heading}`: Uppercase subsection headers
+### Custom Functions Defined
+- `cv-section(title)`: Section header with colored text and horizontal rule
+- `cv-event(title, subtitle, date, location)`: Work/education entries
+- `cv-divider()`: Horizontal line separator between entries
+- `cv-tag(keyword)`: Colored box for skill tags
+- `cv-subsection(heading)`: Uppercase subsection headers
 
 ## CopilotKit Integration
 
@@ -382,6 +375,12 @@ This project underwent multiple architectural transformations:
    - **Cloudinary**: Replaced Node.js `Readable` streams with base64 data URI upload
    - **Config files**: `wrangler.jsonc` (worker config), `.dev.vars` (local secrets, gitignored)
 
+6. **LaTeX to Typst (current)**:
+   - **Removed**: Entire LaTeX generation system, Overleaf integration, prismjs
+   - **Added**: Typst generation system with local compilation
+   - **Benefits**: < 100ms compilation (vs 5-15s LaTeX), single binary dependency, no external API, AI-friendlier syntax
+   - **Key files**: `src/lib/typst/generator.ts`, `src/lib/typst/utils.ts`, `src/lib/typst/compiler.ts`
+
 **Legacy reference**: `A4_RESUME_USAGE.md` documents the original HTML/CSS approach (not currently used)
 
 ## Type System
@@ -389,7 +388,7 @@ This project underwent multiple architectural transformations:
 All types are inferred from Zod schemas using `z.infer<typeof schema>`. When modifying data structures:
 1. Update the Zod schema in `src/lib/validation/schema.ts`
 2. TypeScript types automatically update via type inference
-3. Update LaTeX generator functions to handle new fields
+3. Update Typst generator functions to handle new fields
 4. Test with actual data in `src/data/resume.ts`
 
 ## Development Workflow
@@ -397,9 +396,9 @@ All types are inferred from Zod schemas using `z.infer<typeof schema>`. When mod
 When adding new resume sections:
 1. Update schema in `src/lib/validation/schema.ts`
 2. Add data to `src/data/resume.ts`
-3. Create generator function in `src/lib/latex/generator.ts`
-4. Add section to `generateLatexCode()` sections array
-5. Test LaTeX output in Overleaf
+3. Create generator function in `src/lib/typst/generator.ts`
+4. Add section to `generateTypstCode()` sections array
+5. Test Typst output by compiling locally
 
 ## Claude Code Preferences
 

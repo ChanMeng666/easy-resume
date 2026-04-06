@@ -2,28 +2,20 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { ExternalLink, Copy, Download, CheckCircle } from 'lucide-react';
-import { openInOverleaf, copyToClipboard, downloadTexFile } from '@/lib/overleaf/api';
+import { Copy, Download, CheckCircle } from 'lucide-react';
+import { copyToClipboard, downloadTypFile } from '@/lib/typst/compiler';
 
 interface ExportButtonsProps {
-  latexCode: string;
+  typstCode: string;
   resumeName?: string;
 }
 
-export function ExportButtons({ latexCode, resumeName = 'resume' }: ExportButtonsProps) {
+export function ExportButtons({ typstCode, resumeName = 'resume' }: ExportButtonsProps) {
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied'>('idle');
-
-  const handleOpenInOverleaf = () => {
-    try {
-      openInOverleaf(latexCode, { engine: 'pdflatex' });
-    } catch {
-      alert('Failed to open in Overleaf. The content might be too large.');
-    }
-  };
 
   const handleCopy = async () => {
     try {
-      await copyToClipboard(latexCode);
+      await copyToClipboard(typstCode);
       setCopyStatus('copied');
       setTimeout(() => setCopyStatus('idle'), 2000);
     } catch {
@@ -33,7 +25,7 @@ export function ExportButtons({ latexCode, resumeName = 'resume' }: ExportButton
 
   const handleDownload = () => {
     try {
-      downloadTexFile(latexCode, resumeName);
+      downloadTypFile(typstCode, resumeName);
     } catch {
       alert('Failed to download file');
     }
@@ -41,16 +33,6 @@ export function ExportButtons({ latexCode, resumeName = 'resume' }: ExportButton
 
   return (
     <div className="sticky top-4 space-y-2">
-      <Button
-        onClick={handleOpenInOverleaf}
-        className="w-full"
-        size="lg"
-        variant="default"
-      >
-        <ExternalLink className="mr-2 h-4 w-4" />
-        Open in Overleaf
-      </Button>
-
       <Button
         onClick={handleCopy}
         variant="outline"
@@ -75,7 +57,7 @@ export function ExportButtons({ latexCode, resumeName = 'resume' }: ExportButton
         className="w-full"
       >
         <Download className="mr-2 h-4 w-4" />
-        Download .tex
+        Download .typ
       </Button>
     </div>
   );

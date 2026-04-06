@@ -10,7 +10,7 @@ import { getTemplateById } from '@/templates/registry';
 
 interface PreviewTabsProps {
   templateId?: string;
-  latexCode: string;
+  typstCode: string;
   filename?: string;
 }
 
@@ -24,9 +24,9 @@ function getPdfPath(templateId: string = 'two-column'): string {
 
 /**
  * Neobrutalism styled preview tabs component.
- * Tabbed interface for template preview and LaTeX code.
+ * Tabbed interface for template preview and Typst code.
  */
-export function PreviewTabs({ templateId = 'two-column', latexCode, filename = 'resume' }: PreviewTabsProps) {
+export function PreviewTabs({ templateId = 'two-column', typstCode, filename = 'resume' }: PreviewTabsProps) {
   const pdfPath = getPdfPath(templateId);
 
   const handleOpenInNewTab = () => {
@@ -54,15 +54,15 @@ export function PreviewTabs({ templateId = 'two-column', latexCode, filename = '
             <FileText className="h-4 w-4" />
             Template
           </TabsTrigger>
-          <TabsTrigger value="latex" className="gap-2">
+          <TabsTrigger value="typst" className="gap-2">
             <FileCode className="h-4 w-4" />
-            LaTeX
+            Typst
           </TabsTrigger>
         </TabsList>
 
         {/* Live PDF Tab */}
         <TabsContent value="live" className="mt-4">
-          <LivePdfPreview latexCode={latexCode} filename={filename} />
+          <LivePdfPreview typstCode={typstCode} filename={filename} />
         </TabsContent>
 
         {/* Template Preview Tab */}
@@ -110,16 +110,16 @@ export function PreviewTabs({ templateId = 'two-column', latexCode, filename = '
                 <p className="text-blue-800 font-medium">
                   This PDF shows the <strong>template design</strong> with sample content.
                   To see your customized resume with your data,
-                  click <strong>&quot;Open in Overleaf&quot;</strong> in the top toolbar.
+                  use the <strong>Live PDF</strong> tab or download the .typ file.
                 </p>
               </div>
             </div>
           </div>
         </TabsContent>
 
-        {/* LaTeX Code Tab */}
-        <TabsContent value="latex" className="mt-4">
-          <LatexPreview code={latexCode} filename={filename} />
+        {/* Typst Code Tab */}
+        <TabsContent value="typst" className="mt-4">
+          <LatexPreview code={typstCode} filename={filename} />
         </TabsContent>
       </Tabs>
     </Card>

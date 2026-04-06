@@ -1,14 +1,18 @@
 /**
- * LaTeX compilation API route
- * Proxies requests to LaTeX.Online for PDF generation
+ * Typst compilation API route
+ * Compiles Typst code to PDF locally using the Typst binary
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { execFile } from 'child_process';
+import { writeFile, readFile, unlink, mkdir } from 'fs/promises';
+import { tmpdir } from 'os';
+import { join } from 'path';
 
-// LaTeX-on-HTTP API (supports POST with large payloads)
-const LATEX_API_URL = 'https://latex.ytotech.com/builds/sync';
+const TYPST_BIN = process.env.TYPST_BIN || 'typst';
 const CACHE_TTL = 3600000; // 1 hour in milliseconds
 const MAX_CACHE_SIZE = 100; // Maximum number of cached PDFs
+const COMPILE_TIMEOUT = 30000; // 30 second timeout
 
 /**
  * Simple LRU-like cache for compiled PDFs
@@ -21,7 +25,7 @@ interface CacheEntry {
 const pdfCache = new Map<string, CacheEntry>();
 
 /**
- * Generate a hash key from LaTeX code using Web Crypto API
+ * Generate a hash key from Typst code using Web Crypto API
  */
 async function generateHash(content: string): Promise<string> {
   const encoder = new TextEncoder();
@@ -48,30 +52,62 @@ function evictOldestEntries(): void {
 }
 
 /**
- * POST handler for LaTeX compilation
+ * Clean up temporary files, ignoring errors if files don't exist
+ */
+async function cleanupFiles(...paths: string[]): Promise<void> {
+  await Promise.allSettled(paths.map(p => unlink(p)));
+}
+
+/**
+ * Compile Typst code to PDF using the local Typst binary
+ */
+function compileTypst(inputPath: string, outputPath: string): Promise<{ stdout: string; stderr: string }> {
+  return new Promise((resolve, reject) => {
+    execFile(
+      TYPST_BIN,
+      ['compile', inputPath, outputPath],
+      { timeout: COMPILE_TIMEOUT },
+      (error, stdout, stderr) => {
+        if (error) {
+          reject({ error, stdout, stderr });
+        } else {
+          resolve({ stdout, stderr });
+        }
+      }
+    );
+  });
+}
+
+/**
+ * POST handler for Typst compilation
  */
 export async function POST(request: NextRequest) {
+  const id = crypto.randomUUID();
+  const tempDir = join(tmpdir(), 'vitex-typst');
+  const inputPath = join(tempDir, `${id}.typ`);
+  const outputPath = join(tempDir, `${id}.pdf`);
+
   try {
     const body = await request.json();
-    const { latexCode, engine = 'pdflatex' } = body;
+    const { typstCode } = body;
 
     // Validate input
-    if (!latexCode || typeof latexCode !== 'string') {
+    if (!typstCode || typeof typstCode !== 'string') {
       return NextResponse.json(
-        { error: 'Invalid LaTeX code', message: 'LaTeX code is required' },
+        { error: 'Invalid Typst code', message: 'Typst code is required' },
         { status: 400 }
       );
     }
 
-    if (latexCode.length > 500000) {
+    if (typstCode.length > 500000) {
       return NextResponse.json(
-        { error: 'LaTeX code too large', message: 'Maximum size is 500KB' },
+        { error: 'Typst code too large', message: 'Maximum size is 500KB' },
         { status: 413 }
       );
     }
 
     // Check cache
-    const cacheKey = await generateHash(latexCode + engine);
+    const cacheKey = await generateHash(typstCode);
     const cached = pdfCache.get(cacheKey);
 
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
@@ -84,66 +120,22 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Compile via LaTeX-on-HTTP API (supports large payloads via POST)
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 second timeout
+    // Ensure temp directory exists
+    await mkdir(tempDir, { recursive: true });
 
-    // Build request body for LaTeX-on-HTTP API
-    const requestBody = JSON.stringify({
-      compiler: engine,
-      resources: [{
-        main: true,
-        content: latexCode,
-      }],
-    });
+    // Write Typst code to temp file
+    await writeFile(inputPath, typstCode, 'utf-8');
 
     try {
-      const response = await fetch(LATEX_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: requestBody,
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
+      // Compile Typst to PDF
+      await compileTypst(inputPath, outputPath);
 
-      const contentType = response.headers.get('content-type') || '';
-
-      // LaTeX-on-HTTP returns JSON on error, PDF on success
-      if (!response.ok || contentType.includes('application/json')) {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        const logContent = errorData.log_files?.['__main_document__.log'] || '';
-        console.error('LaTeX compilation error:', errorData.error, logContent.slice(0, 500));
-
-        return NextResponse.json(
-          {
-            error: 'Compilation failed',
-            message: errorData.error || 'LaTeX compilation error',
-            log: logContent.slice(0, 5000) // Limit log size
-          },
-          { status: 422 }
-        );
-      }
-
-      // Check if response is actually a PDF
-      if (!contentType.includes('application/pdf')) {
-        const errorText = await response.text();
-        return NextResponse.json(
-          {
-            error: 'Compilation failed',
-            message: 'Did not receive PDF response',
-            log: errorText.slice(0, 5000)
-          },
-          { status: 422 }
-        );
-      }
-
-      const pdfBuffer = Buffer.from(await response.arrayBuffer());
+      // Read the output PDF
+      const pdfBuffer = await readFile(outputPath);
 
       // Cache the result
       evictOldestEntries();
-      pdfCache.set(cacheKey, { pdf: pdfBuffer, timestamp: Date.now() });
+      pdfCache.set(cacheKey, { pdf: Buffer.from(pdfBuffer), timestamp: Date.now() });
 
       return new NextResponse(new Uint8Array(pdfBuffer), {
         headers: {
@@ -152,26 +144,25 @@ export async function POST(request: NextRequest) {
           'Cache-Control': 'private, max-age=3600',
         },
       });
-    } catch (fetchError) {
-      clearTimeout(timeoutId);
+    } catch (compileError: unknown) {
+      const { error, stderr } = compileError as { error: Error; stdout: string; stderr: string };
 
-      if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+      // Check if it was a timeout
+      if (error && 'killed' in error && error.killed) {
         return NextResponse.json(
-          { error: 'Timeout', message: 'Compilation took too long (>60s)' },
+          { error: 'Timeout', message: 'Compilation took too long (>30s)' },
           { status: 504 }
         );
       }
 
-      // Handle network errors with more detail
-      const errorMessage = fetchError instanceof Error ? fetchError.message : 'Unknown error';
-      console.error('LaTeX.Online fetch error:', errorMessage);
-
+      // Return Typst compilation error
+      console.error('Typst compilation error:', stderr || error?.message);
       return NextResponse.json(
         {
-          error: 'Network error',
-          message: `Failed to connect to LaTeX.Online: ${errorMessage}. Please try "Open in Overleaf" instead.`
+          error: 'Compilation failed',
+          message: stderr || error?.message || 'Typst compilation error',
         },
-        { status: 503 }
+        { status: 422 }
       );
     }
   } catch (error) {
@@ -180,6 +171,8 @@ export async function POST(request: NextRequest) {
       { error: 'Internal server error', message: 'Failed to process compilation request' },
       { status: 500 }
     );
+  } finally {
+    await cleanupFiles(inputPath, outputPath);
   }
 }
 

@@ -68,8 +68,8 @@ export function ManualEditorContent({
     router.replace(`/editor/manual?${params.toString()}`, { scroll: false });
   };
 
-  // Generate LaTeX code when data or template changes
-  const latexCode = useMemo(() => {
+  // Generate Typst code when data or template changes
+  const typstCode = useMemo(() => {
     const template = getTemplateById(selectedTemplateId);
     if (!template) {
       console.warn(`Template ${selectedTemplateId} not found, using default`);
@@ -92,7 +92,7 @@ export function ManualEditorContent({
       <TopToolbar
         currentTemplateId={selectedTemplateId}
         onTemplateChange={handleTemplateChange}
-        latexCode={latexCode}
+        typstCode={typstCode}
         resumeName={currentData.basics.name.replace(/\s+/g, '_')}
         lastSaved={lastSaved}
         isSaving={isSaving}
@@ -182,7 +182,7 @@ export function ManualEditorContent({
           >
             <PreviewTabs
               templateId={selectedTemplateId}
-              latexCode={latexCode}
+              typstCode={typstCode}
               filename={currentData.basics.name.replace(/\s+/g, '_')}
             />
           </motion.div>
@@ -199,8 +199,8 @@ export function ManualEditorContent({
           <ol className="space-y-3 text-sm">
             {[
               { title: 'Edit directly in the browser:', desc: 'Use the visual editor on the left to update your resume information' },
-              { title: 'Real-time preview:', desc: 'See the generated LaTeX code update automatically on the right' },
-              { title: 'Open in Overleaf:', desc: 'Click the button to compile to PDF in Overleaf (free account required)' },
+              { title: 'Real-time preview:', desc: 'See the generated Typst code update automatically on the right' },
+              { title: 'Live PDF:', desc: 'Your resume is compiled to PDF in real-time as you edit' },
               { title: 'Backup your data:', desc: 'Export your resume as JSON to save or share it. Import JSON to restore previous data.' },
             ].map((item, idx) => (
               <li key={idx} className="flex gap-3">

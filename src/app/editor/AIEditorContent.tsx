@@ -19,7 +19,7 @@ interface AIEditorContentProps {
   updateData: (data: ResumeData) => void;
   selectedTemplateId: string;
   onTemplateChange: (templateId: string) => void;
-  latexCode: string;
+  typstCode: string;
   onExportJSON: () => void;
   onImportJSON: (file: File) => Promise<void>;
 }
@@ -36,7 +36,7 @@ export function AIEditorContent({
   isDbMode,
   selectedTemplateId,
   onTemplateChange,
-  latexCode,
+  typstCode,
   onExportJSON,
   onImportJSON,
 }: AIEditorContentProps) {
@@ -52,7 +52,7 @@ export function AIEditorContent({
       <TopToolbar
         currentTemplateId={selectedTemplateId}
         onTemplateChange={onTemplateChange}
-        latexCode={latexCode}
+        typstCode={typstCode}
         resumeName={currentData.basics.name.replace(/\s+/g, '_')}
         lastSaved={lastSaved}
         isSaving={isSaving}
@@ -109,7 +109,7 @@ export function AIEditorContent({
           {isLoaded ? (
             <PreviewTabs
               templateId={selectedTemplateId}
-              latexCode={latexCode}
+              typstCode={typstCode}
               filename={currentData.basics.name.replace(/\s+/g, '_')}
             />
           ) : (
@@ -134,7 +134,7 @@ export function AIEditorContent({
               { num: '1', text: 'Chat with AI in sidebar' },
               { num: '2', text: 'Paste a job description to tailor' },
               { num: '3', text: 'Watch your resume update live' },
-              { num: '4', text: 'Export to Overleaf or download' },
+              { num: '4', text: 'Export PDF or download .typ file' },
             ].map((item) => (
               <div key={item.num} className="flex items-center gap-2">
                 <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md bg-purple-600 text-xs font-black text-white">

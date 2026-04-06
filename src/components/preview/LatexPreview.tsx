@@ -1,12 +1,9 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import Prism from 'prismjs';
-import 'prismjs/components/prism-latex';
-import 'prismjs/themes/prism-tomorrow.css';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, Copy, Check } from 'lucide-react';
-import { downloadTexFile, copyToClipboard } from '@/lib/overleaf/api';
+import { downloadTypFile, copyToClipboard } from '@/lib/typst/compiler';
 
 interface LatexPreviewProps {
   code: string;
@@ -14,17 +11,10 @@ interface LatexPreviewProps {
 }
 
 export function LatexPreview({ code, filename = 'resume' }: LatexPreviewProps) {
-  const codeRef = useRef<HTMLElement>(null);
   const [isCopied, setIsCopied] = useState(false);
 
-  useEffect(() => {
-    if (codeRef.current) {
-      Prism.highlightElement(codeRef.current);
-    }
-  }, [code]);
-
   const handleDownload = () => {
-    downloadTexFile(code, filename);
+    downloadTypFile(code, filename);
   };
 
   const handleCopy = async () => {
@@ -37,7 +27,7 @@ export function LatexPreview({ code, filename = 'resume' }: LatexPreviewProps) {
     <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
       <div className="flex items-center justify-between border-b bg-muted/50 px-4 py-2">
         <div className="flex items-center gap-3">
-          <h3 className="text-sm font-semibold">LaTeX Code</h3>
+          <h3 className="text-sm font-semibold">Typst Code</h3>
           <span className="text-xs text-muted-foreground">
             {code.split('\n').length} lines
           </span>
@@ -50,7 +40,7 @@ export function LatexPreview({ code, filename = 'resume' }: LatexPreviewProps) {
             className="gap-2"
           >
             <Download className="h-4 w-4" />
-            Download .tex
+            Download .typ
           </Button>
           <Button
             variant="outline"
@@ -74,8 +64,8 @@ export function LatexPreview({ code, filename = 'resume' }: LatexPreviewProps) {
       </div>
 
       <div className="relative">
-        <pre className="max-h-[calc(100vh-16rem)] overflow-auto p-4 text-sm" suppressHydrationWarning>
-          <code ref={codeRef} className="language-latex" suppressHydrationWarning>
+        <pre className="max-h-[calc(100vh-16rem)] overflow-auto p-4 text-sm font-mono bg-gray-950 text-gray-100" suppressHydrationWarning>
+          <code suppressHydrationWarning>
             {code}
           </code>
         </pre>

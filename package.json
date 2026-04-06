@@ -36,7 +36,6 @@
     "nanoid": "^5.1.6",
     "next": "^15.1.12",
     "openai": "^6.9.1",
-    "prismjs": "^1.30.0",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
     "react-hook-form": "^7.64.0",
@@ -49,7 +48,6 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@types/node": "^20",
-    "@types/prismjs": "^1.26.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "dotenv": "^17.2.3",

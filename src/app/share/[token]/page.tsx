@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { LatexPreview } from "@/components/preview/LatexPreview";
 import { ExportButtons } from "@/components/preview/ExportButtons";
-import { generateLatexCode } from "@/lib/latex/generator";
+import { generateTypstCode } from "@/lib/typst/generator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, AlertCircle, FileText, Download } from "lucide-react";
@@ -54,9 +54,9 @@ export default function SharePage() {
     }
   }, [token]);
 
-  const latexCode = useMemo(() => {
+  const typstCode = useMemo(() => {
     if (!shareData) return "";
-    return generateLatexCode(shareData.resumeData);
+    return generateTypstCode(shareData.resumeData);
   }, [shareData]);
 
   const formatTimeRemaining = (seconds: number): string => {
@@ -157,10 +157,10 @@ export default function SharePage() {
           >
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg font-black">LaTeX Preview</CardTitle>
+                <CardTitle className="text-lg font-black">Typst Preview</CardTitle>
               </CardHeader>
               <CardContent>
-                <LatexPreview code={latexCode} />
+                <LatexPreview code={typstCode} />
               </CardContent>
             </Card>
           </motion.div>
@@ -180,10 +180,10 @@ export default function SharePage() {
               <CardContent>
                 <div className="space-y-4">
                   <p className="text-sm text-muted-foreground font-medium">
-                    Export this resume to PDF using Overleaf or download the LaTeX
+                    Export this resume to PDF or download the Typst
                     source code.
                   </p>
-                  <ExportButtons latexCode={latexCode} />
+                  <ExportButtons typstCode={typstCode} />
                 </div>
               </CardContent>
             </Card>
