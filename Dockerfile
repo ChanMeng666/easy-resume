@@ -70,12 +70,12 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
-# Install common fonts for PDF generation
+# Install fonts and xz-utils (needed to extract Typst tarball)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    fonts-liberation fonts-dejavu-core && \
+    xz-utils fonts-liberation fonts-dejavu-core && \
     rm -rf /var/lib/apt/lists/*
 
-# Install Typst binary (separate layer for caching)
+# Install Typst binary
 ADD https://github.com/typst/typst/releases/download/v0.13.1/typst-x86_64-unknown-linux-musl.tar.xz /tmp/typst.tar.xz
 RUN tar xJf /tmp/typst.tar.xz --strip-components=1 -C /usr/local/bin typst-x86_64-unknown-linux-musl/typst && \
     rm /tmp/typst.tar.xz && \
