@@ -178,7 +178,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - LinkedIn: [chanmeng666](https://www.linkedin.com/in/chanmeng666/)
 - GitHub: [ChanMeng666](https://github.com/ChanMeng666)
 - Email: [chanmeng.dev@gmail.com](mailto:chanmeng.dev@gmail.com)
-- Website: [chanmeng.live](https://2d-portfolio-eta.vercel.app/)
+- Website: [chanmeng.org](https://chanmeng.org/)
 
 ---
 
