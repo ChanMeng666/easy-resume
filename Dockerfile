@@ -88,6 +88,18 @@ RUN tar xJf /tmp/typst.tar.xz --strip-components=1 -C /usr/local/bin typst-x86_6
 COPY --from=builder /app/node_modules/@fortawesome/fontawesome-free/webfonts /app/fonts
 ENV TYPST_FONT_PATH=/app/fonts
 
+# Pre-populate the Typst package cache with @preview/fontawesome:0.5.0 so
+# the compiler never needs outbound HTTPS to packages.typst.org at runtime
+# (the VPS has been returning OpenSSL/TLS errors when the typst binary tries
+# to negotiate TLS there). Docker's ADD directive uses the host daemon's
+# TLS stack, so it works regardless of CA certs inside the image.
+ADD https://packages.typst.org/preview/fontawesome-0.5.0.tar.gz /tmp/fa-pkg.tar.gz
+RUN mkdir -p /app/typst-cache/preview/fontawesome/0.5.0 && \
+    tar xzf /tmp/fa-pkg.tar.gz -C /app/typst-cache/preview/fontawesome/0.5.0 && \
+    rm /tmp/fa-pkg.tar.gz && \
+    test -f /app/typst-cache/preview/fontawesome/0.5.0/typst.toml
+ENV TYPST_PACKAGE_CACHE_PATH=/app/typst-cache
+
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
