@@ -1,18 +1,11 @@
 import { Template, TemplateCategory, TemplateRegistry } from './types';
 import twoColumnTemplate from './two-column';
 import modernCvTemplate from './modern-cv';
-import classicTemplate from './classic';
-import awesomeCvTemplate from './awesome-cv';
 import executiveTemplate from './executive';
 import creativeTemplate from './creative';
 import compactTemplate from './compact';
 import bankingTemplate from './banking';
 import academicTemplate from './academic';
-import sidebarAccentTemplate from './sidebar-accent';
-import timelineDualTemplate from './timeline-dual';
-import reverseTwoColumnTemplate from './reverse-two-column';
-import cardGridTemplate from './card-grid';
-import threeSectionTemplate from './three-section';
 
 /**
  * Template registry - central place to register all templates
@@ -24,18 +17,11 @@ class TemplateRegistryImpl implements TemplateRegistry {
     // Register all templates here
     this.register(twoColumnTemplate);
     this.register(modernCvTemplate);
-    this.register(classicTemplate);
-    this.register(awesomeCvTemplate);
     this.register(executiveTemplate);
     this.register(creativeTemplate);
     this.register(compactTemplate);
     this.register(bankingTemplate);
     this.register(academicTemplate);
-    this.register(sidebarAccentTemplate);
-    this.register(timelineDualTemplate);
-    this.register(reverseTwoColumnTemplate);
-    this.register(cardGridTemplate);
-    this.register(threeSectionTemplate);
   }
 
   /**

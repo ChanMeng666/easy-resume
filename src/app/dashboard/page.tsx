@@ -6,7 +6,6 @@ import { useUser } from "@stackframe/stack";
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/shared/Navbar";
 import { ResumeCard } from "@/components/dashboard/ResumeCard";
-import { CreateResumeDialog } from "@/components/dashboard/CreateResumeDialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -45,7 +44,6 @@ export default function DashboardPage() {
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [creditInfo, setCreditInfo] = useState<CreditInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   const activeTab = searchParams.get("tab") || "resumes";
 
@@ -141,7 +139,7 @@ export default function DashboardPage() {
                   Create, edit, and share your professional resumes
                 </p>
               </div>
-              <Button onClick={() => setShowCreateDialog(true)}>
+              <Button onClick={() => router.push("/")}>
                 <Plus className="mr-2 h-4 w-4" />
                 New Resume
               </Button>
@@ -186,7 +184,7 @@ export default function DashboardPage() {
                 <p className="text-muted-foreground mb-6 max-w-sm font-medium">
                   Create your first resume to get started.
                 </p>
-                <Button onClick={() => setShowCreateDialog(true)}>
+                <Button onClick={() => router.push("/")}>
                   <Plus className="mr-2 h-4 w-4" />
                   Create Your First Resume
                 </Button>
@@ -262,12 +260,6 @@ export default function DashboardPage() {
 
         </Tabs>
       </main>
-
-      <CreateResumeDialog
-        open={showCreateDialog}
-        onOpenChange={setShowCreateDialog}
-        onCreated={fetchResumes}
-      />
     </div>
   );
 }

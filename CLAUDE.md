@@ -235,7 +235,7 @@ src/
 │   ├── validation/
 │   │   └── schema.ts         # Zod schemas for type validation
 │   └── utils.ts              # General utilities
-├── templates/                # 14 Typst resume templates
+├── templates/                # 7 Typst resume templates (one per industry bucket)
 │   ├── registry.ts           # Template registry
 │   ├── types.ts              # Template type definitions
 │   └── [template-name]/      # Individual templates (metadata + generator)
