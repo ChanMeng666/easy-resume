@@ -145,7 +145,7 @@ function generateHeader(basics: ResumeData['basics']): string {
 
   return `// ── Header ──────────────────────────────────────────
 #grid(
-  columns: (1fr, auto),
+  columns: (1fr, 40%),
   align: (left, right),
   [
     #text(size: 24pt, weight: "bold", fill: textcolor)[${escapeTypst(basics.name)}]

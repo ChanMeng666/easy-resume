@@ -47,6 +47,7 @@ interface GenerateResult {
     missingSkills: string[];
   };
   coverLetter: string;
+  coverLetterTypst: string;
   templateId: string;
 }
 
@@ -68,6 +69,7 @@ export function AIEditorContent({ jd, bg }: AIEditorContentProps) {
   const [refinementText, setRefinementText] = useState('');
   const [copySuccess, setCopySuccess] = useState(false);
   const [coverLetterCopied, setCoverLetterCopied] = useState(false);
+  const [coverLetterCodeCopied, setCoverLetterCodeCopied] = useState(false);
   const [showCoverLetter, setShowCoverLetter] = useState(false);
   const generationStarted = useRef(false);
 
@@ -183,6 +185,37 @@ export function AIEditorContent({ jd, bg }: AIEditorContentProps) {
     setCoverLetterCopied(true);
     setTimeout(() => setCoverLetterCopied(false), 2000);
   }, [result?.coverLetter]);
+
+  /** Handle cover letter PDF download. */
+  const handleDownloadCoverLetterPdf = useCallback(async () => {
+    if (!result?.coverLetterTypst) return;
+    const compileResult = await compilePdf(result.coverLetterTypst);
+    if (compileResult.success && compileResult.pdfBlob) {
+      const url = URL.createObjectURL(compileResult.pdfBlob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `${filename}_cover_letter.pdf`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(url);
+    }
+  }, [result?.coverLetterTypst, filename]);
+
+  /** Handle cover letter .typ download. */
+  const handleDownloadCoverLetterTyp = useCallback(() => {
+    if (result?.coverLetterTypst) {
+      downloadTypFile(result.coverLetterTypst, `${filename}_cover_letter.typ`);
+    }
+  }, [result?.coverLetterTypst, filename]);
+
+  /** Handle copy cover letter Typst code. */
+  const handleCopyCoverLetterCode = useCallback(async () => {
+    if (!result?.coverLetterTypst) return;
+    await copyToClipboard(result.coverLetterTypst);
+    setCoverLetterCodeCopied(true);
+    setTimeout(() => setCoverLetterCodeCopied(false), 2000);
+  }, [result?.coverLetterTypst]);
 
   /** Handle refinement (re-generate with feedback). */
   const handleRefine = useCallback(() => {
@@ -427,19 +460,65 @@ export function AIEditorContent({ jd, bg }: AIEditorContentProps) {
           animate={{ opacity: 1, height: 'auto' }}
           className="mt-4 rounded-xl border-2 border-black bg-white p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
         >
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-black">Cover Letter</h3>
+          <h3 className="mb-4 text-lg font-black">Cover Letter</h3>
+
+          {/* PDF preview */}
+          {result.coverLetterTypst && (
+            <div className="mb-4">
+              <LivePdfPreview
+                typstCode={result.coverLetterTypst}
+                filename={`${filename}_cover_letter`}
+              />
+            </div>
+          )}
+
+          {/* Action buttons */}
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <Button
+              size="sm"
+              className="border-2 border-black bg-purple-600 font-bold text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:bg-purple-700 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
+              onClick={handleDownloadCoverLetterPdf}
+              disabled={!result.coverLetterTypst}
+            >
+              <Download className="mr-2 h-3.5 w-3.5" />
+              Download PDF
+            </Button>
+
             <Button
               variant="outline"
               size="sm"
-              className="border-2 border-black font-bold"
+              className="border-2 border-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
+              onClick={handleDownloadCoverLetterTyp}
+              disabled={!result.coverLetterTypst}
+            >
+              <FileCode className="mr-2 h-3.5 w-3.5" />
+              Download .typ
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-2 border-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
+              onClick={handleCopyCoverLetterCode}
+              disabled={!result.coverLetterTypst}
+            >
+              {coverLetterCodeCopied ? <Check className="mr-2 h-3.5 w-3.5 text-green-600" /> : <Copy className="mr-2 h-3.5 w-3.5" />}
+              {coverLetterCodeCopied ? 'Copied!' : 'Copy Code'}
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-2 border-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
               onClick={handleCopyCoverLetter}
             >
-              {coverLetterCopied ? <Check className="mr-1 h-3 w-3" /> : <Copy className="mr-1 h-3 w-3" />}
-              {coverLetterCopied ? 'Copied!' : 'Copy'}
+              {coverLetterCopied ? <Check className="mr-2 h-3.5 w-3.5 text-green-600" /> : <Copy className="mr-2 h-3.5 w-3.5" />}
+              {coverLetterCopied ? 'Copied!' : 'Copy Text'}
             </Button>
           </div>
-          <div className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">
+
+          {/* Plain text preview */}
+          <div className="whitespace-pre-wrap rounded-lg border-2 border-gray-200 bg-gray-50 p-4 text-sm leading-relaxed text-gray-700">
             {result.coverLetter}
           </div>
         </motion.div>

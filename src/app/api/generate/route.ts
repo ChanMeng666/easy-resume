@@ -14,6 +14,7 @@ import { generateCoverLetter } from '@/lib/agent/cover-letter';
 import { selectTemplate } from '@/lib/agent/template-selector';
 import { getTemplateById } from '@/templates/registry';
 import { generateTypstCode } from '@/lib/typst/generator';
+import { generateCoverLetterTypst } from '@/lib/typst/cover-letter';
 
 const TOTAL_STEPS = 7;
 
@@ -113,6 +114,8 @@ export async function POST(request: NextRequest) {
           ? template.generator(tailoredResume)
           : generateTypstCode(tailoredResume);
 
+        const coverLetterTypst = generateCoverLetterTypst(coverLetter, tailoredResume);
+
         // Send final result
         sendEvent(controller, encoder, {
           type: 'result',
@@ -126,6 +129,7 @@ export async function POST(request: NextRequest) {
               missingSkills: matchAnalysis.skillMatch.missing,
             },
             coverLetter,
+            coverLetterTypst,
             templateId,
           },
         });
