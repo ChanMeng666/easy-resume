@@ -17,6 +17,7 @@ export async function tailorResume(
   const { object } = await generateObject({
     model: openai("gpt-4o"),
     schema: resumeDataSchema,
+    providerOptions: { openai: { strictJsonSchema: false } },
     prompt: `You are an expert resume writer. Tailor this resume for the target job.
 
 RULES:

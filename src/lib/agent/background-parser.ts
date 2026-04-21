@@ -12,6 +12,7 @@ export async function parseBackground(
   const { object } = await generateObject({
     model: openai("gpt-4o"),
     schema: resumeDataSchema,
+    providerOptions: { openai: { strictJsonSchema: false } },
     prompt: `You are an expert resume writer. Parse the following free-text background description into structured resume data.
 
 Instructions:

@@ -32,6 +32,7 @@ export async function parseJobDescription(rawText: string): Promise<ParsedJD> {
   const { object } = await generateObject({
     model: openai("gpt-4o"),
     schema: parsedJDSchema,
+    providerOptions: { openai: { strictJsonSchema: false } },
     prompt: `Parse the following job description into structured data.
 Extract all relevant information including skills, keywords, requirements, and responsibilities.
 For keywords, focus on terms that ATS systems would scan for.
