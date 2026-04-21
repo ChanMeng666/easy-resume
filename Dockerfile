@@ -81,6 +81,13 @@ RUN tar xJf /tmp/typst.tar.xz --strip-components=1 -C /usr/local/bin typst-x86_6
     rm /tmp/typst.tar.xz && \
     typst --version
 
+# Bundle FontAwesome 6 webfonts so Typst can render @preview/fontawesome icons.
+# Typst identifies fonts by their internal name, not filename — these TTFs
+# register as "Font Awesome 6 Free", "Font Awesome 6 Free Solid", and
+# "Font Awesome 6 Brands", which is exactly what the package expects.
+COPY --from=builder /app/node_modules/@fortawesome/fontawesome-free/webfonts /app/fonts
+ENV TYPST_FONT_PATH=/app/fonts
+
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs

@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { execFile } from 'child_process';
 import { writeFile, readFile, unlink, mkdir } from 'fs/promises';
+import { existsSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 
@@ -13,6 +14,24 @@ const TYPST_BIN = process.env.TYPST_BIN || 'typst';
 const CACHE_TTL = 3600000; // 1 hour in milliseconds
 const MAX_CACHE_SIZE = 100; // Maximum number of cached PDFs
 const COMPILE_TIMEOUT = 30000; // 30 second timeout
+
+/**
+ * Resolve the path to FontAwesome webfonts so Typst can render FA icons.
+ * Docker sets TYPST_FONT_PATH explicitly; in local dev we fall back to the
+ * npm package's webfonts directory, which Typst detects by its internal
+ * font names ("Font Awesome 6 Free" / "... Solid" / "... Brands").
+ */
+const TYPST_FONT_PATH = (() => {
+  if (process.env.TYPST_FONT_PATH) return process.env.TYPST_FONT_PATH;
+  const localFallback = join(
+    process.cwd(),
+    'node_modules',
+    '@fortawesome',
+    'fontawesome-free',
+    'webfonts'
+  );
+  return existsSync(localFallback) ? localFallback : undefined;
+})();
 
 /**
  * Simple LRU-like cache for compiled PDFs
@@ -62,10 +81,16 @@ async function cleanupFiles(...paths: string[]): Promise<void> {
  * Compile Typst code to PDF using the local Typst binary
  */
 function compileTypst(inputPath: string, outputPath: string): Promise<{ stdout: string; stderr: string }> {
+  const args = ['compile'];
+  if (TYPST_FONT_PATH) {
+    args.push('--font-path', TYPST_FONT_PATH);
+  }
+  args.push(inputPath, outputPath);
+
   return new Promise((resolve, reject) => {
     execFile(
       TYPST_BIN,
-      ['compile', inputPath, outputPath],
+      args,
       { timeout: COMPILE_TIMEOUT },
       (error, stdout, stderr) => {
         if (error) {

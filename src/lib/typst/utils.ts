@@ -89,3 +89,42 @@ export function networkToIcon(network: string): string {
 
   return iconMap[network.toLowerCase()] || '🌐';
 }
+
+/**
+ * Import statement for the FontAwesome Typst package.
+ * Place at the top of any Typst document that uses `fa-*` icon functions
+ * below. Relies on FontAwesome 6 webfont files being on the compiler's
+ * font search path.
+ */
+export const FONTAWESOME_IMPORT = '#import "@preview/fontawesome:0.5.0": *';
+
+/**
+ * Map a social network name to a FontAwesome Typst function call.
+ * Produces Typst source like `#fa-github()` or `#fa-linkedin()` that the
+ * document compiles to a real vector icon — no emoji, no fallback glyphs,
+ * no unpredictable advance widths.
+ * @param network - Network name (e.g., "LinkedIn", "GitHub", "Portfolio")
+ * @returns Typst source string that renders the matching FA icon
+ */
+export function networkToFaIcon(network: string): string {
+  const key = network.toLowerCase();
+  const brandMap: Record<string, string> = {
+    linkedin: '#fa-linkedin()',
+    github: '#fa-github()',
+    twitter: '#fa-x-twitter()',
+    x: '#fa-x-twitter()',
+    gitlab: '#fa-gitlab()',
+    stackoverflow: '#fa-stack-overflow()',
+    'stack-overflow': '#fa-stack-overflow()',
+    medium: '#fa-medium()',
+    dribbble: '#fa-dribbble()',
+    behance: '#fa-behance()',
+    youtube: '#fa-youtube()',
+    instagram: '#fa-instagram()',
+    facebook: '#fa-facebook()',
+  };
+  if (brandMap[key]) return brandMap[key];
+
+  // Default: generic website / portfolio globe icon (Free Solid set).
+  return '#fa-globe(solid: true)';
+}
