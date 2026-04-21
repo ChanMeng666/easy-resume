@@ -151,7 +151,7 @@ The UI follows a **Neobrutalism** design aesthetic with these key characteristic
 - **Refinement input**: Natural language feedback → re-runs pipeline
 
 #### Dashboard Page (`src/app/dashboard/page.tsx`)
-- **2-tab layout**: Resumes (card grid with CRUD) + Credits (balance, transactions, buy)
+- **Credits & Billing**: current balance, subscription tier, transaction history, "Buy Credits" button
 - Requires authentication
 
 #### Pricing Page (`src/app/pricing/page.tsx`)
@@ -189,28 +189,16 @@ src/
 │   ├── globals.css           # Global styles and CSS variables
 │   ├── api/
 │   │   ├── generate/route.ts # AI generation pipeline (SSE streaming)
-│   │   ├── agent/chat/route.ts # Agent chat endpoint (Vercel AI SDK)
 │   │   ├── compile/route.ts  # Local Typst → PDF compilation
-│   │   ├── ai/suggest/route.ts # AI content suggestions
-│   │   ├── resumes/          # Resume CRUD endpoints
-│   │   ├── jd/               # Job description parsing endpoints
-│   │   ├── tailor/           # Resume tailoring endpoints
-│   │   ├── ats/              # ATS scoring endpoint
-│   │   ├── cover-letter/     # Cover letter generation
-│   │   ├── credits/          # Credit management + Stripe webhook
-│   │   ├── applications/     # Application tracking
-│   │   └── share/            # Public resume sharing
+│   │   └── credits/          # Credit balance + Stripe webhook
 │   ├── editor/
 │   │   ├── page.tsx          # Editor page wrapper
 │   │   └── AIEditorContent.tsx # Result review + refinement UI
-│   ├── dashboard/page.tsx    # Resumes + Credits management
+│   ├── dashboard/page.tsx    # Credits & billing
 │   ├── pricing/page.tsx      # Pricing tiers
-│   ├── share/[token]/page.tsx # Public shared resume view
 │   └── handler/[...stack]/   # Stack Auth pages
 ├── components/
-│   ├── agent/                # AI agent chat components
 │   ├── auth/                 # Authentication components
-│   ├── dashboard/            # Resume cards, create dialog, share dialog
 │   ├── preview/              # PDF preview, Typst code view, export buttons
 │   ├── shared/               # Navbar, Footer
 │   └── ui/                   # shadcn/ui components
@@ -225,9 +213,11 @@ src/
 │   │   └── template-selector.ts # Rule-based template selection
 │   ├── typst/
 │   │   ├── generator.ts      # Main Typst code generation
-│   │   ├── utils.ts          # Typst formatting utilities
+│   │   ├── cover-letter.ts   # Cover letter Typst document generator
+│   │   ├── utils.ts          # Typst formatting utilities + FA icon helpers
 │   │   └── compiler.ts       # Client-side PDF compilation and export
-│   ├── services/             # Database service layer
+│   ├── services/
+│   │   └── creditService.ts  # Credit balance / transactions / Stripe
 │   ├── db/                   # Drizzle ORM client + schema
 │   ├── redis/                # Upstash Redis client
 │   ├── stripe/               # Stripe client + checkout
@@ -235,12 +225,10 @@ src/
 │   ├── validation/
 │   │   └── schema.ts         # Zod schemas for type validation
 │   └── utils.ts              # General utilities
-├── templates/                # 7 Typst resume templates (one per industry bucket)
-│   ├── registry.ts           # Template registry
-│   ├── types.ts              # Template type definitions
-│   └── [template-name]/      # Individual templates (metadata + generator)
-└── data/
-    └── resume.ts             # Sample resume data
+└── templates/                # 7 Typst resume templates (one per industry bucket)
+    ├── registry.ts           # Template registry
+    ├── types.ts              # Template type definitions
+    └── [template-name]/      # Individual templates (metadata + generator)
 ```
 
 ## Important Implementation Notes
@@ -252,10 +240,12 @@ Always use `escapeTypst()` from `src/lib/typst/utils.ts` when inserting user dat
 Work and education entries use string dates (`"Mar 2025"`, `"PRESENT"`) rather than ISO format. The `formatDateRange()` function handles the display formatting.
 
 ### Social Profile Mapping
-The generator maps common network names to Unicode symbols:
-- `"LinkedIn"` → Unicode LinkedIn icon
-- `"GitHub"` → Unicode GitHub icon
-- `"Portfolio"` / other → Unicode globe icon
+The generator maps common network names to FontAwesome 6 icon function calls via `networkToFaIcon()` in `src/lib/typst/utils.ts` (rendered via the `@preview/fontawesome:0.5.0` Typst package, with FA 6 webfonts bundled at `/app/fonts` in production and auto-detected from `node_modules` in dev):
+- `"LinkedIn"` → `#fa-linkedin()`
+- `"GitHub"` → `#fa-github()`
+- `"Twitter"` / `"X"` → `#fa-x-twitter()`
+- `"GitLab"` → `#fa-gitlab()`
+- Everything else → `#fa-globe(solid: true)`
 
 ### Typst Template Customization
 - Page setup: `#set page(paper: "a4")` with 10pt font size
@@ -266,12 +256,14 @@ The generator maps common network names to Unicode symbols:
 - Section formatting: Custom Typst functions with colored headers and horizontal rules
 
 ### Typst Built-in Features Used
-Typst does not use external packages for basic functionality. All layout, color, typography, and linking features are built into the language:
+Most layout, color, typography, and linking features come from Typst's built-in language:
 - `grid`: Two-column layout with asymmetric widths
 - `page`/`text`: Page margins, font size, and typography
 - `link`: Clickable hyperlinks
 - `list`: Bullet point lists
 - `rect`/`box`: Colored boxes for skill tags
+
+The one external package used is `@preview/fontawesome:0.5.0` for contact and brand icons (see Social Profile Mapping above). Its webfont files are bundled at build time from the `@fortawesome/fontawesome-free` npm package.
 
 ### Custom Functions Defined
 - `cv-section(title)`: Section header with colored text and horizontal rule
@@ -302,11 +294,6 @@ SSE streaming endpoint that runs 7 sequential steps:
 - **ats-scorer.ts**: GPT-4o evaluates formatting, keywords, experience, skills → ATSReport (0-100)
 - **cover-letter.ts**: GPT-4o generates 3-4 paragraph professional cover letter
 - **template-selector.ts**: Rule-based mapping of industry/level → template ID
-
-### Agent Chat (`src/app/api/agent/chat/route.ts`)
-- Uses Vercel AI SDK v6 with OpenAI GPT-4o
-- 6 tools: updateResume, parseJobDescription, analyzeJobMatch, tailorResumeToJob, scoreATSCompatibility, generateCoverLetter
-- Streaming UI message response with 5-step limit
 
 ### Environment Variables
 ```env
