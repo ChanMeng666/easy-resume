@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Titan_One } from "next/font/google";
 import { StackAuthProvider } from "@/components/auth/StackProvider";
 import "./globals.css";
@@ -32,6 +32,12 @@ export const metadata: Metadata = {
     shortcut: '/logo/vitex-logo-white-with-bg.svg',
     apple: '/logo/vitex-logo-white-with-bg.svg',
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
 };
 
 export default function RootLayout({

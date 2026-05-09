@@ -1,6 +1,9 @@
 /**
  * LivePdfPreview component
- * Orchestrates real-time Typst compilation and PDF preview
+ * Orchestrates real-time Typst compilation and PDF preview.
+ * On md+ viewports it renders the full PdfViewer with iframe preview.
+ * On smaller screens it collapses to a download card, since iOS Safari
+ * has long-standing issues rendering blob-URL PDFs inside iframes.
  */
 
 'use client';
@@ -9,12 +12,16 @@ import { useEffect, useCallback, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { PdfViewer } from './PdfViewer';
 import { usePdfCompilation } from '@/hooks/usePdfCompilation';
+import { downloadPdfFromUrl, openPdfInNewTab } from '@/lib/pdf/download';
 import {
   Loader2,
   AlertCircle,
   RefreshCw,
   Zap,
   CheckCircle2,
+  Download,
+  ExternalLink,
+  FileText,
 } from 'lucide-react';
 
 interface LivePdfPreviewProps {
@@ -77,12 +84,12 @@ export function LivePdfPreview({
   // Initial state - no compilation yet
   if (!hasCompiled && !isCompiling) {
     return (
-      <div className="flex h-[500px] flex-col items-center justify-center rounded-lg border bg-gray-50">
-        <Zap className="h-12 w-12 text-gray-400" />
-        <h3 className="mt-4 text-lg font-medium text-gray-700">
+      <div className="flex h-[40vh] min-h-[280px] md:h-[500px] flex-col items-center justify-center rounded-lg border bg-gray-50 px-4">
+        <Zap className="h-10 w-10 sm:h-12 sm:w-12 text-gray-400" />
+        <h3 className="mt-3 sm:mt-4 text-base sm:text-lg font-medium text-gray-700">
           Live PDF Preview
         </h3>
-        <p className="mt-2 max-w-sm text-center text-sm text-gray-500">
+        <p className="mt-2 max-w-sm text-center text-xs sm:text-sm text-gray-500">
           Your resume will be compiled and displayed here in real-time as you edit.
         </p>
         <Button
@@ -100,12 +107,12 @@ export function LivePdfPreview({
   // Compiling state
   if (isCompiling && !pdfUrl) {
     return (
-      <div className="flex h-[500px] flex-col items-center justify-center rounded-lg border bg-gray-50">
-        <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
-        <h3 className="mt-4 text-lg font-medium text-gray-700">
+      <div className="flex h-[40vh] min-h-[280px] md:h-[500px] flex-col items-center justify-center rounded-lg border bg-gray-50 px-4">
+        <Loader2 className="h-10 w-10 sm:h-12 sm:w-12 animate-spin text-blue-600" />
+        <h3 className="mt-3 sm:mt-4 text-base sm:text-lg font-medium text-gray-700">
           Compiling...
         </h3>
-        <p className="mt-2 text-sm text-gray-500">
+        <p className="mt-2 text-xs sm:text-sm text-gray-500">
           This may take a few seconds
         </p>
         <div className="mt-4 flex items-center gap-2 text-xs text-gray-400">
@@ -119,19 +126,19 @@ export function LivePdfPreview({
   // Error state
   if (error && !pdfUrl) {
     return (
-      <div className="flex h-[500px] flex-col items-center justify-center rounded-lg border bg-red-50">
-        <AlertCircle className="h-12 w-12 text-red-500" />
-        <h3 className="mt-4 text-lg font-medium text-red-700">
+      <div className="flex h-[40vh] min-h-[280px] md:h-[500px] flex-col items-center justify-center rounded-lg border bg-red-50 px-4">
+        <AlertCircle className="h-10 w-10 sm:h-12 sm:w-12 text-red-500" />
+        <h3 className="mt-3 sm:mt-4 text-base sm:text-lg font-medium text-red-700">
           Compilation Failed
         </h3>
-        <p className="mt-2 max-w-md text-center text-sm text-red-600">
+        <p className="mt-2 max-w-md text-center text-xs sm:text-sm text-red-600">
           {error.message}
         </p>
 
         {/* Show log excerpt if available */}
         {error.log && (
           <details className="mt-4 w-full max-w-lg">
-            <summary className="cursor-pointer text-sm text-red-600 hover:underline">
+            <summary className="cursor-pointer text-xs sm:text-sm text-red-600 hover:underline">
               View error log
             </summary>
             <pre className="mt-2 max-h-[150px] overflow-auto rounded bg-gray-900 p-3 text-xs text-gray-100">
@@ -154,19 +161,19 @@ export function LivePdfPreview({
   return (
     <div className="space-y-2">
       {/* Status bar */}
-      <div className="flex items-center justify-between rounded-lg border bg-green-50 px-4 py-2">
+      <div className="flex items-center justify-between rounded-lg border bg-green-50 px-3 sm:px-4 py-2">
         <div className="flex items-center gap-2">
           {isCompiling ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-              <span className="text-sm text-blue-700">
+              <span className="text-xs sm:text-sm text-blue-700">
                 Updating preview...
               </span>
             </>
           ) : (
             <>
               <CheckCircle2 className="h-4 w-4 text-green-600" />
-              <span className="text-sm text-green-700">
+              <span className="text-xs sm:text-sm text-green-700">
                 Preview ready
                 {isCached && (
                   <span className="ml-2 text-xs text-gray-500">(cached)</span>
@@ -182,18 +189,61 @@ export function LivePdfPreview({
           disabled={isCompiling}
           className="h-8"
         >
-          <RefreshCw className={`mr-2 h-3 w-3 ${isCompiling ? 'animate-spin' : ''}`} />
-          Refresh
+          <RefreshCw className={`mr-1 sm:mr-2 h-3 w-3 ${isCompiling ? 'animate-spin' : ''}`} />
+          <span className="hidden sm:inline">Refresh</span>
         </Button>
       </div>
 
-      {/* PDF Viewer */}
       {pdfUrl && (
-        <PdfViewer
-          url={pdfUrl}
-          filename={filename}
-          showToolbar={true}
-        />
+        <>
+          {/* Desktop: full embedded preview */}
+          <div className="hidden md:block">
+            <PdfViewer
+              url={pdfUrl}
+              filename={filename}
+              showToolbar={true}
+            />
+          </div>
+
+          {/* Mobile: collapsed download card.
+              iOS Safari blob-URL iframes are unreliable, so we surface
+              "Open in new tab" + "Download" instead of an empty preview. */}
+          <div className="md:hidden rounded-lg border-2 border-black bg-white p-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg border-2 border-black bg-purple-100">
+                <FileText className="h-5 w-5 text-purple-700" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-black truncate">{filename}.pdf</p>
+                <p className="text-xs text-muted-foreground font-medium">
+                  Ready to download
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                size="lg"
+                className="w-full border-2 border-black bg-purple-600 font-bold text-white text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
+                onClick={() => downloadPdfFromUrl(pdfUrl, filename)}
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Download
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="w-full border-2 border-black font-bold text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
+                onClick={() => openPdfInNewTab(pdfUrl)}
+              >
+                <ExternalLink className="mr-2 h-4 w-4" />
+                Open
+              </Button>
+            </div>
+            <p className="mt-3 text-xs text-muted-foreground font-medium text-center">
+              For best results, view on a tablet or desktop.
+            </p>
+          </div>
+        </>
       )}
     </div>
   );

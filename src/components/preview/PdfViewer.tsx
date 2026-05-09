@@ -8,6 +8,7 @@
 
 import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
+import { downloadPdfFromUrl, openPdfInNewTab } from '@/lib/pdf/download';
 import {
   Download,
   ZoomIn,
@@ -59,19 +60,14 @@ export function PdfViewer({
    * Download the PDF
    */
   const downloadPdf = useCallback(() => {
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${filename}.pdf`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    downloadPdfFromUrl(url, filename);
   }, [url, filename]);
 
   /**
    * Open in new tab
    */
   const openInNewTab = useCallback(() => {
-    window.open(url, '_blank');
+    openPdfInNewTab(url);
   }, [url]);
 
   /**
@@ -91,9 +87,9 @@ export function PdfViewer({
 
   if (error) {
     return (
-      <div className="flex h-[600px] items-center justify-center rounded-lg border bg-gray-50 dark:bg-gray-900">
+      <div className="flex h-[60vh] min-h-[420px] md:h-[600px] items-center justify-center rounded-lg border bg-gray-50">
         <div className="text-center">
-          <p className="text-red-600 dark:text-red-400">{error}</p>
+          <p className="text-red-600">{error}</p>
           <Button
             variant="outline"
             size="sm"
@@ -109,7 +105,7 @@ export function PdfViewer({
   }
 
   return (
-    <div className="flex flex-col rounded-lg border-2 border-black bg-white dark:bg-gray-950">
+    <div className="flex flex-col rounded-lg border-2 border-black bg-white">
       {/* Toolbar */}
       {showToolbar && (
         <div className="flex items-center justify-between border-b-2 border-black px-4 py-2">
@@ -169,14 +165,13 @@ export function PdfViewer({
 
       {/* PDF Container */}
       <div
-        className={`relative overflow-hidden bg-gray-100 dark:bg-gray-900 ${showToolbar ? 'rounded-b-lg' : 'rounded-lg'}`}
-        style={{ height: '600px' }}
+        className={`relative overflow-hidden bg-gray-100 h-[60vh] min-h-[420px] md:h-[600px] ${showToolbar ? 'rounded-b-lg' : 'rounded-lg'}`}
       >
         {isLoading && (
-          <div className={`absolute inset-0 z-10 flex items-center justify-center bg-white/80 dark:bg-gray-950/80 ${showToolbar ? 'rounded-b-lg' : 'rounded-lg'}`}>
+          <div className={`absolute inset-0 z-10 flex items-center justify-center bg-white/80 ${showToolbar ? 'rounded-b-lg' : 'rounded-lg'}`}>
             <div className="flex flex-col items-center gap-2">
               <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-              <span className="text-sm text-gray-600 dark:text-gray-400">
+              <span className="text-sm text-gray-600">
                 Loading PDF...
               </span>
             </div>
@@ -184,7 +179,7 @@ export function PdfViewer({
         )}
         <div className="h-full overflow-auto">
           <div
-            className="flex min-h-full justify-center p-4"
+            className="flex min-h-full justify-center p-2 sm:p-4"
             style={{
               transform: `scale(${scale / 100})`,
               transformOrigin: 'top center',
@@ -192,7 +187,7 @@ export function PdfViewer({
           >
             <iframe
               src={url}
-              className="h-[800px] w-[600px] border-0 bg-white shadow-lg"
+              className="aspect-[3/4] w-full max-w-[600px] border-0 bg-white shadow-lg"
               title="PDF Preview"
               onLoad={handleLoad}
               onError={handleError}

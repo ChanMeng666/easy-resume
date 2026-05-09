@@ -81,6 +81,17 @@ export async function POST(request: NextRequest) {
 
   const stream = new ReadableStream({
     async start(controller) {
+      // Heartbeat keeps proxies and mobile browsers from treating the long
+      // OpenAI calls as an idle connection. The client treats >45s of silence
+      // as a dropped stream, so we ping every 15s.
+      const heartbeatId: ReturnType<typeof setInterval> = setInterval(() => {
+        try {
+          sendEvent(controller, encoder, { type: 'heartbeat' });
+        } catch {
+          // Stream already closed — ignore.
+        }
+      }, 15_000);
+
       try {
         // Step 1: Parse job description
         sendProgress(controller, encoder, 1, 'Analyzing job description...');
@@ -142,6 +153,7 @@ export async function POST(request: NextRequest) {
           error instanceof Error ? error.message : 'An unexpected error occurred';
         sendEvent(controller, encoder, { type: 'error', message });
       } finally {
+        clearInterval(heartbeatId);
         controller.close();
       }
     },
@@ -150,8 +162,10 @@ export async function POST(request: NextRequest) {
   return new Response(stream, {
     headers: {
       'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
+      'Cache-Control': 'no-cache, no-transform',
       Connection: 'keep-alive',
+      // Tell Nginx (and any X-Accel-aware proxy) not to buffer the stream.
+      'X-Accel-Buffering': 'no',
     },
   });
 }

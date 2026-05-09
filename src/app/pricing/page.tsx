@@ -201,32 +201,61 @@ export default function PricingPage() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="max-w-2xl mx-auto mt-16"
+          className="max-w-2xl mx-auto mt-12 sm:mt-16"
         >
-          <h2 className="text-2xl font-black text-center mb-6">What Credits Get You</h2>
-          <div className="bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] overflow-hidden">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b-2 border-black bg-gray-50">
-                  <th className="text-left p-4 font-black text-sm">Action</th>
-                  <th className="text-center p-4 font-black text-sm">Credits</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  { action: 'Resume tailoring to job description', credits: '1' },
-                  { action: 'Cover letter generation', credits: '1' },
-                  { action: 'ATS optimization report', credits: '1' },
-                  { action: 'Basic resume editing (AI chat)', credits: 'Free' },
-                ].map((row) => (
-                  <tr key={row.action} className="border-b border-gray-100">
-                    <td className="p-4 text-sm font-medium">{row.action}</td>
-                    <td className="p-4 text-sm font-black text-center">{row.credits}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <h2 className="text-xl sm:text-2xl font-black text-center mb-4 sm:mb-6">
+            What Credits Get You
+          </h2>
+
+          {(() => {
+            const rows = [
+              { action: 'Resume tailoring to job description', credits: '1' },
+              { action: 'Cover letter generation', credits: '1' },
+              { action: 'ATS optimization report', credits: '1' },
+              { action: 'Basic resume editing (AI chat)', credits: 'Free' },
+            ];
+
+            return (
+              <>
+                {/* sm+ : table */}
+                <div className="hidden sm:block bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] overflow-hidden">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b-2 border-black bg-gray-50">
+                        <th className="text-left p-4 font-black text-sm">Action</th>
+                        <th className="text-center p-4 font-black text-sm">Credits</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((row) => (
+                        <tr key={row.action} className="border-b border-gray-100">
+                          <td className="p-4 text-sm font-medium">{row.action}</td>
+                          <td className="p-4 text-sm font-black text-center">{row.credits}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* mobile : card list */}
+                <div className="sm:hidden space-y-3">
+                  {rows.map((row) => (
+                    <div
+                      key={row.action}
+                      className="bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] p-4 flex items-center justify-between gap-3"
+                    >
+                      <span className="text-sm font-medium leading-snug">
+                        {row.action}
+                      </span>
+                      <span className="text-sm font-black flex-shrink-0">
+                        {row.credits}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            );
+          })()}
         </motion.div>
       </main>
 

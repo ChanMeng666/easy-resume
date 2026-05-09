@@ -9,9 +9,9 @@ import { Mail, Github, Sparkles, Briefcase, MessageSquare, LayoutDashboard, Cred
 export function Footer() {
   return (
     <footer className="relative bg-white border-t-2 border-black">
-      <div className="container mx-auto px-4 py-16">
+      <div className="container mx-auto px-4 py-10 sm:py-16">
         {/* Top Section: Brand Identity */}
-        <div className="mb-16 text-center">
+        <div className="mb-10 sm:mb-16 text-center">
           <div className="mb-6 flex flex-col items-center justify-center gap-4">
             <Link href="/">
               <Image
@@ -29,7 +29,7 @@ export function Footer() {
         </div>
 
         {/* Main Content Grid */}
-        <div className="mb-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-8 sm:mb-12 grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
           {/* Product */}
           <div className="p-6 bg-gray-50 rounded-xl">
             <h3 className="flex items-center gap-2 text-sm font-black uppercase tracking-wider mb-4">
@@ -120,7 +120,7 @@ export function Footer() {
         </div>
 
         {/* Bottom Section: Copyright */}
-        <div className="border-t-2 border-black pt-8 text-center">
+        <div className="border-t-2 border-black pt-6 sm:pt-8 text-center">
           <p className="text-sm text-muted-foreground font-medium">
             © {new Date().getFullYear()} Vitex by{' '}
             <a
