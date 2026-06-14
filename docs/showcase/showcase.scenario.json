@@ -1,0 +1,66 @@
+{
+  "project": "vitex",
+  "baseUrl": "https://www.vitex.org.nz",
+  "outDir": "docs/showcase",
+
+  "viewports": {
+    "desktop": { "width": 1280, "height": 800, "deviceScaleFactor": 2 },
+    "mobile":  { "width": 390,  "height": 844, "deviceScaleFactor": 3, "isMobile": true }
+  },
+
+  "reducedMotion": "reduce",
+
+  "pages": [
+    {
+      "label": "hero",
+      "url": "/",
+      "viewport": "desktop",
+      "fullPage": false,
+      "before": [
+        { "action": "wait", "ms": 2500 }
+      ]
+    },
+    {
+      "label": "how-it-works",
+      "url": "/",
+      "viewport": "desktop",
+      "fullPage": false,
+      "before": [
+        { "action": "wait", "ms": 2000 },
+        { "action": "scroll", "by": 600 },
+        { "action": "wait", "ms": 800 }
+      ]
+    },
+    {
+      "label": "pricing",
+      "url": "/pricing",
+      "viewport": "desktop",
+      "fullPage": false,
+      "before": [
+        { "action": "wait", "ms": 2000 }
+      ]
+    },
+    {
+      "label": "mobile-hero",
+      "url": "/",
+      "viewport": "mobile",
+      "fullPage": false,
+      "before": [
+        { "action": "wait", "ms": 2500 }
+      ]
+    }
+  ],
+
+  "demo": {
+    "size": { "width": 1280, "height": 720 },
+    "stepPauseMs": 500,
+    "steps": [
+      { "action": "goto", "url": "/", "timeoutMs": 15000 },
+      { "action": "wait", "ms": 2000 },
+      { "action": "fill", "selector": "textarea[placeholder=\"Paste the job description here...\"]", "value": "Senior Software Engineer at Acme Corp. We are looking for a full-stack engineer with 5+ years of experience in React, Node.js, and cloud infrastructure. You will design scalable APIs, mentor junior engineers, and collaborate with product teams to ship features.", "delayMs": 18 },
+      { "action": "wait", "ms": 600 },
+      { "action": "fill", "selector": "textarea[placeholder=\"Briefly describe your experience, skills, and education...\"]", "value": "5 years full-stack development. React, TypeScript, Node.js, PostgreSQL. Led a team of 3 engineers at a fintech startup, shipped payment processing APIs used by 50k users. BSc Computer Science.", "delayMs": 22 },
+      { "action": "wait", "ms": 1500 }
+    ]
+  }
+}
