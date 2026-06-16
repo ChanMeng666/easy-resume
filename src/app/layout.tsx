@@ -25,12 +25,34 @@ const titanOne = Titan_One({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.vitex.org.nz"),
   title: "Vitex | AI Career Agent",
   description: "Your AI Career Agent - Job-targeted resumes, ATS optimization, and cover letters powered by AI. Transform your job search with intelligent resume tailoring.",
   icons: {
     icon: '/logo/vitex-logo-white-with-bg.svg',
     shortcut: '/logo/vitex-logo-white-with-bg.svg',
     apple: '/logo/vitex-logo-white-with-bg.svg',
+  },
+  openGraph: {
+    title: "Vitex | AI Career Agent",
+    description: "Job-targeted resumes, ATS scoring, and cover letters — powered by AI.",
+    type: "website",
+    siteName: "Vitex",
+    url: "https://www.vitex.org.nz",
+    images: [
+      {
+        url: "/og-cover.png",
+        width: 1200,
+        height: 630,
+        alt: "Vitex — AI Career Agent",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Vitex | AI Career Agent",
+    description: "Job-targeted resumes, ATS scoring, and cover letters — powered by AI.",
+    images: ["/og-cover.png"],
   },
 };
 
