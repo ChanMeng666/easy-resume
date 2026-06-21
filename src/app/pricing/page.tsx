@@ -171,9 +171,9 @@ export default function PricingPage() {
                 variant={plan.ctaVariant}
                 className="w-full mb-6"
                 disabled={isLoading !== null}
-                onClick={() => plan.priceType && handlePurchase(plan.priceType)}
+                onClick={() => (plan.priceType ? handlePurchase(plan.priceType) : router.push('/'))}
               >
-                {isLoading === plan.priceType ? 'Redirecting...' : plan.cta}
+                {plan.priceType && isLoading === plan.priceType ? 'Redirecting...' : plan.cta}
               </Button>
 
               <ul className="space-y-3">
