@@ -24,6 +24,7 @@ import {
   BarChart3,
   Mail,
   RefreshCw,
+  CreditCard,
 } from 'lucide-react';
 
 /** Progress steps displayed during generation. */
@@ -61,7 +62,7 @@ interface AIEditorContentProps {
   bg: string;
 }
 
-type ErrorKind = 'timeout' | 'server' | 'network' | 'other';
+type ErrorKind = 'timeout' | 'server' | 'network' | 'credits' | 'auth' | 'other';
 
 interface GenerationError {
   kind: ErrorKind;
@@ -111,7 +112,11 @@ async function runGenerationStream(
       (typeof errData.error === 'string' ? errData.error : '') ||
       `Server error (${response.status})`;
     const kind: ErrorKind =
-      code === 'INSUFFICIENT_CREDITS' || code === 'UNAUTHENTICATED' ? 'other' : 'server';
+      code === 'INSUFFICIENT_CREDITS'
+        ? 'credits'
+        : code === 'UNAUTHENTICATED'
+          ? 'auth'
+          : 'server';
     throw Object.assign(new Error(message), { kind, message });
   }
 
@@ -166,8 +171,16 @@ async function runGenerationStream(
           else if (event.type === 'result') onResult(event.data);
           else if (event.type === 'error') {
             // Prefer the structured envelope; fall back to the flat message.
+            const code: string | undefined = event.error?.code;
             const message: string = event.error?.message || event.message || 'Generation failed.';
-            const kind: ErrorKind = event.error?.retriable ? 'server' : 'other';
+            const kind: ErrorKind =
+              code === 'INSUFFICIENT_CREDITS'
+                ? 'credits'
+                : code === 'UNAUTHENTICATED'
+                  ? 'auth'
+                  : event.error?.retriable
+                    ? 'server'
+                    : 'other';
             throw Object.assign(new Error(message), { kind, message });
           }
           // 'heartbeat' and 'done' events fall through silently.
@@ -381,6 +394,8 @@ export function AIEditorContent({ jd, bg }: AIEditorContentProps) {
       timeout: 'Connection timed out',
       server: 'Server error',
       network: 'Network error',
+      credits: 'Out of credits',
+      auth: 'Sign in to continue',
       other: 'Generation failed',
     }[error.kind];
 
@@ -396,6 +411,11 @@ export function AIEditorContent({ jd, bg }: AIEditorContentProps) {
             <h2 className="text-lg sm:text-xl font-black text-red-800">{headline}</h2>
           </div>
           <p className="text-sm sm:text-base text-red-700 mb-4">{error.message}</p>
+          {error.kind === 'credits' && (
+            <p className="text-xs sm:text-sm text-red-700 mb-4">
+              Each generation costs 1 credit. Top up to keep going.
+            </p>
+          )}
           {wasHiddenDuringGeneration && (
             <p className="text-xs sm:text-sm text-red-700 mb-4 italic">
               Tip: switching tabs or locking your phone during generation can drop the
@@ -403,14 +423,37 @@ export function AIEditorContent({ jd, bg }: AIEditorContentProps) {
             </p>
           )}
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-            <Button
-              onClick={handleRetry}
-              size="lg"
-              className="border-2 border-black font-bold gap-2 w-full sm:w-auto"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Try again
-            </Button>
+            {error.kind === 'credits' ? (
+              <Button
+                onClick={() => (window.location.href = '/pricing')}
+                size="lg"
+                className="border-2 border-black font-bold gap-2 w-full sm:w-auto"
+              >
+                <CreditCard className="h-4 w-4" />
+                Buy Credits
+              </Button>
+            ) : error.kind === 'auth' ? (
+              <Button
+                onClick={() =>
+                  (window.location.href =
+                    '/handler/sign-in?after_auth_return_to=/editor')
+                }
+                size="lg"
+                className="border-2 border-black font-bold gap-2 w-full sm:w-auto"
+              >
+                <UserCheck className="h-4 w-4" />
+                Sign in
+              </Button>
+            ) : (
+              <Button
+                onClick={handleRetry}
+                size="lg"
+                className="border-2 border-black font-bold gap-2 w-full sm:w-auto"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Try again
+              </Button>
+            )}
             <Button
               onClick={() => window.history.back()}
               variant="outline"

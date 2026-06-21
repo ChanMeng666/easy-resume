@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { UserButton } from '@/components/auth/UserButton';
+import { CreditBadge } from '@/components/shared/CreditBadge';
 import { ReactNode, Suspense, useState } from 'react';
 import { useScrollDirection } from '@/lib/hooks/useScrollDirection';
 import { useUser } from "@stackframe/stack";
@@ -212,12 +213,18 @@ export function Navbar({ currentPath = '/', rightContent, position, fixed, exter
                       Get Started
                     </Button>
                   </Link>
-                  
+
+                  <Suspense fallback={null}>
+                    <CreditBadge />
+                  </Suspense>
                   <UserButton />
                 </div>
 
                 {/* Mobile Menu Button */}
                 <div className="flex md:hidden items-center gap-3">
+                  <Suspense fallback={null}>
+                    <CreditBadge />
+                  </Suspense>
                   <UserButton />
                   <button 
                     onClick={() => setIsMobileMenuOpen(true)}
