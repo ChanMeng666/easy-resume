@@ -1,6 +1,6 @@
 import { getDb } from "@/lib/db/client";
-import { credits, creditTransactions } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { credits, creditTransactions, stripeEvents } from "@/lib/db/schema";
+import { and, eq } from "drizzle-orm";
 
 /**
  * Service for managing user credits and transactions.
@@ -105,6 +105,77 @@ export const creditService = {
     return true;
   },
 
+  /**
+   * Idempotent outcome-based deduction.
+   *
+   * Keyed by `idempotencyKey` (stored as transaction `referenceId`): if a usage
+   * transaction with this key already exists, the prior charge is returned
+   * without deducting again. This protects against SSE reconnects and job
+   * retries double-charging for the same produced result.
+   */
+  async useCreditsIdempotent(
+    userId: string,
+    amount: number,
+    description: string,
+    referenceType: string,
+    idempotencyKey: string
+  ): Promise<{ ok: boolean; transactionId?: string }> {
+    const db = getDb();
+
+    // Idempotency: a usage txn for this key means we already charged.
+    const [prior] = await db
+      .select()
+      .from(creditTransactions)
+      .where(
+        and(
+          eq(creditTransactions.referenceId, idempotencyKey),
+          eq(creditTransactions.type, "usage")
+        )
+      )
+      .limit(1);
+
+    if (prior) return { ok: true, transactionId: prior.id };
+
+    const record = await this.getOrCreate(userId);
+
+    // Unlimited plan: record a zero-amount usage txn for auditing, never block.
+    if (record.subscriptionTier === "unlimited") {
+      const [tx] = await db
+        .insert(creditTransactions)
+        .values({
+          userId,
+          type: "usage",
+          amount: 0,
+          description: `${description} (unlimited plan)`,
+          referenceType,
+          referenceId: idempotencyKey,
+        })
+        .returning();
+      return { ok: true, transactionId: tx.id };
+    }
+
+    if (record.balance < amount) return { ok: false };
+
+    await db
+      .update(credits)
+      .set({ balance: record.balance - amount, updatedAt: new Date() })
+      .where(eq(credits.userId, userId));
+
+    const [tx] = await db
+      .insert(creditTransactions)
+      .values({
+        userId,
+        type: "usage",
+        amount: -amount,
+        description,
+        referenceType,
+        referenceId: idempotencyKey,
+      })
+      .returning();
+
+    return { ok: true, transactionId: tx.id };
+  },
+
   /** Add credits (from purchase). */
   async addCredits(
     userId: string,
@@ -149,6 +220,31 @@ export const creditService = {
         updatedAt: new Date(),
       })
       .where(eq(credits.userId, userId));
+  },
+
+  /** Look up a credit record by Stripe customer id (for subscription webhooks). */
+  async getByStripeCustomerId(stripeCustomerId: string) {
+    const db = getDb();
+    const [record] = await db
+      .select()
+      .from(credits)
+      .where(eq(credits.stripeCustomerId, stripeCustomerId))
+      .limit(1);
+    return record ?? null;
+  },
+
+  /**
+   * Record a Stripe event id, returning true only the FIRST time it is seen.
+   * Stripe retries webhooks, so callers use this to process each event once.
+   */
+  async recordStripeEvent(eventId: string, type?: string): Promise<boolean> {
+    const db = getDb();
+    const inserted = await db
+      .insert(stripeEvents)
+      .values({ id: eventId, type })
+      .onConflictDoNothing()
+      .returning({ id: stripeEvents.id });
+    return inserted.length > 0;
   },
 
   /** Get transaction history. */

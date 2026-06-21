@@ -84,14 +84,19 @@ export async function compilePdf(typstCode: string): Promise<CompileResult> {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      // Server returns a machine-readable envelope { error: { code, message, details } };
+      // fall back to legacy top-level fields for resilience.
+      const envelope = errorData.error ?? errorData;
+      const message: string | undefined = envelope.message;
+      const log: string | undefined = envelope.details?.stderr ?? errorData.log;
 
       if (response.status === 422) {
         return {
           success: false,
           error: {
             type: 'compilation',
-            message: errorData.message || 'Typst compilation failed',
-            log: errorData.log,
+            message: message || 'Typst compilation failed',
+            log,
           },
         };
       }
@@ -110,7 +115,7 @@ export async function compilePdf(typstCode: string): Promise<CompileResult> {
         success: false,
         error: {
           type: 'server',
-          message: errorData.message || 'Server error occurred',
+          message: message || 'Server error occurred',
         },
       };
     }

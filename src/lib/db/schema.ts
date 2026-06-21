@@ -1,4 +1,7 @@
 import { pgTable, uuid, varchar, text, boolean, timestamp, jsonb, index, integer, real } from "drizzle-orm/pg-core";
+import type { ResumeData } from "@/lib/validation/schema";
+import type { ParsedJD } from "@/lib/agent/jd-parser";
+import type { MatchAnalysis } from "@/lib/agent/matching-engine";
 
 /**
  * Resumes table schema.
@@ -9,7 +12,7 @@ export const resumes = pgTable("resumes", {
   userId: text("user_id").notNull(),
   title: varchar("title", { length: 255 }).notNull().default("My Resume"),
   templateId: varchar("template_id", { length: 50 }).notNull().default("two-column"),
-  data: jsonb("data").notNull(),
+  data: jsonb("data").$type<ResumeData>().notNull(),
   isPublic: boolean("is_public").default(false),
   shareSlug: varchar("share_slug", { length: 20 }).unique(),
   pdfBlobUrl: text("pdf_blob_url"),
@@ -68,7 +71,7 @@ export const resumeVersions = pgTable("resume_versions", {
   resumeId: uuid("resume_id").notNull().references(() => resumes.id, { onDelete: "cascade" }),
   threadId: uuid("thread_id").references(() => agentThreads.id, { onDelete: "set null" }),
   version: integer("version").notNull(),
-  data: jsonb("data").notNull(),
+  data: jsonb("data").$type<ResumeData>().notNull(),
   templateId: varchar("template_id", { length: 50 }).notNull(),
   changeDescription: text("change_description"),
   changedBy: varchar("changed_by", { length: 20 }).default("user"),
@@ -88,7 +91,7 @@ export const jobDescriptions = pgTable("job_descriptions", {
   userId: text("user_id").notNull(),
   rawText: text("raw_text").notNull(),
   sourceUrl: text("source_url"),
-  parsed: jsonb("parsed").notNull(), // { title, company, location, skills[], keywords[], requirements[], etc. }
+  parsed: jsonb("parsed").$type<ParsedJD>().notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 }, (table) => ({
@@ -104,10 +107,10 @@ export const tailoredResumes = pgTable("tailored_resumes", {
   userId: text("user_id").notNull(),
   baseResumeId: uuid("base_resume_id").notNull().references(() => resumes.id, { onDelete: "cascade" }),
   jobDescriptionId: uuid("job_description_id").notNull().references(() => jobDescriptions.id, { onDelete: "cascade" }),
-  data: jsonb("data").notNull(), // Full ResumeData tailored to the JD
+  data: jsonb("data").$type<ResumeData>().notNull(), // Full ResumeData tailored to the JD
   templateId: varchar("template_id", { length: 50 }).notNull().default("two-column"),
   matchScore: real("match_score"), // 0-100 score
-  matchAnalysis: jsonb("match_analysis"), // { skillMatches, gaps, suggestions }
+  matchAnalysis: jsonb("match_analysis").$type<MatchAnalysis>(),
   coverLetter: text("cover_letter"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
@@ -172,6 +175,10 @@ export const creditTransactions = pgTable("credit_transactions", {
 }, (table) => ({
   userIdIdx: index("idx_credit_tx_user_id").on(table.userId),
   typeIdx: index("idx_credit_tx_type").on(table.userId, table.type),
+  // Backs the idempotency lookup in creditService.useCreditsIdempotent:
+  // a usage txn carrying the generation idempotencyKey as referenceId means
+  // the result was already charged, so we must not deduct again.
+  referenceIdx: index("idx_credit_tx_reference").on(table.referenceId),
 }));
 
 // Resume types
@@ -209,3 +216,75 @@ export type NewCredit = typeof credits.$inferInsert;
 // Credit transaction types
 export type CreditTransaction = typeof creditTransactions.$inferSelect;
 export type NewCreditTransaction = typeof creditTransactions.$inferInsert;
+
+/**
+ * API keys for agent/server-to-server access ("the API is the UI").
+ * Only the SHA-256 hash of the secret is stored; the raw token is shown once
+ * at creation. Lookup is by `prefix`, then a constant-time hash comparison.
+ */
+export const apiKeys = pgTable("api_keys", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull(),
+  name: varchar("name", { length: 120 }).notNull().default("default"),
+  prefix: varchar("prefix", { length: 16 }).notNull(), // e.g. "vitex_ab12cd34"
+  keyHash: text("key_hash").notNull(), // sha256(secret) hex; raw never stored
+  lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+}, (table) => ({
+  userIdIdx: index("idx_api_keys_user_id").on(table.userId),
+  prefixIdx: index("idx_api_keys_prefix").on(table.prefix),
+}));
+
+/**
+ * Asynchronous generation jobs for the public v1 API.
+ * Agents POST to create a job, then poll until it succeeds/fails. The pipeline
+ * runs in-process (one monolith — no external queue/microservice).
+ */
+export const generationJobs = pgTable("generation_jobs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull(),
+  status: varchar("status", { length: 20 }).notNull().default("queued"), // queued, running, succeeded, failed
+  input: jsonb("input").$type<{ jobDescription: string; background: string; templateId?: string }>().notNull(),
+  result: jsonb("result").$type<Record<string, unknown>>(), // wire-shaped GenerateResult (no PDF bytes)
+  error: jsonb("error").$type<Record<string, unknown>>(), // error envelope on failure
+  pdfUrl: text("pdf_url"), // route serving the compiled PDF bytes
+  charged: boolean("charged").notNull().default(false),
+  idempotencyKey: uuid("idempotency_key").notNull().unique(), // dedupes job + charge
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+}, (table) => ({
+  userIdIdx: index("idx_generation_jobs_user_id").on(table.userId),
+  statusIdx: index("idx_generation_jobs_status").on(table.status),
+}));
+
+/**
+ * Fixed-window rate limit counters.
+ * Lives in Postgres (always-on) instead of Redis so it can't be idle-deleted
+ * and adds no extra infra dependency. Each row is one (key, time-bucket).
+ */
+export const rateLimits = pgTable("rate_limits", {
+  bucketKey: varchar("bucket_key", { length: 255 }).primaryKey(), // `${key}:${bucket}`
+  count: integer("count").notNull().default(0),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+}, (table) => ({
+  expiresIdx: index("idx_rate_limits_expires").on(table.expiresAt),
+}));
+
+/**
+ * Processed Stripe webhook events.
+ * Stripe retries webhooks, so we dedupe by event id to avoid double-crediting.
+ */
+export const stripeEvents = pgTable("stripe_events", {
+  id: varchar("id", { length: 255 }).primaryKey(), // Stripe event id (evt_...)
+  type: varchar("type", { length: 100 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+// API key types
+export type ApiKey = typeof apiKeys.$inferSelect;
+export type NewApiKey = typeof apiKeys.$inferInsert;
+
+// Generation job types
+export type GenerationJob = typeof generationJobs.$inferSelect;
+export type NewGenerationJob = typeof generationJobs.$inferInsert;

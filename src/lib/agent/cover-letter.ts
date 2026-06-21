@@ -1,7 +1,8 @@
 import { generateText } from "ai";
-import { openai } from "@ai-sdk/openai";
 import { ResumeData } from "@/lib/validation/schema";
 import { ParsedJD } from "./jd-parser";
+import { reasonModel } from "./models";
+import { aiTelemetry } from "./telemetry";
 
 /**
  * Generates a professional cover letter tailored to a specific job description.
@@ -12,7 +13,8 @@ export async function generateCoverLetter(
   jd: ParsedJD
 ): Promise<string> {
   const { text } = await generateText({
-    model: openai("gpt-4o"),
+    model: reasonModel,
+    experimental_telemetry: aiTelemetry("cover-letter"),
     prompt: `Write a professional cover letter for this candidate applying to the specified job.
 
 CANDIDATE:

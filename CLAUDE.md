@@ -35,6 +35,13 @@ npm run build        # Build production bundle
 npm run start        # Start production server
 npm run lint         # Run ESLint
 
+# Testing
+npm test             # Run vitest once (unit tests for the backend core)
+npm run test:watch   # Vitest in watch mode
+
+# Database migrations (idempotent, raw SQL — NOT drizzle-kit)
+npx tsx scripts/migrate.ts   # Create/upgrade Neon tables; safe to re-run
+
 # Docker / VPS Deployment
 # Docker build and GitHub Actions CI/CD deploy to DigitalOcean VPS
 # See .github/workflows/deploy.yml and Dockerfile
@@ -43,6 +50,115 @@ npm run lint         # Run ESLint
 npm install          # Install all dependencies
 npx shadcn add <component>  # Add shadcn/ui components
 ```
+
+**Verification gate** (run before claiming work complete): `npm test && npx tsc --noEmit && npm run lint && npm run build`.
+
+## Backend Architecture (`src/server/`)
+
+The product follows two principles that shape the whole backend:
+
+- **"The API is the UI."** Everything the web app does, an AI agent can do over
+  HTTP with an API key — no browser, cookie, 2FA, or CAPTCHA. The web UI and the
+  public v1 API run the **exact same pipeline core**.
+- **"Sell results, not tools."** Billing is outcome-based: a user is charged
+  exactly once, and only when a real compiled PDF is produced. Failures are free.
+
+To enable this, business logic lives in a **transport-agnostic backend core**
+under `src/server/`, separate from the HTTP/SSE routes (which are thin adapters):
+
+```
+src/server/
+├── core/
+│   ├── pipeline.ts        # runGenerationPipeline() — the 8-step orchestrator (no HTTP/SSE)
+│   ├── pipeline.types.ts  # Caller, GenerateInput/Result, ProgressEvent, PipelineDeps
+│   ├── compile.ts         # compileTypstToPdf() — Typst→PDF core (napi-rs-ready seam)
+│   └── deps.ts            # defaultDeps() — wires real agent/render/compile/meter/logger
+├── billing/
+│   ├── meter.ts           # BillingMeter — charges once, only on success, idempotent
+│   └── stripeWebhook.ts   # applyStripeEvent() — webhook business logic (unit tested)
+├── auth/
+│   ├── apiKeys.ts         # mint/verify API keys (sha256 hash; raw shown once)
+│   └── caller.ts          # getCaller() — resolves Bearer key OR Stack cookie → Caller
+├── jobs/
+│   └── runner.ts          # in-process async job runner for the v1 API (no microservice)
+├── errors/
+│   ├── AppError.ts        # typed errors: code/httpStatus/retriable/step/headers
+│   └── envelope.ts        # toErrorEnvelope() + errorResponse()
+├── log/
+│   └── logger.ts          # zero-dep structured JSON logger (AI-readable)
+└── ratelimit.ts           # Postgres-backed fixed-window rate limiting (fail-open)
+```
+
+Two thin transports sit over this core:
+1. **`POST /api/generate`** — SSE adapter for the web UI; streams `onProgress`.
+2. **`/api/v1/resumes`** — public, API-key-authed, job-based agent API (see
+   `docs/api/v1.md`).
+
+### Conventions (apply to all backend code)
+- **Errors are machine-readable, never prose.** Throw an `AppError` subclass;
+  routes render it via `errorResponse()` as `{ error: { code, message, retriable,
+  step, requestId, details } }`. SSE and REST share this one shape. Never return
+  ad-hoc `{ error: "string" }`.
+- **Logs are structured JSON** via `createLogger()` (one object per line, with
+  `requestId`). No human-formatted log strings.
+- **The core is dependency-injected.** New pipeline behavior goes in `pipeline.ts`
+  with deps from `deps.ts`; tests inject fakes (see `pipeline.test.ts`).
+
+## Authentication
+
+- **Stack Auth IS Neon Auth.** Neon acquired Stack Auth; `@stackframe/stack`
+  (`src/lib/auth/stack.ts`) is the supported (legacy) Neon Auth integration. We
+  deliberately stay on it. Cookie sessions power the web UI.
+- **API keys** (`src/server/auth/apiKeys.ts`) power agent access. Format
+  `vitex_<prefix>_<secret>`; only `sha256(secret)` is stored; the raw token is
+  shown once at creation. Users self-manage via `POST/GET/DELETE /api/keys`.
+- **`getCaller(req)`** is the single resolver: `Authorization: Bearer ...` → API
+  key, otherwise the Stack cookie session. Both yield a `Caller { userId, via }`.
+  Use it in every authenticated route.
+
+## Billing & Credits (outcome-based)
+
+- Prepaid credits in the `credits` table (3 free on signup). 1 credit per
+  successfully generated resume result.
+- The **sole charge call site** is inside `runGenerationPipeline`, *after* the
+  PDF compiles successfully. Any earlier failure skips it → failures are free.
+- **Idempotent**: `creditService.useCreditsIdempotent()` keys on the generation
+  `idempotencyKey` (stored as `creditTransactions.referenceId`) so SSE
+  reconnects / job retries never double-charge.
+- Stripe top-ups go through `applyStripeEvent()`; the webhook dedupes by Stripe
+  event id (`stripe_events` table) so retries don't double-credit.
+
+## Rate Limiting
+
+`src/server/ratelimit.ts` enforces fixed-window limits per caller on **Neon
+Postgres** (`rate_limits` table, atomic upsert) — NOT Redis (Upstash was removed
+after being idle-deleted). `enforceRateLimit()` throws `RateLimitedError` (429)
+carrying `Retry-After` + `X-RateLimit-*` headers; success responses also carry
+`X-RateLimit-*`. Fail-open on DB error. Applied to `/api/generate` (15/min) and
+`POST /api/v1/resumes` (30/min).
+
+## Database & Migrations
+
+- **Neon Postgres + Drizzle ORM**; schema in `src/lib/db/schema.ts`, client in
+  `src/lib/db/client.ts` (exports `db`).
+- **Migrations are applied by `scripts/migrate.ts`** — hand-written idempotent
+  raw SQL (`CREATE TABLE IF NOT EXISTS`, etc.), run with `npx tsx scripts/migrate.ts`.
+  **Do NOT use `drizzle-kit generate`** here: it prompts interactively (snapshot
+  drift from the historical copilot→agent rename) and breaks automation. When you
+  add a table/column, add idempotent DDL to `scripts/migrate.ts`.
+- Key tables: `resumes`, `credits`, `credit_transactions`, `api_keys`,
+  `generation_jobs`, `stripe_events`, `rate_limits`, plus `job_descriptions`,
+  `tailored_resumes`, `applications`, `agent_*`. JSONB columns are typed via
+  Drizzle `.$type<...>()`.
+
+## Testing
+
+- **Vitest** (`npm test`). Config in `vitest.config.ts` aliases `@` → `src` and
+  stubs `server-only` (so server modules import cleanly in Node).
+- Money-path is covered: `src/server/core/pipeline.test.ts` (billing gating:
+  charge once on success, no charge on failure, fast-fail on no credits) and
+  `src/server/billing/stripeWebhook.test.ts` (credit grants / pro renewal).
+- Prefer testing the **core with injected fakes** over hitting the DB/LLM.
 
 ## Data-Driven Architecture
 
@@ -86,13 +202,23 @@ npx shadcn add <component>  # Add shadcn/ui components
 
 ## PDF Compilation
 
-### Local Typst Compilation (`src/app/api/compile/route.ts`)
-- Compiles Typst code to PDF locally using the `typst` binary
-- No external API dependencies — runs entirely on the VPS
-- Compilation time: < 100ms per resume
-- Temp files in `os.tmpdir()/vitex-typst/`, cleaned up after each request
-- LRU cache for compiled PDFs (100 entries, 1-hour TTL)
-- Typst binary path configurable via `TYPST_BIN` env var
+### Compilation Core (`src/server/core/compile.ts`)
+- **`compileTypstToPdf(code): Promise<{ pdf: Uint8Array; cached: boolean }>`** is
+  the single place Typst becomes a PDF. Both the pipeline (server-side, for the
+  billable artifact) and the `/api/compile` route call it.
+- Compiles via the `typst` binary subprocess; <100ms per resume; no external API.
+- Temp files in `os.tmpdir()/vitex-typst/`, cleaned up after each request.
+- In-memory LRU cache (100 entries, 1-hour TTL) shared across callers.
+- Binary path via `TYPST_BIN`; FA font path via `TYPST_FONT_PATH` (falls back to
+  `node_modules/@fortawesome/fontawesome-free/webfonts` in dev).
+- Throws structured `CompilationError` (422, with `details.stderr`) /
+  `CompilationTimeoutError` (504) — never raw stderr.
+- **napi-rs seam**: the function signature is the deliberate seam where a future
+  in-process Rust Typst module can replace the subprocess with zero caller changes.
+
+### Compile Route (`src/app/api/compile/route.ts`)
+- Thin wrapper over `compileTypstToPdf`: validates input, returns
+  `application/pdf` with `X-Cache: HIT|MISS`, renders errors via the envelope.
 
 ### Client-side Export (`src/lib/typst/compiler.ts`)
 - `compilePdf()`: Calls `/api/compile`, returns PDF blob with client-side caching
@@ -145,7 +271,8 @@ The UI follows a **Neobrutalism** design aesthetic with these key characteristic
 
 #### Editor Page (`src/app/editor/page.tsx`)
 - **Result review page**: Shows AI generation progress, then PDF preview with actions
-- **Progress state**: 7-step animated progress synced with backend SSE pipeline
+- **Progress state**: 8-step animated progress synced with backend SSE pipeline (the 8th step is server-side PDF compilation)
+- **Auth required**: generation now needs a signed-in user (you cannot charge an anonymous caller); the SSE error event carries the structured envelope
 - **Result state**: PDF preview + ATS score badge + matched skills + cover letter
 - **Export actions**: Download PDF, Download .typ, Copy Code, Show Cover Letter
 - **Refinement input**: Natural language feedback → re-runs pipeline
@@ -188,15 +315,25 @@ src/
 │   ├── layout.tsx            # Root layout with metadata
 │   ├── globals.css           # Global styles and CSS variables
 │   ├── api/
-│   │   ├── generate/route.ts # AI generation pipeline (SSE streaming)
-│   │   ├── compile/route.ts  # Local Typst → PDF compilation
+│   │   ├── generate/route.ts # SSE adapter for web UI → pipeline core
+│   │   ├── compile/route.ts  # Thin wrapper over compileTypstToPdf core
+│   │   ├── keys/route.ts     # API key mint/list/revoke (cookie-session protected)
+│   │   ├── v1/resumes/       # PUBLIC agent API (job-based): route + [id] + [id]/pdf
 │   │   └── credits/          # Credit balance + Stripe webhook
 │   ├── editor/
 │   │   ├── page.tsx          # Editor page wrapper
 │   │   └── AIEditorContent.tsx # Result review + refinement UI
 │   ├── dashboard/page.tsx    # Credits & billing
 │   ├── pricing/page.tsx      # Pricing tiers
-│   └── handler/[...stack]/   # Stack Auth pages
+│   └── handler/[...stack]/   # Neon Auth (Stack Auth) pages
+├── server/                   # ← transport-agnostic backend core (see "Backend Architecture")
+│   ├── core/                 # pipeline.ts, pipeline.types.ts, compile.ts, deps.ts
+│   ├── billing/              # meter.ts, stripeWebhook.ts (+ *.test.ts)
+│   ├── auth/                 # apiKeys.ts, caller.ts
+│   ├── jobs/                 # runner.ts (in-process v1 job runner)
+│   ├── errors/               # AppError.ts, envelope.ts
+│   ├── log/                  # logger.ts (structured JSON)
+│   └── ratelimit.ts          # Postgres fixed-window rate limiting
 ├── components/
 │   ├── auth/                 # Authentication components
 │   ├── preview/              # PDF preview, Typst code view, export buttons
@@ -204,24 +341,25 @@ src/
 │   └── ui/                   # shadcn/ui components
 ├── lib/
 │   ├── agent/                # AI agent modules
-│   │   ├── jd-parser.ts      # Job description → structured ParsedJD
-│   │   ├── background-parser.ts # Free text → structured ResumeData
-│   │   ├── matching-engine.ts # Resume ↔ JD compatibility analysis
-│   │   ├── resume-tailor.ts  # Tailors resume to match JD
-│   │   ├── ats-scorer.ts     # ATS compatibility scoring
-│   │   ├── cover-letter.ts   # Cover letter generation
-│   │   └── template-selector.ts # Rule-based template selection
+│   │   ├── models.ts         # Model tiering (extractModel / reasonModel)
+│   │   ├── telemetry.ts      # AI SDK OpenTelemetry config (AI_TELEMETRY_ENABLED)
+│   │   ├── jd-parser.ts      # JD → ParsedJD (extract tier)
+│   │   ├── background-parser.ts # Free text → ResumeData (reason tier)
+│   │   ├── matching-engine.ts # Resume ↔ JD analysis (reason tier)
+│   │   ├── resume-tailor.ts  # Tailors resume to JD (reason tier)
+│   │   ├── ats-scorer.ts     # ATS scoring (extract tier)
+│   │   ├── cover-letter.ts   # Cover letter generation (reason tier)
+│   │   └── template-selector.ts # Rule-based template selection (no LLM)
 │   ├── typst/
 │   │   ├── generator.ts      # Main Typst code generation
 │   │   ├── cover-letter.ts   # Cover letter Typst document generator
 │   │   ├── utils.ts          # Typst formatting utilities + FA icon helpers
-│   │   └── compiler.ts       # Client-side PDF compilation and export
+│   │   └── compiler.ts       # Client-side PDF fetch/cache + export helpers
 │   ├── services/
-│   │   └── creditService.ts  # Credit balance / transactions / Stripe
+│   │   └── creditService.ts  # Credit balance / transactions / idempotent usage / Stripe
 │   ├── db/                   # Drizzle ORM client + schema
-│   ├── redis/                # Upstash Redis client
 │   ├── stripe/               # Stripe client + checkout
-│   ├── auth/                 # Stack Auth configuration
+│   ├── auth/                 # Neon Auth (Stack Auth) configuration
 │   ├── validation/
 │   │   └── schema.ts         # Zod schemas for type validation
 │   └── utils.ts              # General utilities
@@ -229,6 +367,11 @@ src/
     ├── registry.ts           # Template registry
     ├── types.ts              # Template type definitions
     └── [template-name]/      # Individual templates (metadata + generator)
+
+scripts/migrate.ts            # Idempotent raw-SQL migrations (run with tsx)
+vitest.config.ts              # Vitest config (@ alias + server-only stub)
+test/stubs/server-only.ts     # server-only stub for tests
+docs/api/v1.md                # Public v1 API reference (for agents)
 ```
 
 ## Important Implementation Notes
@@ -274,31 +417,79 @@ The one external package used is `@preview/fontawesome:0.5.0` for contact and br
 
 ## AI Generation Pipeline
 
-The project uses a **full AI pipeline** for end-to-end resume generation.
+The full pipeline lives in the **transport-agnostic core**
+`src/server/core/pipeline.ts` (`runGenerationPipeline`), NOT in the route. The
+SSE route and the v1 job runner are thin callers. It runs **8 steps**, with two
+independent pairs parallelized for latency:
 
-### Pipeline Endpoint (`src/app/api/generate/route.ts`)
-SSE streaming endpoint that runs 7 sequential steps:
-1. **Parse JD** → `parseJobDescription()` extracts structured job requirements
-2. **Parse Background** → `parseBackground()` converts free text to ResumeData
-3. **Analyze Match** → `analyzeMatch()` scores resume↔JD compatibility
-4. **Tailor Resume** → `tailorResume()` optimizes resume for the target role
-5. **Score ATS** → `scoreATS()` evaluates ATS compatibility (0-100)
-6. **Generate Cover Letter** → `generateCoverLetter()` creates tailored cover letter
-7. **Generate Document** → `selectTemplate()` + template generator → Typst code
+1. **Parse JD** (`parseJobDescription`) ∥ 2. **Parse Background** (`parseBackground`) — run concurrently
+3. **Analyze Match** (`analyzeMatch`) — deterministic skill overlap + LLM
+4. **Tailor Resume** (`tailorResume`)
+5. **Score ATS** (`scoreATS`) ∥ 6. **Cover Letter** (`generateCoverLetter`) — run concurrently
+7. **Render** (`selectTemplate` + template generator → Typst code + cover-letter Typst)
+8. **Compile** (`compileTypstToPdf` → PDF bytes — the billable artifact)
+
+After step 8 succeeds, the **single billing charge** happens (`deps.meter.chargeForResult`).
+Each step is wrapped so failures become typed `PipelineStepError`/`CompilationError`
+(no charge). Progress is pushed via `deps.onProgress` so the SSE route can stream
+it. User input is zod-validated and prompt-injection-sanitized before reaching LLMs.
 
 ### Agent Modules (`src/lib/agent/`)
-- **jd-parser.ts**: GPT-4o `generateObject` → ParsedJD (title, company, skills, keywords, requirements)
-- **background-parser.ts**: GPT-4o `generateObject` → ResumeData from free-text description
-- **matching-engine.ts**: Deterministic skill overlap + GPT-4o nuanced analysis → MatchAnalysis
-- **resume-tailor.ts**: GPT-4o rewrites resume bullets, reorders skills, adjusts summary for JD
-- **ats-scorer.ts**: GPT-4o evaluates formatting, keywords, experience, skills → ATSReport (0-100)
-- **cover-letter.ts**: GPT-4o generates 3-4 paragraph professional cover letter
-- **template-selector.ts**: Rule-based mapping of industry/level → template ID
+Models are **tiered** (`src/lib/agent/models.ts`): `extractModel` (default
+`gpt-4o-mini`) for read/score steps, `reasonModel` (default `gpt-4o`) for
+generation/quality-critical steps. Override via `AI_MODEL_EXTRACT` / `AI_MODEL_REASON`.
+All calls carry `experimental_telemetry` (`src/lib/agent/telemetry.ts`, gated by
+`AI_TELEMETRY_ENABLED`) for OpenTelemetry/Langfuse traces.
 
-### Environment Variables
+- **jd-parser.ts**: `generateObject` → ParsedJD — **extract tier**
+- **background-parser.ts**: `generateObject` → ResumeData from free text — **reason tier**
+- **matching-engine.ts**: deterministic skill overlap + LLM analysis → MatchAnalysis — **reason tier**
+- **resume-tailor.ts**: rewrites bullets, reorders skills, adjusts summary — **reason tier**
+- **ats-scorer.ts**: formatting/keywords/experience/skills → ATSReport (0-100) — **extract tier**
+- **cover-letter.ts**: `generateText` → 3-4 paragraph cover letter — **reason tier**
+- **template-selector.ts**: rule-based industry/level → template ID (no LLM)
+
+### Adding/Changing a Pipeline Step
+Edit `runGenerationPipeline` in `src/server/core/pipeline.ts`, add the dep to
+`PipelineDeps`/`defaultDeps`, keep the single billing call site after compile,
+and update the step count in `AIEditorContent.tsx`'s `PROGRESS_STEPS`. Add a
+fake-injected case to `pipeline.test.ts`.
+
+## Environment Variables
+
+See `.env.example` for the full list. Summary:
+
 ```env
-OPENAI_API_KEY=sk-...  # Required for all AI features
+# Neon Auth (Stack Auth) — Stack Auth IS Neon Auth
+NEXT_PUBLIC_STACK_PROJECT_ID=
+NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY=
+STACK_SECRET_SERVER_KEY=
+
+# Database (Neon Postgres) — also used for rate limiting
+DATABASE_URL=
+
+# AI
+OPENAI_API_KEY=            # required for the generation pipeline
+AI_MODEL_EXTRACT=gpt-4o-mini   # optional: cheap read/score tier
+AI_MODEL_REASON=gpt-4o         # optional: generation/quality tier
+AI_TELEMETRY_ENABLED=false     # optional: emit OpenTelemetry spans (Langfuse)
+LOG_LEVEL=info                 # optional: debug|info|warn|error
+
+# Stripe (billing)
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+STRIPE_PRICE_CREDITS_5=
+STRIPE_PRICE_PRO_MONTHLY=
+STRIPE_PRICE_UNLIMITED_MONTHLY=
+
+# Typst (compilation) — usually only set in Docker
+TYPST_BIN=typst
+TYPST_FONT_PATH=/app/fonts
 ```
+
+**Removed dependencies** (do not reintroduce without a real need): Cloudinary
+(unused) and Upstash Redis / `KV_REST_API_*` (rate limiting moved to Postgres
+after the free-tier DB was idle-deleted).
 
 ## Migration Context
 
@@ -350,9 +541,28 @@ This project underwent multiple architectural transformations:
    - **Benefits**: 3-step user flow (paste JD → generate → download PDF)
 
 8. **AI Generation Pipeline**:
-   - **Added**: Full 7-step SSE streaming pipeline, background parser, template selector
+   - **Added**: Full SSE streaming pipeline, background parser, template selector
    - **Benefits**: End-to-end automated resume generation from free-text input
    - **Key files**: `src/app/api/generate/route.ts`, `src/lib/agent/background-parser.ts`, `src/lib/agent/template-selector.ts`
+
+9. **Backend core extraction + "API is the UI" + outcome billing** (current):
+   - **Added**: transport-agnostic `src/server/` core (pipeline/compile/billing/auth/errors/log),
+     API-key auth + public job-based v1 API (`/api/v1/resumes`), machine-readable
+     error envelope, structured JSON logging, in-process job runner, vitest tests.
+   - **Fixed**: the critical billing bug — generation never deducted credits;
+     now charges once, only on a successfully compiled PDF, idempotently. Pipeline
+     now compiles the PDF server-side (8th step) so billing anchors to a real artifact.
+   - **Key files**: `src/server/**`, `src/app/api/{generate,compile,keys,v1}/`, `docs/api/v1.md`
+
+10. **Pipeline cost/latency + Stripe correctness** (current):
+    - **Added**: model tiering (`src/lib/agent/models.ts`), parallelized independent
+      steps, AI SDK telemetry, Stripe webhook idempotency (`stripe_events`) + pro
+      monthly-credit renewal (`applyStripeEvent`).
+
+11. **Upstash Redis → Postgres rate limiting** (current):
+    - **Removed**: `@upstash/redis` + `src/lib/redis/` (free-tier DB was idle-deleted).
+    - **Added**: `rate_limits` table + `src/server/ratelimit.ts` (always-on, no extra
+      dependency, immune to idle deletion). Retry-After / X-RateLimit-* headers.
 
 **Legacy reference**: `A4_RESUME_USAGE.md` documents the original HTML/CSS approach (not currently used)
 
@@ -387,10 +597,14 @@ When adding new resume sections:
 - **Commit Location**: Always verify current working directory is the project root (vitex) before committing.
 
 ### Testing Strategy
+- **Vitest is set up** (`npm test`). Add tests for new backend-core logic,
+  especially money-path (billing, webhooks) — test the DI core with fakes.
 - Create functional tests in the project folder for every feature milestone.
 - Test comprehensively before moving to next milestone.
 - Use minimal tests to verify implementation effectiveness.
 - Avoid creating extra documentation files unless explicitly requested.
+- Run the full verification gate before claiming completion:
+  `npm test && npx tsc --noEmit && npm run lint && npm run build`.
 
 ### Code Quality Principles
 1. **Problem-Solving**: Find the best solution, don't bypass problems. Tackle issues head-on.

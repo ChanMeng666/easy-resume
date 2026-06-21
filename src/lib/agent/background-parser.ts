@@ -1,6 +1,7 @@
 import { generateObject } from "ai";
-import { openai } from "@ai-sdk/openai";
 import { resumeDataSchema, type ResumeData } from "@/lib/validation/schema";
+import { reasonModel } from "./models";
+import { aiTelemetry } from "./telemetry";
 
 /**
  * Parses a user's free-text background description into structured ResumeData using GPT-4o.
@@ -10,9 +11,10 @@ export async function parseBackground(
   backgroundText: string
 ): Promise<ResumeData> {
   const { object } = await generateObject({
-    model: openai("gpt-4o"),
+    model: reasonModel,
     schema: resumeDataSchema,
     providerOptions: { openai: { strictJsonSchema: false } },
+    experimental_telemetry: aiTelemetry("parse-background"),
     prompt: `You are an expert resume writer. Parse the following free-text background description into structured resume data.
 
 Instructions:

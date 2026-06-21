@@ -58,13 +58,15 @@ Built with Next.js 15, React 19, TypeScript, and Vercel AI SDK.
 
 ## Introduction
 
-Vitex is an AI-powered resume generation platform that transforms a job description and your professional background into a polished, ATS-optimized resume PDF and cover letter. A 7-step AI pipeline handles everything from JD parsing and skill matching to document generation, with Typst compiling PDFs locally in under 100ms. The UI follows a bold Neobrutalism design system with hard shadows, thick borders, and high contrast.
+Vitex is an AI-powered resume generation platform that transforms a job description and your professional background into a polished, ATS-optimized resume PDF and cover letter. An 8-step AI pipeline handles everything from JD parsing and skill matching to server-side PDF compilation, with Typst compiling PDFs locally in under 100ms. It is **agent-ready**: every capability is reachable over an authenticated HTTP API (the web UI and the public v1 API share one pipeline core), and billing is **outcome-based** — you are charged only when a resume is successfully produced. The UI follows a bold Neobrutalism design system with hard shadows, thick borders, and high contrast.
 
 ## Key Features
 
 - **AI Resume Generation** -- Paste a job description + describe your background, get a tailored resume PDF
-- **7-Step AI Pipeline** -- JD parsing, background parsing, match analysis, tailoring, ATS scoring, cover letter, document generation
-- **14 Professional Templates** -- Auto-selected by AI based on industry and role
+- **8-Step AI Pipeline** -- JD parsing, background parsing, match analysis, tailoring, ATS scoring, cover letter, document generation, server-side PDF compilation
+- **Agent-Ready API** -- Operate the whole product over HTTP with an API key; no browser, 2FA, or CAPTCHA (see `docs/api/v1.md`)
+- **Outcome-Based Billing** -- Credits are charged only when a resume is successfully produced (failures are free), idempotently
+- **7 Professional Templates** -- Auto-selected by AI based on industry and role (two-column, modern-cv, executive, creative, compact, banking, academic)
 - **ATS Optimization** -- Real-time ATS compatibility scoring with actionable feedback
 - **Cover Letter Generation** -- Automatically generated alongside the resume
 - **Typst-Powered PDF** -- Local compilation in <100ms, no external APIs required
@@ -76,7 +78,7 @@ Vitex is an AI-powered resume generation platform that transforms a job descript
 ## How It Works
 
 1. **Input** -- Paste a job description and describe your professional background on the homepage
-2. **Generate** -- AI analyzes, matches, tailors, and compiles your resume through a 7-step pipeline streamed via SSE
+2. **Generate** -- AI analyzes, matches, tailors, and compiles your resume through an 8-step pipeline streamed via SSE
 3. **Refine & Export** -- Review the PDF preview, ATS score, and cover letter; refine with natural language; download or share
 
 ## Tech Stack
@@ -88,10 +90,10 @@ Vitex is an AI-powered resume generation platform that transforms a job descript
 | Resume Rendering | Typst (local binary, <100ms compilation) |
 | Design System | Neobrutalism (Tailwind CSS + shadcn/ui) |
 | Database | Neon PostgreSQL + Drizzle ORM |
-| Cache | Upstash Redis |
-| Auth | Stack Auth |
-| Payments | Stripe |
-| Storage | Cloudinary |
+| Auth | Neon Auth (Stack Auth) + API keys for agents |
+| Payments | Stripe (outcome-based credits) |
+| Rate limiting | Neon Postgres (fixed-window) |
+| Observability | OpenTelemetry / Langfuse (optional) |
 | Deployment | DigitalOcean VPS, Docker, Traefik, GitHub Actions CI/CD |
 
 ## Getting Started
@@ -121,23 +123,26 @@ OPENAI_API_KEY=sk-...
 # Database
 DATABASE_URL=postgresql://user:password@host:5432/dbname
 
-# Auth
-STACK_PROJECT_ID=...
-STACK_API_KEY=...
+# Neon Auth (Stack Auth)
+NEXT_PUBLIC_STACK_PROJECT_ID=...
+NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY=...
+STACK_SECRET_SERVER_KEY=...
 
-# Payments
+# Payments (Stripe)
 STRIPE_SECRET_KEY=...
 STRIPE_WEBHOOK_SECRET=...
+STRIPE_PRICE_CREDITS_5=...
+STRIPE_PRICE_PRO_MONTHLY=...
+STRIPE_PRICE_UNLIMITED_MONTHLY=...
 
-# Cache
-UPSTASH_REDIS_REST_URL=...
-UPSTASH_REDIS_REST_TOKEN=...
-
-# Storage
-CLOUDINARY_CLOUD_NAME=...
-CLOUDINARY_API_KEY=...
-CLOUDINARY_API_SECRET=...
+# Optional: model tiering + observability
+AI_MODEL_EXTRACT=gpt-4o-mini
+AI_MODEL_REASON=gpt-4o
+AI_TELEMETRY_ENABLED=false
 ```
+
+> See `.env.example` for the full annotated list. Rate limiting and webhook
+> idempotency use the existing Neon Postgres — no Redis required.
 
 ### Development
 
@@ -178,22 +183,22 @@ Monolith Next.js App (Docker Container on VPS)
 |   |-- /pricing             Subscription plans
 |   |-- /share/[token]       Public resume sharing
 |
-|-- AI Pipeline (SSE streaming)
-|   |-- 1. JD Parsing
-|   |-- 2. Background Parsing
-|   |-- 3. Match Analysis
-|   |-- 4. Resume Tailoring
-|   |-- 5. ATS Scoring
-|   |-- 6. Cover Letter
-|   |-- 7. Document Generation (Typst)
+|-- Transports (thin adapters over one shared core)
+|   |-- POST /api/generate     SSE stream for the web UI
+|   |-- /api/v1/resumes        Public agent API (API key, job-based) -- "the API is the UI"
+|
+|-- Backend Core (src/server/, transport-agnostic)
+|   |-- 8-Step Pipeline: JD parse || background parse -> match -> tailor
+|   |   -> ATS score || cover letter -> render (Typst) -> compile (PDF)
+|   |-- Outcome billing: charge once, only on a compiled PDF, idempotent
+|   |-- Auth: getCaller() resolves API key or Neon Auth cookie session
+|   |-- Errors: machine-readable envelope; structured JSON logs
 |
 |-- Services
-|   |-- Neon PostgreSQL (Drizzle ORM)
-|   |-- Upstash Redis (caching)
-|   |-- Stack Auth (authentication)
+|   |-- Neon PostgreSQL (Drizzle ORM) -- data, credits, rate limits, job queue
+|   |-- Neon Auth / Stack Auth (authentication)
 |   |-- Stripe (payments)
-|   |-- Cloudinary (file storage)
-|   |-- OpenAI GPT-4o (AI generation)
+|   |-- OpenAI (tiered: gpt-4o-mini extract / gpt-4o reason)
 ```
 
 ## License

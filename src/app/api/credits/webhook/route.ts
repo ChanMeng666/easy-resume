@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe/client";
 import { creditService } from "@/lib/services/creditService";
+import { applyStripeEvent } from "@/server/billing/stripeWebhook";
 
 /**
  * POST /api/credits/webhook - Stripe webhook handler.
@@ -26,51 +27,15 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    switch (event.type) {
-      case "checkout.session.completed": {
-        const session = event.data.object;
-        const userId = session.metadata?.userId;
-        const priceType = session.metadata?.priceType;
-
-        if (!userId || !priceType) break;
-
-        if (priceType === "credits_5") {
-          await creditService.addCredits(userId, 5, "Purchased 5 credits", session.payment_intent as string);
-        } else if (priceType === "pro_monthly") {
-          await creditService.updateSubscription(
-            userId,
-            "pro",
-            session.customer as string,
-            session.subscription as string
-          );
-          await creditService.addCredits(userId, 20, "Pro subscription - 20 monthly credits");
-        } else if (priceType === "unlimited_monthly") {
-          await creditService.updateSubscription(
-            userId,
-            "unlimited",
-            session.customer as string,
-            session.subscription as string
-          );
-        }
-        break;
-      }
-
-      case "customer.subscription.deleted": {
-        const subscription = event.data.object;
-        const customerId = subscription.customer as string;
-        console.log(`Subscription cancelled for customer: ${customerId}`);
-        break;
-      }
-
-      case "invoice.payment_succeeded": {
-        const invoice = event.data.object;
-        if (invoice.billing_reason === "subscription_cycle") {
-          const customerId = invoice.customer as string;
-          console.log(`Monthly renewal for customer: ${customerId}`);
-        }
-        break;
-      }
+    // Idempotency: Stripe retries webhooks. Process each event id exactly once
+    // so retries can't double-credit a user.
+    const isNew = await creditService.recordStripeEvent(event.id, event.type);
+    if (!isNew) {
+      return NextResponse.json({ received: true, duplicate: true });
     }
+
+    // Business logic is extracted + unit tested (src/server/billing/stripeWebhook.ts).
+    await applyStripeEvent(event, creditService);
 
     return NextResponse.json({ received: true });
   } catch (error) {

@@ -117,7 +117,67 @@ async function migrate() {
   `;
   await sql`CREATE INDEX IF NOT EXISTS idx_credit_tx_user_id ON credit_transactions(user_id)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_credit_tx_type ON credit_transactions(user_id, type)`;
+  // Backs idempotent outcome-based billing (creditService.useCreditsIdempotent).
+  await sql`CREATE INDEX IF NOT EXISTS idx_credit_tx_reference ON credit_transactions(reference_id)`;
   console.log("Created credit_transactions table");
+
+  // Create api_keys table (agent/server-to-server access — "API is the UI")
+  await sql`
+    CREATE TABLE IF NOT EXISTS api_keys (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id TEXT NOT NULL,
+      name VARCHAR(120) NOT NULL DEFAULT 'default',
+      prefix VARCHAR(16) NOT NULL,
+      key_hash TEXT NOT NULL,
+      last_used_at TIMESTAMPTZ,
+      revoked_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_api_keys_user_id ON api_keys(user_id)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_api_keys_prefix ON api_keys(prefix)`;
+  console.log("Created api_keys table");
+
+  // Create generation_jobs table (async public v1 API jobs, run in-process)
+  await sql`
+    CREATE TABLE IF NOT EXISTS generation_jobs (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id TEXT NOT NULL,
+      status VARCHAR(20) NOT NULL DEFAULT 'queued',
+      input JSONB NOT NULL,
+      result JSONB,
+      error JSONB,
+      pdf_url TEXT,
+      charged BOOLEAN NOT NULL DEFAULT FALSE,
+      idempotency_key UUID NOT NULL UNIQUE,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_generation_jobs_user_id ON generation_jobs(user_id)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_generation_jobs_status ON generation_jobs(status)`;
+  console.log("Created generation_jobs table");
+
+  // Create rate_limits table (Postgres-backed fixed-window rate limiting)
+  await sql`
+    CREATE TABLE IF NOT EXISTS rate_limits (
+      bucket_key VARCHAR(255) PRIMARY KEY,
+      count INTEGER NOT NULL DEFAULT 0,
+      expires_at TIMESTAMPTZ NOT NULL
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_rate_limits_expires ON rate_limits(expires_at)`;
+  console.log("Created rate_limits table");
+
+  // Create stripe_events table (webhook idempotency — dedupe by Stripe event id)
+  await sql`
+    CREATE TABLE IF NOT EXISTS stripe_events (
+      id VARCHAR(255) PRIMARY KEY,
+      type VARCHAR(100),
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  console.log("Created stripe_events table");
 
   console.log("Migration complete!");
 }

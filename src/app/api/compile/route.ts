@@ -1,209 +1,51 @@
 /**
- * Typst compilation API route
- * Compiles Typst code to PDF locally using the Typst binary
+ * Typst compilation API route.
+ *
+ * Thin transport wrapper over the `compileTypstToPdf` core
+ * (src/server/core/compile.ts). Keeps the existing contract for the web client:
+ * POST { typstCode } -> application/pdf, with X-Cache HIT/MISS. Errors are
+ * rendered as the machine-readable envelope.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { execFile } from 'child_process';
-import { writeFile, readFile, unlink, mkdir } from 'fs/promises';
-import { existsSync } from 'fs';
-import { tmpdir } from 'os';
-import { join } from 'path';
+import { compileTypstToPdf } from '@/server/core/compile';
+import { ValidationError } from '@/server/errors/AppError';
+import { errorResponse } from '@/server/errors/envelope';
 
-const TYPST_BIN = process.env.TYPST_BIN || 'typst';
-const CACHE_TTL = 3600000; // 1 hour in milliseconds
-const MAX_CACHE_SIZE = 100; // Maximum number of cached PDFs
-const COMPILE_TIMEOUT = 30000; // 30 second timeout
+export const runtime = 'nodejs';
 
-/**
- * Resolve the path to FontAwesome webfonts so Typst can render FA icons.
- * Docker sets TYPST_FONT_PATH explicitly; in local dev we fall back to the
- * npm package's webfonts directory, which Typst detects by its internal
- * font names ("Font Awesome 6 Free" / "... Solid" / "... Brands").
- */
-const TYPST_FONT_PATH = (() => {
-  if (process.env.TYPST_FONT_PATH) return process.env.TYPST_FONT_PATH;
-  const localFallback = join(
-    process.cwd(),
-    'node_modules',
-    '@fortawesome',
-    'fontawesome-free',
-    'webfonts'
-  );
-  return existsSync(localFallback) ? localFallback : undefined;
-})();
-
-/**
- * Simple LRU-like cache for compiled PDFs
- */
-interface CacheEntry {
-  pdf: Buffer;
-  timestamp: number;
-}
-
-const pdfCache = new Map<string, CacheEntry>();
-
-/**
- * Generate a hash key from Typst code using Web Crypto API
- */
-async function generateHash(content: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(content);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-/**
- * Evict oldest entries if cache is full
- */
-function evictOldestEntries(): void {
-  if (pdfCache.size >= MAX_CACHE_SIZE) {
-    const entries = Array.from(pdfCache.entries());
-    entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
-
-    // Remove oldest 20% of entries
-    const toRemove = Math.ceil(MAX_CACHE_SIZE * 0.2);
-    for (let i = 0; i < toRemove && i < entries.length; i++) {
-      pdfCache.delete(entries[i][0]);
-    }
-  }
-}
-
-/**
- * Clean up temporary files, ignoring errors if files don't exist
- */
-async function cleanupFiles(...paths: string[]): Promise<void> {
-  await Promise.allSettled(paths.map(p => unlink(p)));
-}
-
-/**
- * Compile Typst code to PDF using the local Typst binary
- */
-function compileTypst(inputPath: string, outputPath: string): Promise<{ stdout: string; stderr: string }> {
-  const args = ['compile'];
-  if (TYPST_FONT_PATH) {
-    args.push('--font-path', TYPST_FONT_PATH);
-  }
-  args.push(inputPath, outputPath);
-
-  return new Promise((resolve, reject) => {
-    execFile(
-      TYPST_BIN,
-      args,
-      { timeout: COMPILE_TIMEOUT },
-      (error, stdout, stderr) => {
-        if (error) {
-          reject({ error, stdout, stderr });
-        } else {
-          resolve({ stdout, stderr });
-        }
-      }
-    );
-  });
-}
-
-/**
- * POST handler for Typst compilation
- */
+/** POST handler for Typst compilation. */
 export async function POST(request: NextRequest) {
-  const id = crypto.randomUUID();
-  const tempDir = join(tmpdir(), 'vitex-typst');
-  const inputPath = join(tempDir, `${id}.typ`);
-  const outputPath = join(tempDir, `${id}.pdf`);
-
+  const requestId = crypto.randomUUID();
   try {
-    const body = await request.json();
-    const { typstCode } = body;
-
-    // Validate input
-    if (!typstCode || typeof typstCode !== 'string') {
-      return NextResponse.json(
-        { error: 'Invalid Typst code', message: 'Typst code is required' },
-        { status: 400 }
-      );
-    }
-
-    if (typstCode.length > 500000) {
-      return NextResponse.json(
-        { error: 'Typst code too large', message: 'Maximum size is 500KB' },
-        { status: 413 }
-      );
-    }
-
-    // Check cache
-    const cacheKey = await generateHash(typstCode);
-    const cached = pdfCache.get(cacheKey);
-
-    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-      return new NextResponse(new Uint8Array(cached.pdf), {
-        headers: {
-          'Content-Type': 'application/pdf',
-          'X-Cache': 'HIT',
-          'Cache-Control': 'private, max-age=3600',
-        },
-      });
-    }
-
-    // Ensure temp directory exists
-    await mkdir(tempDir, { recursive: true });
-
-    // Write Typst code to temp file
-    await writeFile(inputPath, typstCode, 'utf-8');
-
+    let typstCode: unknown;
     try {
-      // Compile Typst to PDF
-      await compileTypst(inputPath, outputPath);
-
-      // Read the output PDF
-      const pdfBuffer = await readFile(outputPath);
-
-      // Cache the result
-      evictOldestEntries();
-      pdfCache.set(cacheKey, { pdf: Buffer.from(pdfBuffer), timestamp: Date.now() });
-
-      return new NextResponse(new Uint8Array(pdfBuffer), {
-        headers: {
-          'Content-Type': 'application/pdf',
-          'X-Cache': 'MISS',
-          'Cache-Control': 'private, max-age=3600',
-        },
-      });
-    } catch (compileError: unknown) {
-      const { error, stderr } = compileError as { error: Error; stdout: string; stderr: string };
-
-      // Check if it was a timeout
-      if (error && 'killed' in error && error.killed) {
-        return NextResponse.json(
-          { error: 'Timeout', message: 'Compilation took too long (>30s)' },
-          { status: 504 }
-        );
-      }
-
-      // Return Typst compilation error
-      console.error('Typst compilation error:', stderr || error?.message);
-      return NextResponse.json(
-        {
-          error: 'Compilation failed',
-          message: stderr || error?.message || 'Typst compilation error',
-        },
-        { status: 422 }
-      );
+      ({ typstCode } = await request.json());
+    } catch {
+      throw new ValidationError('Invalid JSON body');
     }
+
+    if (typeof typstCode !== 'string') {
+      throw new ValidationError('typstCode is required and must be a string');
+    }
+
+    const { pdf, cached } = await compileTypstToPdf(typstCode);
+
+    // Re-wrap to an ArrayBuffer-backed view so it satisfies BodyInit.
+    return new NextResponse(new Uint8Array(pdf), {
+      headers: {
+        'Content-Type': 'application/pdf',
+        'X-Cache': cached ? 'HIT' : 'MISS',
+        'X-Request-Id': requestId,
+        'Cache-Control': 'private, max-age=3600',
+      },
+    });
   } catch (error) {
-    console.error('Compile API error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error', message: 'Failed to process compilation request' },
-      { status: 500 }
-    );
-  } finally {
-    await cleanupFiles(inputPath, outputPath);
+    return errorResponse(error, requestId);
   }
 }
 
-/**
- * OPTIONS handler for CORS preflight
- */
+/** OPTIONS handler for CORS preflight. */
 export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,

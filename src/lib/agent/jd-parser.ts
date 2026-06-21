@@ -1,6 +1,7 @@
 import { generateObject } from "ai";
-import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
+import { extractModel } from "./models";
+import { aiTelemetry } from "./telemetry";
 
 /**
  * Schema for a parsed job description.
@@ -30,9 +31,10 @@ export type ParsedJD = z.infer<typeof parsedJDSchema>;
  */
 export async function parseJobDescription(rawText: string): Promise<ParsedJD> {
   const { object } = await generateObject({
-    model: openai("gpt-4o"),
+    model: extractModel,
     schema: parsedJDSchema,
     providerOptions: { openai: { strictJsonSchema: false } },
+    experimental_telemetry: aiTelemetry("parse-jd"),
     prompt: `Parse the following job description into structured data.
 Extract all relevant information including skills, keywords, requirements, and responsibilities.
 For keywords, focus on terms that ATS systems would scan for.

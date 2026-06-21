@@ -34,7 +34,8 @@ const PROGRESS_STEPS = [
   { label: 'Tailoring resume for the role...', icon: FileText },
   { label: 'Scoring ATS compatibility...', icon: CheckCircle2 },
   { label: 'Generating cover letter...', icon: Mail },
-  { label: 'Generating resume document...', icon: Printer },
+  { label: 'Generating resume document...', icon: FileText },
+  { label: 'Compiling your PDF...', icon: Printer },
 ] as const;
 
 /** Read timeout for SSE — heartbeat is 15s server-side, so 45s is 3x slack. */
@@ -102,11 +103,16 @@ async function runGenerationStream(
 
   if (!response.ok) {
     const errData = await response.json().catch(() => ({}));
-    const e: GenerationError = {
-      kind: 'server',
-      message: errData.error || `Server error (${response.status})`,
-    };
-    throw Object.assign(new Error(e.message), e);
+    // Server returns a machine-readable envelope { error: { code, message } }.
+    const envelope = errData.error ?? {};
+    const code: string | undefined = envelope.code;
+    const message: string =
+      envelope.message ||
+      (typeof errData.error === 'string' ? errData.error : '') ||
+      `Server error (${response.status})`;
+    const kind: ErrorKind =
+      code === 'INSUFFICIENT_CREDITS' || code === 'UNAUTHENTICATED' ? 'other' : 'server';
+    throw Object.assign(new Error(message), { kind, message });
   }
 
   const reader = response.body?.getReader();
@@ -159,8 +165,10 @@ async function runGenerationStream(
           if (event.type === 'progress') onProgress(event.step);
           else if (event.type === 'result') onResult(event.data);
           else if (event.type === 'error') {
-            const e: GenerationError = { kind: 'server', message: event.message };
-            throw Object.assign(new Error(e.message), e);
+            // Prefer the structured envelope; fall back to the flat message.
+            const message: string = event.error?.message || event.message || 'Generation failed.';
+            const kind: ErrorKind = event.error?.retriable ? 'server' : 'other';
+            throw Object.assign(new Error(message), { kind, message });
           }
           // 'heartbeat' and 'done' events fall through silently.
         } catch (parseErr) {

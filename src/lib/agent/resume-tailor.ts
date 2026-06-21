@@ -1,8 +1,9 @@
 import { generateObject } from "ai";
-import { openai } from "@ai-sdk/openai";
 import { ResumeData, resumeDataSchema } from "@/lib/validation/schema";
 import { ParsedJD } from "./jd-parser";
 import { MatchAnalysis } from "./matching-engine";
+import { reasonModel } from "./models";
+import { aiTelemetry } from "./telemetry";
 
 /**
  * Tailors a resume to a specific job description.
@@ -15,9 +16,10 @@ export async function tailorResume(
   matchAnalysis: MatchAnalysis
 ): Promise<ResumeData> {
   const { object } = await generateObject({
-    model: openai("gpt-4o"),
+    model: reasonModel,
     schema: resumeDataSchema,
     providerOptions: { openai: { strictJsonSchema: false } },
+    experimental_telemetry: aiTelemetry("tailor-resume"),
     prompt: `You are an expert resume writer. Tailor this resume for the target job.
 
 RULES:

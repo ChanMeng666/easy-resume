@@ -1,8 +1,9 @@
 import { generateObject } from "ai";
-import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 import { ResumeData } from "@/lib/validation/schema";
 import { ParsedJD } from "./jd-parser";
+import { extractModel } from "./models";
+import { aiTelemetry } from "./telemetry";
 
 /**
  * Schema for ATS optimization report.
@@ -58,8 +59,9 @@ Requirements: ${jd.requirements.join("; ")}`
     : "\nNo specific job target - evaluate against general ATS best practices.";
 
   const { object } = await generateObject({
-    model: openai("gpt-4o"),
+    model: extractModel,
     schema: atsReportSchema,
+    experimental_telemetry: aiTelemetry("score-ats"),
     prompt: `You are an ATS (Applicant Tracking System) optimization expert.
 Analyze this resume for ATS compatibility and provide a detailed report.
 

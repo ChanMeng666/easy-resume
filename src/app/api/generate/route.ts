@@ -1,26 +1,30 @@
 /**
- * Resume generation pipeline API route.
- * Streams SSE progress events while running the full AI pipeline:
- * JD parsing -> background parsing -> match analysis -> tailoring -> ATS scoring -> cover letter -> Typst generation.
+ * Resume generation pipeline API route (web UI transport).
+ *
+ * Thin SSE adapter over the transport-agnostic core
+ * (src/server/core/pipeline.ts). It only: authenticates the caller, opens an
+ * SSE stream, forwards `onProgress` events, and emits the final result or a
+ * machine-readable error envelope. The actual 8-step pipeline + server-side
+ * compilation + outcome-based billing all live in the core, shared with the
+ * public v1 API.
  */
 
 import { NextRequest } from 'next/server';
-import { parseJobDescription } from '@/lib/agent/jd-parser';
-import { parseBackground } from '@/lib/agent/background-parser';
-import { analyzeMatch } from '@/lib/agent/matching-engine';
-import { tailorResume } from '@/lib/agent/resume-tailor';
-import { scoreATS } from '@/lib/agent/ats-scorer';
-import { generateCoverLetter } from '@/lib/agent/cover-letter';
-import { selectTemplate } from '@/lib/agent/template-selector';
-import { getTemplateById } from '@/templates/registry';
-import { generateTypstCode } from '@/lib/typst/generator';
-import { generateCoverLetterTypst } from '@/lib/typst/cover-letter';
+import { getCaller } from '@/server/auth/caller';
+import { runGenerationPipeline } from '@/server/core/pipeline';
+import { defaultDeps } from '@/server/core/deps';
+import { UnauthenticatedError, ValidationError } from '@/server/errors/AppError';
+import { toErrorEnvelope, errorResponse } from '@/server/errors/envelope';
+import { createLogger } from '@/server/log/logger';
+import { enforceRateLimit, rateLimitHeaders, type RateLimitResult } from '@/server/ratelimit';
 
-const TOTAL_STEPS = 7;
+// Per-user generation cap for the interactive web flow.
+const GEN_LIMIT = 15;
+const GEN_WINDOW_SECONDS = 60;
 
-/**
- * Send an SSE event to the stream.
- */
+export const runtime = 'nodejs';
+
+/** Send an SSE event to the stream. */
 function sendEvent(
   controller: ReadableStreamDefaultController,
   encoder: TextEncoder,
@@ -29,129 +33,90 @@ function sendEvent(
   controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
 }
 
-/**
- * Send a progress event for the current pipeline step.
- */
-function sendProgress(
-  controller: ReadableStreamDefaultController,
-  encoder: TextEncoder,
-  step: number,
-  message: string
-): void {
-  sendEvent(controller, encoder, {
-    type: 'progress',
-    step,
-    total: TOTAL_STEPS,
-    message,
-  });
-}
-
-/**
- * POST handler — runs the full resume generation pipeline and streams progress via SSE.
- */
+/** POST — authenticate, run the pipeline, stream progress + result via SSE. */
 export async function POST(request: NextRequest) {
-  let body: { jobDescription?: string; background?: string };
+  const requestId = crypto.randomUUID();
+  const log = createLogger({ requestId, route: 'generate' });
 
+  const caller = await getCaller(request);
+  if (!caller) return errorResponse(new UnauthenticatedError(), requestId);
+
+  let rl: RateLimitResult;
+  try {
+    rl = await enforceRateLimit(`gen:${caller.userId}`, GEN_LIMIT, GEN_WINDOW_SECONDS);
+  } catch (error) {
+    return errorResponse(error, requestId);
+  }
+
+  let body: { jobDescription?: string; background?: string; templateId?: string };
   try {
     body = await request.json();
   } catch {
-    return new Response(
-      JSON.stringify({ error: 'Invalid JSON body' }),
-      { status: 400, headers: { 'Content-Type': 'application/json' } }
-    );
+    return errorResponse(new ValidationError('Invalid JSON body'), requestId);
   }
 
-  const { jobDescription, background } = body;
-
-  if (!jobDescription || typeof jobDescription !== 'string' || !jobDescription.trim()) {
-    return new Response(
-      JSON.stringify({ error: 'jobDescription is required' }),
-      { status: 400, headers: { 'Content-Type': 'application/json' } }
-    );
-  }
-
-  if (!background || typeof background !== 'string' || !background.trim()) {
-    return new Response(
-      JSON.stringify({ error: 'background is required' }),
-      { status: 400, headers: { 'Content-Type': 'application/json' } }
-    );
-  }
+  // A stable idempotency key lets a reconnecting client avoid double-charging.
+  const headerKey = request.headers.get('Idempotency-Key');
+  const idempotencyKey =
+    headerKey && /^[0-9a-f-]{36}$/i.test(headerKey) ? headerKey : crypto.randomUUID();
 
   const encoder = new TextEncoder();
-
   const stream = new ReadableStream({
     async start(controller) {
-      // Heartbeat keeps proxies and mobile browsers from treating the long
-      // OpenAI calls as an idle connection. The client treats >45s of silence
-      // as a dropped stream, so we ping every 15s.
-      const heartbeatId: ReturnType<typeof setInterval> = setInterval(() => {
+      // Heartbeat keeps proxies/mobile browsers from dropping the long stream.
+      const heartbeatId = setInterval(() => {
         try {
           sendEvent(controller, encoder, { type: 'heartbeat' });
         } catch {
-          // Stream already closed — ignore.
+          /* stream closed */
         }
       }, 15_000);
 
       try {
-        // Step 1: Parse job description
-        sendProgress(controller, encoder, 1, 'Analyzing job description...');
-        const parsedJD = await parseJobDescription(jobDescription);
+        const result = await runGenerationPipeline(
+          {
+            jobDescription: body.jobDescription ?? '',
+            background: body.background ?? '',
+            templateId: body.templateId,
+          },
+          caller,
+          defaultDeps({
+            requestId,
+            onProgress: (e) =>
+              sendEvent(controller, encoder, {
+                type: 'progress',
+                step: e.index,
+                total: e.total,
+                message: e.message,
+                stepName: e.step,
+              }),
+          }),
+          { idempotencyKey }
+        );
 
-        // Step 2: Parse background into ResumeData
-        sendProgress(controller, encoder, 2, 'Parsing your background...');
-        const baseResume = await parseBackground(background);
-
-        // Step 3: Analyze match
-        sendProgress(controller, encoder, 3, 'Analyzing match with job requirements...');
-        const matchAnalysis = await analyzeMatch(baseResume, parsedJD);
-
-        // Step 4: Tailor resume
-        sendProgress(controller, encoder, 4, 'Tailoring resume for the role...');
-        const tailoredResume = await tailorResume(baseResume, parsedJD, matchAnalysis);
-
-        // Step 5: Score ATS
-        sendProgress(controller, encoder, 5, 'Scoring ATS compatibility...');
-        const atsReport = await scoreATS(tailoredResume, parsedJD);
-
-        // Step 6: Generate cover letter
-        sendProgress(controller, encoder, 6, 'Generating cover letter...');
-        const coverLetter = await generateCoverLetter(tailoredResume, parsedJD);
-
-        // Step 7: Select template and generate Typst code
-        sendProgress(controller, encoder, 7, 'Generating resume document...');
-        const templateId = selectTemplate(parsedJD);
-        const template = getTemplateById(templateId);
-        const typstCode = template
-          ? template.generator(tailoredResume)
-          : generateTypstCode(tailoredResume);
-
-        const coverLetterTypst = generateCoverLetterTypst(coverLetter, tailoredResume);
-
-        // Send final result
         sendEvent(controller, encoder, {
           type: 'result',
           data: {
-            resumeData: tailoredResume,
-            typstCode,
-            atsScore: atsReport.overallScore,
-            matchAnalysis: {
-              overallScore: matchAnalysis.overallScore,
-              matchedSkills: matchAnalysis.skillMatch.matched,
-              missingSkills: matchAnalysis.skillMatch.missing,
-            },
-            coverLetter,
-            coverLetterTypst,
-            templateId,
+            resumeData: result.resumeData,
+            typstCode: result.typstCode,
+            atsScore: result.atsScore,
+            matchAnalysis: result.matchAnalysis,
+            coverLetter: result.coverLetter,
+            coverLetterTypst: result.coverLetterTypst,
+            templateId: result.templateId,
+            usage: result.usage,
           },
         });
-
-        // Send done signal
         sendEvent(controller, encoder, { type: 'done' });
       } catch (error) {
-        console.error('Generate pipeline error:', error);
-        const message =
-          error instanceof Error ? error.message : 'An unexpected error occurred';
-        sendEvent(controller, encoder, { type: 'error', message });
+        const envelope = toErrorEnvelope(error, requestId);
+        log.error('generate.failed', { code: envelope.error.code, step: envelope.error.step }, error);
+        // Send both the envelope and a flat `message` for client back-compat.
+        sendEvent(controller, encoder, {
+          type: 'error',
+          message: envelope.error.message,
+          error: envelope.error,
+        });
       } finally {
         clearInterval(heartbeatId);
         controller.close();
@@ -164,8 +129,9 @@ export async function POST(request: NextRequest) {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache, no-transform',
       Connection: 'keep-alive',
-      // Tell Nginx (and any X-Accel-aware proxy) not to buffer the stream.
       'X-Accel-Buffering': 'no',
+      'X-Request-Id': requestId,
+      ...rateLimitHeaders(rl),
     },
   });
 }

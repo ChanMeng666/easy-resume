@@ -1,8 +1,9 @@
 import { generateObject } from "ai";
-import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 import { ResumeData } from "@/lib/validation/schema";
 import { ParsedJD } from "./jd-parser";
+import { reasonModel } from "./models";
+import { aiTelemetry } from "./telemetry";
 
 /**
  * Schema for match analysis result.
@@ -66,8 +67,9 @@ export async function analyzeMatch(
   const deterministicOverlap = computeSkillOverlap(resumeSkillsList, allJdSkills);
   // LLM-enhanced analysis
   const { object } = await generateObject({
-    model: openai("gpt-4o"),
+    model: reasonModel,
     schema: matchAnalysisSchema,
+    experimental_telemetry: aiTelemetry("analyze-match"),
     prompt: `Analyze how well this resume matches the job description.
 
 RESUME:
