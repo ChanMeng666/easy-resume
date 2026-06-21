@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Navbar } from '@/components/shared/Navbar';
 import { Footer } from '@/components/shared/Footer';
@@ -12,14 +13,14 @@ const plans = [
     name: 'Free',
     price: '$0',
     period: 'forever',
-    description: 'Basic resume building with AI chat',
+    description: 'AI resume generation to get you started',
     icon: Sparkles,
     color: 'bg-gray-100',
     features: [
-      'AI-powered resume editor',
-      '14 professional LaTeX templates',
-      'Overleaf export',
-      'Manual editor',
+      'AI resume generation from a job description',
+      '7 professional Typst templates',
+      'ATS compatibility scoring',
+      'PDF + cover letter download',
       '3 free credits on signup',
     ],
     cta: 'Get Started',
@@ -78,22 +79,35 @@ const creditPacks = [
  * Shows subscription tiers and credit pack purchases.
  */
 export default function PricingPage() {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handlePurchase = async (priceType: string) => {
     setIsLoading(priceType);
+    setError(null);
     try {
       const res = await fetch('/api/credits', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ priceType }),
       });
-      const data = await res.json();
+
+      // Not signed in — send to sign-in, then return to pricing.
+      if (res.status === 401) {
+        router.push('/handler/sign-in?after_auth_return_to=/pricing');
+        return;
+      }
+
+      const data = await res.json().catch(() => ({}));
       if (data.url) {
         window.location.href = data.url;
+      } else {
+        setError(data.error || 'Could not start checkout. Please try again.');
       }
-    } catch (error) {
-      console.error('Purchase error:', error);
+    } catch (err) {
+      console.error('Purchase error:', err);
+      setError('Network error — please check your connection and try again.');
     } finally {
       setIsLoading(null);
     }
@@ -117,6 +131,12 @@ export default function PricingPage() {
             Free to build. Pay per result when you need AI-powered career tools.
           </p>
         </motion.div>
+
+        {error && (
+          <div className="max-w-2xl mx-auto mb-8 bg-red-100 border-2 border-black rounded-xl p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] text-sm font-bold text-red-900">
+            {error}
+          </div>
+        )}
 
         {/* Plans Grid */}
         <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto mb-16">
