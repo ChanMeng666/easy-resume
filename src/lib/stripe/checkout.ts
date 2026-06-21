@@ -18,6 +18,13 @@ export async function createCreditCheckout(
   cancelUrl: string
 ) {
   const priceId = PRICES[priceType];
+  if (!priceId) {
+    // Surface a clear configuration error instead of letting Stripe reject an
+    // empty price id with a cryptic message after the user submits checkout.
+    throw new Error(
+      `Missing Stripe price id for "${priceType}" — set the corresponding STRIPE_PRICE_* env var`
+    );
+  }
   const isSubscription = priceType !== "credits_5";
 
   const session = await stripe.checkout.sessions.create({

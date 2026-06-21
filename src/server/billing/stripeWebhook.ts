@@ -9,6 +9,9 @@
 
 import 'server-only';
 import type Stripe from 'stripe';
+import { createLogger } from '@/server/log/logger';
+
+const log = createLogger({ scope: 'stripe-webhook' });
 
 /** The slice of creditService this handler needs (injectable for tests). */
 export interface StripeEventSink {
@@ -27,6 +30,7 @@ export interface StripeEventSink {
   getByStripeCustomerId(
     stripeCustomerId: string
   ): Promise<{ userId: string; subscriptionTier: string | null } | null>;
+  reverseByStripePaymentId(stripePaymentId: string): Promise<void>;
 }
 
 /** Pro plan's included monthly credit allowance. */
@@ -38,7 +42,10 @@ export const CREDIT_PACK_SIZE = 5;
  * Apply a verified, deduplicated Stripe event to the credit sink.
  * - checkout.session.completed: grant credits / set subscription tier
  * - invoice.payment_succeeded (subscription_cycle): replenish pro monthly credits
- * - customer.subscription.deleted: (no-op here; tier change handled elsewhere)
+ * - invoice.payment_failed: log the failed renewal (Stripe retries; final
+ *   failure surfaces as subscription.deleted → downgrade)
+ * - customer.subscription.deleted: downgrade the user back to the free tier
+ * - charge.refunded: reverse the credits granted by the refunded purchase
  */
 export async function applyStripeEvent(event: Stripe.Event, sink: StripeEventSink): Promise<void> {
   switch (event.type) {
@@ -87,8 +94,41 @@ export async function applyStripeEvent(event: Stripe.Event, sink: StripeEventSin
       break;
     }
 
-    case 'customer.subscription.deleted':
-      // Cancellation is handled by Stripe's portal + tier sync; nothing to apply.
+    case 'invoice.payment_failed': {
+      const invoice = event.data.object as Stripe.Invoice;
+      const customerId = invoice.customer as string;
+      const record = customerId ? await sink.getByStripeCustomerId(customerId) : null;
+      // Keep the tier as-is: Stripe retries the invoice, and a terminal failure
+      // arrives later as customer.subscription.deleted (handled below). Record it
+      // so a failed renewal is never silent.
+      log.warn('Subscription invoice payment failed', {
+        userId: record?.userId,
+        stripeCustomerId: customerId,
+        billingReason: invoice.billing_reason ?? undefined,
+      });
       break;
+    }
+
+    case 'customer.subscription.deleted': {
+      // The subscription ended (cancelled in the portal or terminal payment
+      // failure). Downgrade the user back to free so billing state stays correct.
+      const sub = event.data.object as Stripe.Subscription;
+      const customerId = sub.customer as string;
+      const record = customerId ? await sink.getByStripeCustomerId(customerId) : null;
+      if (record) {
+        await sink.updateSubscription(record.userId, 'free');
+      }
+      break;
+    }
+
+    case 'charge.refunded': {
+      // Reverse the credits granted by the original one-time purchase.
+      const charge = event.data.object as Stripe.Charge;
+      const paymentIntent = charge.payment_intent;
+      if (typeof paymentIntent === 'string' && paymentIntent) {
+        await sink.reverseByStripePaymentId(paymentIntent);
+      }
+      break;
+    }
   }
 }

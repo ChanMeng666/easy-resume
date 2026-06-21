@@ -119,6 +119,24 @@ async function migrate() {
   await sql`CREATE INDEX IF NOT EXISTS idx_credit_tx_type ON credit_transactions(user_id, type)`;
   // Backs idempotent outcome-based billing (creditService.useCreditsIdempotent).
   await sql`CREATE INDEX IF NOT EXISTS idx_credit_tx_reference ON credit_transactions(reference_id)`;
+  // Enforce idempotent billing at the DB level: at most one usage txn per
+  // reference_id. Partial (WHERE type='usage') so purchase/signup_bonus rows
+  // with NULL reference_id are unaffected. Dedupe any pre-existing duplicate
+  // usage rows first (keep the earliest) so the unique index can be created.
+  await sql`
+    DELETE FROM credit_transactions a
+    USING credit_transactions b
+    WHERE a.type = 'usage'
+      AND b.type = 'usage'
+      AND a.reference_id = b.reference_id
+      AND a.reference_id IS NOT NULL
+      AND (a.created_at > b.created_at
+           OR (a.created_at = b.created_at AND a.id > b.id))
+  `;
+  await sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS uk_credit_tx_reference_usage
+    ON credit_transactions(reference_id) WHERE type = 'usage'
+  `;
   console.log("Created credit_transactions table");
 
   // Create api_keys table (agent/server-to-server access — "API is the UI")

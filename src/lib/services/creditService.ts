@@ -1,6 +1,19 @@
 import { getDb } from "@/lib/db/client";
 import { credits, creditTransactions, stripeEvents } from "@/lib/db/schema";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
+
+/** Postgres unique-violation error code (SQLSTATE 23505). */
+const PG_UNIQUE_VIOLATION = "23505";
+
+/** True when an error is a Postgres unique-constraint violation. */
+function isUniqueViolation(err: unknown): boolean {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    "code" in err &&
+    (err as { code?: string }).code === PG_UNIQUE_VIOLATION
+  );
+}
 
 /**
  * Service for managing user credits and transactions.
@@ -140,38 +153,80 @@ export const creditService = {
 
     // Unlimited plan: record a zero-amount usage txn for auditing, never block.
     if (record.subscriptionTier === "unlimited") {
-      const [tx] = await db
-        .insert(creditTransactions)
-        .values({
-          userId,
-          type: "usage",
-          amount: 0,
-          description: `${description} (unlimited plan)`,
-          referenceType,
-          referenceId: idempotencyKey,
-        })
-        .returning();
-      return { ok: true, transactionId: tx.id };
+      try {
+        const [tx] = await db
+          .insert(creditTransactions)
+          .values({
+            userId,
+            type: "usage",
+            amount: 0,
+            description: `${description} (unlimited plan)`,
+            referenceType,
+            referenceId: idempotencyKey,
+          })
+          .returning();
+        return { ok: true, transactionId: tx.id };
+      } catch (err) {
+        if (isUniqueViolation(err)) {
+          const [winner] = await db
+            .select()
+            .from(creditTransactions)
+            .where(
+              and(
+                eq(creditTransactions.referenceId, idempotencyKey),
+                eq(creditTransactions.type, "usage")
+              )
+            )
+            .limit(1);
+          return { ok: true, transactionId: winner?.id };
+        }
+        throw err;
+      }
     }
 
     if (record.balance < amount) return { ok: false };
 
+    // Insert the usage txn first. A partial UNIQUE index on
+    // (reference_id) WHERE type='usage' makes this the atomic guard against a
+    // concurrent request charging the same idempotencyKey twice: only one
+    // insert can win. The losing insert throws 23505 — we then return the
+    // winner's transaction without deducting again.
+    let tx: { id: string };
+    try {
+      [tx] = await db
+        .insert(creditTransactions)
+        .values({
+          userId,
+          type: "usage",
+          amount: -amount,
+          description,
+          referenceType,
+          referenceId: idempotencyKey,
+        })
+        .returning();
+    } catch (err) {
+      if (isUniqueViolation(err)) {
+        const [winner] = await db
+          .select()
+          .from(creditTransactions)
+          .where(
+            and(
+              eq(creditTransactions.referenceId, idempotencyKey),
+              eq(creditTransactions.type, "usage")
+            )
+          )
+          .limit(1);
+        return { ok: true, transactionId: winner?.id };
+      }
+      throw err;
+    }
+
+    // Deduct only after we won the insert race, so a duplicate request never
+    // double-debits the balance.
     await db
       .update(credits)
       .set({ balance: record.balance - amount, updatedAt: new Date() })
       .where(eq(credits.userId, userId));
-
-    const [tx] = await db
-      .insert(creditTransactions)
-      .values({
-        userId,
-        type: "usage",
-        amount: -amount,
-        description,
-        referenceType,
-        referenceId: idempotencyKey,
-      })
-      .returning();
 
     return { ok: true, transactionId: tx.id };
   },
@@ -247,14 +302,79 @@ export const creditService = {
     return inserted.length > 0;
   },
 
-  /** Get transaction history. */
+  /**
+   * Remove a recorded Stripe event id so a failed webhook can be reprocessed.
+   *
+   * `recordStripeEvent` is used as a processing lock: it marks an event seen
+   * BEFORE the business logic runs. If that logic throws, the route deletes the
+   * record here so Stripe's automatic retry is not skipped as a duplicate —
+   * otherwise a paid-for credit grant could be lost forever.
+   */
+  async deleteStripeEvent(eventId: string): Promise<void> {
+    const db = getDb();
+    await db.delete(stripeEvents).where(eq(stripeEvents.id, eventId));
+  },
+
+  /**
+   * Reverse a one-time purchase when Stripe reports a refund.
+   *
+   * Finds the original `purchase` transaction by its Stripe payment intent id,
+   * subtracts the purchased amount back out of the balance, and records a
+   * `refund` transaction. Idempotent: if a refund for this payment intent was
+   * already recorded, it is a no-op (Stripe can resend `charge.refunded`).
+   */
+  async reverseByStripePaymentId(stripePaymentId: string): Promise<void> {
+    const db = getDb();
+
+    // Idempotency: bail if we already recorded a refund for this payment.
+    const [existingRefund] = await db
+      .select()
+      .from(creditTransactions)
+      .where(
+        and(
+          eq(creditTransactions.stripePaymentId, stripePaymentId),
+          eq(creditTransactions.type, "refund")
+        )
+      )
+      .limit(1);
+    if (existingRefund) return;
+
+    // Find the original purchase to know who and how much to reverse.
+    const [purchase] = await db
+      .select()
+      .from(creditTransactions)
+      .where(
+        and(
+          eq(creditTransactions.stripePaymentId, stripePaymentId),
+          eq(creditTransactions.type, "purchase")
+        )
+      )
+      .limit(1);
+    if (!purchase) return;
+
+    const record = await this.getOrCreate(purchase.userId);
+    await db
+      .update(credits)
+      .set({ balance: record.balance - purchase.amount, updatedAt: new Date() })
+      .where(eq(credits.userId, purchase.userId));
+
+    await db.insert(creditTransactions).values({
+      userId: purchase.userId,
+      type: "refund",
+      amount: -purchase.amount,
+      description: "Refund for credit purchase",
+      stripePaymentId,
+    });
+  },
+
+  /** Get transaction history (newest first). */
   async getTransactions(userId: string, limit = 20) {
     const db = getDb();
     return db
       .select()
       .from(creditTransactions)
       .where(eq(creditTransactions.userId, userId))
-      .orderBy(creditTransactions.createdAt)
+      .orderBy(desc(creditTransactions.createdAt))
       .limit(limit);
   },
 };
