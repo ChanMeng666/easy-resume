@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Navbar } from '@/components/shared/Navbar';
 import { Footer } from '@/components/shared/Footer';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Sparkles, Zap, Crown } from 'lucide-react';
+import { CheckCircle, Sparkles, Zap, Crown, Info } from 'lucide-react';
 
 const plans = [
   {
@@ -75,13 +75,19 @@ const creditPacks = [
 ];
 
 /**
- * Pricing page with Neobrutalism design.
- * Shows subscription tiers and credit pack purchases.
+ * Pricing page content with Neobrutalism design.
+ * Shows subscription tiers and credit pack purchases. Reads the
+ * `?cancelled=true` query param Stripe appends when a user abandons checkout,
+ * so it is wrapped in <Suspense> by the page export.
  */
-export default function PricingPage() {
+function PricingContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [cancelled, setCancelled] = useState(
+    searchParams.get('cancelled') === 'true'
+  );
 
   const handlePurchase = async (priceType: string) => {
     setIsLoading(priceType);
@@ -131,6 +137,23 @@ export default function PricingPage() {
             Free to build. Pay per result when you need AI-powered career tools.
           </p>
         </motion.div>
+
+        {cancelled && (
+          <div className="max-w-2xl mx-auto mb-8 flex items-start gap-3 bg-yellow-100 border-2 border-black rounded-xl p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
+            <Info className="h-5 w-5 flex-shrink-0 text-yellow-800 mt-0.5" />
+            <p className="flex-1 text-sm font-bold text-yellow-900">
+              Checkout cancelled — no charge was made. You can pick a plan whenever
+              you&apos;re ready.
+            </p>
+            <button
+              onClick={() => setCancelled(false)}
+              className="text-yellow-900 font-black px-2"
+              aria-label="Dismiss"
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
         {error && (
           <div className="max-w-2xl mx-auto mb-8 bg-red-100 border-2 border-black rounded-xl p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] text-sm font-bold text-red-900">
@@ -281,5 +304,23 @@ export default function PricingPage() {
 
       <Footer />
     </div>
+  );
+}
+
+/**
+ * Pricing page with Neobrutalism design.
+ * Shows subscription tiers and credit pack purchases.
+ */
+export default function PricingPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#f0f0f0]">
+          <Navbar currentPath="/pricing" />
+        </div>
+      }
+    >
+      <PricingContent />
+    </Suspense>
   );
 }

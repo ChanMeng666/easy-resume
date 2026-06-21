@@ -18,8 +18,33 @@ function makeSink(customerRecord: { userId: string; subscriptionTier: string | n
     addCredits: vi.fn().mockResolvedValue(undefined),
     updateSubscription: vi.fn().mockResolvedValue(undefined),
     getByStripeCustomerId: vi.fn().mockResolvedValue(customerRecord),
+    reverseByStripePaymentId: vi.fn().mockResolvedValue(undefined),
   };
   return sink;
+}
+
+/** Build a minimal customer.subscription.deleted event. */
+function subscriptionDeletedEvent(customer = 'cus_123'): Stripe.Event {
+  return {
+    type: 'customer.subscription.deleted',
+    data: { object: { customer } },
+  } as unknown as Stripe.Event;
+}
+
+/** Build a minimal invoice.payment_failed event. */
+function paymentFailedEvent(customer = 'cus_123'): Stripe.Event {
+  return {
+    type: 'invoice.payment_failed',
+    data: { object: { customer, billing_reason: 'subscription_cycle' } },
+  } as unknown as Stripe.Event;
+}
+
+/** Build a minimal charge.refunded event. */
+function refundEvent(paymentIntent: unknown = 'pi_1'): Stripe.Event {
+  return {
+    type: 'charge.refunded',
+    data: { object: { payment_intent: paymentIntent } },
+  } as unknown as Stripe.Event;
 }
 
 /** Build a minimal invoice.payment_succeeded event. */
@@ -105,5 +130,49 @@ describe('applyStripeEvent — checkout', () => {
     await applyStripeEvent(checkoutEvent({}), sink);
     expect(sink.addCredits).not.toHaveBeenCalled();
     expect(sink.updateSubscription).not.toHaveBeenCalled();
+  });
+});
+
+describe('applyStripeEvent — subscription cancellation', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('downgrades the user to free on subscription deletion', async () => {
+    const sink = makeSink({ userId: 'user_1', subscriptionTier: 'pro' });
+    await applyStripeEvent(subscriptionDeletedEvent(), sink);
+    expect(sink.getByStripeCustomerId).toHaveBeenCalledWith('cus_123');
+    expect(sink.updateSubscription).toHaveBeenCalledWith('user_1', 'free');
+  });
+
+  it('is a no-op when the cancelled customer is unknown', async () => {
+    const sink = makeSink(null);
+    await applyStripeEvent(subscriptionDeletedEvent(), sink);
+    expect(sink.updateSubscription).not.toHaveBeenCalled();
+  });
+});
+
+describe('applyStripeEvent — payment failure', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('does not change the tier or credits on a failed renewal', async () => {
+    const sink = makeSink({ userId: 'user_1', subscriptionTier: 'pro' });
+    await applyStripeEvent(paymentFailedEvent(), sink);
+    expect(sink.updateSubscription).not.toHaveBeenCalled();
+    expect(sink.addCredits).not.toHaveBeenCalled();
+  });
+});
+
+describe('applyStripeEvent — refund', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('reverses credits for the refunded payment intent', async () => {
+    const sink = makeSink();
+    await applyStripeEvent(refundEvent('pi_1'), sink);
+    expect(sink.reverseByStripePaymentId).toHaveBeenCalledWith('pi_1');
+  });
+
+  it('ignores a refund with no payment intent', async () => {
+    const sink = makeSink();
+    await applyStripeEvent(refundEvent(null), sink);
+    expect(sink.reverseByStripePaymentId).not.toHaveBeenCalled();
   });
 });

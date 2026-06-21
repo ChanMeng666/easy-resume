@@ -1,4 +1,5 @@
-import { pgTable, uuid, varchar, text, boolean, timestamp, jsonb, index, integer, real } from "drizzle-orm/pg-core";
+import { pgTable, uuid, varchar, text, boolean, timestamp, jsonb, index, uniqueIndex, integer, real } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import type { ResumeData } from "@/lib/validation/schema";
 import type { ParsedJD } from "@/lib/agent/jd-parser";
 import type { MatchAnalysis } from "@/lib/agent/matching-engine";
@@ -179,6 +180,13 @@ export const creditTransactions = pgTable("credit_transactions", {
   // a usage txn carrying the generation idempotencyKey as referenceId means
   // the result was already charged, so we must not deduct again.
   referenceIdx: index("idx_credit_tx_reference").on(table.referenceId),
+  // Enforces idempotent billing at the DB level: at most one usage txn per
+  // referenceId, so concurrent requests for the same generation can't double
+  // charge. Partial (WHERE type='usage') so purchase/signup_bonus rows with a
+  // NULL referenceId are unaffected.
+  usageReferenceUk: uniqueIndex("uk_credit_tx_reference_usage")
+    .on(table.referenceId)
+    .where(sql`type = 'usage'`),
 }));
 
 // Resume types
