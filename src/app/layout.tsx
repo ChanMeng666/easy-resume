@@ -72,6 +72,15 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${titanOne.variable} antialiased`}
       >
+        {/* Fallback: if JS never runs (or a scroll observer fails), force
+            scroll-reveal sections visible so content is never stuck hidden. */}
+        <noscript>
+          <style
+            dangerouslySetInnerHTML={{
+              __html: '.motion-reveal{opacity:1 !important;transform:none !important;}',
+            }}
+          />
+        </noscript>
         <StackAuthProvider>
           {children}
         </StackAuthProvider>

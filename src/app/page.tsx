@@ -244,8 +244,8 @@ export default function HomePage() {
               <motion.div
                 initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                className="mb-10 sm:mb-14"
+                viewport={{ once: true, amount: 0.2 }}
+                className="motion-reveal mb-10 sm:mb-14"
               >
                 <p className="proof-label mb-2">§ The Pipeline</p>
                 <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
@@ -275,8 +275,9 @@ export default function HomePage() {
                     key={idx}
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
+                    viewport={{ once: true, amount: 0.2 }}
                     transition={{ delay: idx * 0.1 }}
+                    className="motion-reveal"
                   >
                     <CropFrame className="h-full rounded-xl border-2 border-black bg-white p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] transition-all duration-200 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px]">
                       <div className="mb-4 flex items-center justify-between">

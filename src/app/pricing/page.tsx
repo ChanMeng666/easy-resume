@@ -223,8 +223,8 @@ function PricingContent() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="max-w-2xl mx-auto"
+          viewport={{ once: true, amount: 0.2 }}
+          className="motion-reveal max-w-2xl mx-auto"
         >
           <p className="proof-label text-center mb-2">§ Top-up</p>
           <h2 className="text-2xl font-black text-center mb-6">Need just a few credits?</h2>
@@ -253,8 +253,8 @@ function PricingContent() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="max-w-2xl mx-auto mt-12 sm:mt-16"
+          viewport={{ once: true, amount: 0.2 }}
+          className="motion-reveal max-w-2xl mx-auto mt-12 sm:mt-16"
         >
           <p className="proof-label text-center mb-2">§ Ledger</p>
           <h2 className="text-xl sm:text-2xl font-black text-center mb-4 sm:mb-6">
