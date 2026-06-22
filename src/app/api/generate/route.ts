@@ -13,6 +13,7 @@ import { NextRequest } from 'next/server';
 import { getCaller } from '@/server/auth/caller';
 import { runGenerationPipeline } from '@/server/core/pipeline';
 import { defaultDeps } from '@/server/core/deps';
+import { persistCompletedJob } from '@/server/jobs/persist';
 import { UnauthenticatedError, ValidationError } from '@/server/errors/AppError';
 import { toErrorEnvelope, errorResponse } from '@/server/errors/envelope';
 import { createLogger } from '@/server/log/logger';
@@ -107,6 +108,25 @@ export async function POST(request: NextRequest) {
             usage: result.usage,
           },
         });
+
+        // Persist the finished generation so the web user keeps a history entry
+        // (same `generationJobs` model the v1 API uses). Best-effort and off the
+        // delivery critical path: the result is already streamed above, and a DB
+        // failure is swallowed inside persistCompletedJob. A `saved` event lets
+        // the client deep-link /editor?job=<id> and survive a refresh.
+        const saved = await persistCompletedJob({
+          caller,
+          input: {
+            jobDescription: body.jobDescription ?? '',
+            background: body.background ?? '',
+            templateId: body.templateId,
+          },
+          idempotencyKey,
+          result,
+          logger: log,
+        });
+        if (saved) sendEvent(controller, encoder, { type: 'saved', jobId: saved.jobId });
+
         sendEvent(controller, encoder, { type: 'done' });
       } catch (error) {
         const envelope = toErrorEnvelope(error, requestId);

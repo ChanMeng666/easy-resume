@@ -18,21 +18,8 @@ import { runGenerationPipeline } from '@/server/core/pipeline';
 import { defaultDeps } from '@/server/core/deps';
 import { toErrorEnvelope } from '@/server/errors/envelope';
 import { createLogger } from '@/server/log/logger';
+import { toWireResult, deriveJobTitle } from '@/server/jobs/persist';
 import type { Caller, GenerateInput } from '@/server/core/pipeline.types';
-
-/** Wire-shaped result persisted on the job (PDF bytes are recompiled on demand). */
-function toWireResult(r: Awaited<ReturnType<typeof runGenerationPipeline>>) {
-  return {
-    resumeData: r.resumeData,
-    typstCode: r.typstCode,
-    coverLetter: r.coverLetter,
-    coverLetterTypst: r.coverLetterTypst,
-    atsScore: r.atsScore,
-    matchAnalysis: r.matchAnalysis,
-    templateId: r.templateId,
-    usage: r.usage,
-  };
-}
 
 /**
  * Create (or return the existing) job for an idempotency key, then kick off the
@@ -87,6 +74,7 @@ async function runJob(jobId: string, caller: Caller): Promise<void> {
       .update(generationJobs)
       .set({
         status: 'succeeded',
+        title: deriveJobTitle(job.input, result),
         result: toWireResult(result),
         charged: result.usage.charged,
         pdfUrl: `/api/v1/resumes/${jobId}/pdf`,

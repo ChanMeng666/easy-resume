@@ -8,7 +8,7 @@ import { CreditBadge } from '@/components/shared/CreditBadge';
 import { ReactNode, Suspense, useState } from 'react';
 import { useScrollDirection } from '@/lib/hooks/useScrollDirection';
 import { useUser } from "@stackframe/stack";
-import { Sparkles, Menu, X, LayoutDashboard, CreditCard } from 'lucide-react';
+import { Sparkles, Menu, X, LayoutDashboard, CreditCard, Files } from 'lucide-react';
 
 interface NavbarProps {
   currentPath?: string;
@@ -56,6 +56,14 @@ function NavLinksInner({ currentPath }: { currentPath: string }) {
 
   return (
     <>
+      {/* My Resumes - Only show for logged-in users */}
+      {user && (
+        <Link href="/resumes" className={getNavLinkStyles(currentPath, '/resumes')}>
+          <Files className="w-4 h-4" />
+          My Resumes
+        </Link>
+      )}
+
       {/* Dashboard - Only show for logged-in users */}
       {user && (
         <Link href="/dashboard" className={getNavLinkStyles(currentPath, '/dashboard')}>
@@ -109,10 +117,22 @@ function MobileMenu({
         </div>
         
         <nav className="flex flex-col gap-3">
+          {/* My Resumes - Only for logged-in users */}
+          {user && (
+            <Link
+              href="/resumes"
+              onClick={onClose}
+              className={`${getNavLinkStyles(currentPath, '/resumes')} w-full`}
+            >
+              <Files className="w-4 h-4" />
+              My Resumes
+            </Link>
+          )}
+
           {/* Dashboard - Only for logged-in users */}
           {user && (
-            <Link 
-              href="/dashboard" 
+            <Link
+              href="/dashboard"
               onClick={onClose}
               className={`${getNavLinkStyles(currentPath, '/dashboard')} w-full`}
             >

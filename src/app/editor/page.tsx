@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Navbar } from '@/components/shared/Navbar';
 import { Footer } from '@/components/shared/Footer';
 import { Button } from '@/components/ui/button';
@@ -10,19 +11,23 @@ import { ArrowLeft } from 'lucide-react';
 import { AIEditorContent } from './AIEditorContent';
 
 /**
- * Editor page — result review page.
- * Users arrive here after clicking "Generate My Resume" on the homepage.
- * Reads JD and background from a window global first (survives client-side
- * navigation and the iOS Safari private-mode sessionStorage quota), then
- * falls back to sessionStorage for full-reload scenarios.
+ * Editor content — resolves how to populate the result review:
+ * - `?job=<id>` present → re-open a persisted generation (free, no re-charge);
+ * - otherwise → read JD/background from a window global first (survives
+ *   client-side navigation and the iOS Safari private-mode sessionStorage
+ *   quota), then fall back to sessionStorage for full-reload scenarios.
  */
-export default function AIEditorPage() {
+function AIEditorPageContent() {
+  const searchParams = useSearchParams();
+  const jobId = searchParams.get('job');
   const [inputs, setInputs] = useState<{ jd: string; bg: string } | null>(null);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const scrollDirection = useElementScrollDirection(scrollContainerRef);
 
   useEffect(() => {
+    // Job mode skips the JD/background lookup entirely.
+    if (jobId) return;
     const fromWindow = window.__vitexInputs;
     if (fromWindow && fromWindow.jd && fromWindow.bg) {
       setInputs({ jd: fromWindow.jd, bg: fromWindow.bg });
@@ -37,7 +42,7 @@ export default function AIEditorPage() {
       // sessionStorage may throw in private mode — treat as empty.
     }
     setInputs({ jd, bg });
-  }, []);
+  }, [jobId]);
 
   const hasInputs = inputs !== null && inputs.jd.trim() && inputs.bg.trim();
 
@@ -50,7 +55,9 @@ export default function AIEditorPage() {
           externalScrollDirection={scrollDirection}
         />
 
-        {inputs === null ? (
+        {jobId ? (
+          <AIEditorContent jobId={jobId} />
+        ) : inputs === null ? (
           <div className="container mx-auto px-4 pt-16 pb-20">
             <div className="flex items-center justify-center py-20">
               <div className="flex items-center gap-3 rounded-xl border-2 border-black bg-white px-6 py-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
@@ -88,5 +95,35 @@ export default function AIEditorPage() {
         <Footer />
       </div>
     </div>
+  );
+}
+
+/**
+ * Editor page — result review page. Wraps the content in <Suspense> because it
+ * reads `?job=` via useSearchParams (required by Next.js for static rendering).
+ */
+export default function AIEditorPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen flex-col bg-[#f0f0f0]">
+          <div className="flex-1 overflow-auto baseline-grid">
+            <Navbar currentPath="/editor" position="sticky" />
+            <div className="container mx-auto px-4 pt-16 pb-20">
+              <div className="flex items-center justify-center py-20">
+                <div className="flex items-center gap-3 rounded-xl border-2 border-black bg-white px-6 py-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
+                  <span className="proof-label">compile.log</span>
+                  <p className="font-mono text-sm font-medium text-muted-foreground animate-pulse">
+                    loading editor…
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <AIEditorPageContent />
+    </Suspense>
   );
 }
