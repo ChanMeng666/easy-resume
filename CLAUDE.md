@@ -80,7 +80,11 @@ src/server/
 │   ├── apiKeys.ts         # mint/verify API keys (sha256 hash; raw shown once)
 │   └── caller.ts          # getCaller() — resolves Bearer key OR Stack cookie → Caller
 ├── jobs/
-│   └── runner.ts          # in-process async job runner for the v1 API (no microservice)
+│   ├── runner.ts          # in-process async job runner for the v1 API (no microservice)
+│   └── persist.ts         # shared toWireResult/deriveJobTitle/persistCompletedJob/storeResumePdf/deleteJobPdfs
+├── storage/
+│   ├── blobStore.ts       # getBlobStore() seam — R2 store if configured, else no-op NullBlobStore
+│   └── r2.ts              # Cloudflare R2 (S3-compatible) impl; @aws-sdk/client-s3 imported lazily
 ├── errors/
 │   ├── AppError.ts        # typed errors: code/httpStatus/retriable/step/headers
 │   └── envelope.ts        # toErrorEnvelope() + errorResponse()
@@ -89,10 +93,21 @@ src/server/
 └── ratelimit.ts           # Postgres-backed fixed-window rate limiting (fail-open)
 ```
 
-Two thin transports sit over this core:
-1. **`POST /api/generate`** — SSE adapter for the web UI; streams `onProgress`.
+Both transports persist every completed generation to the `generationJobs` table
+via the shared `persist.ts` helpers, so a resume made in the browser and one made
+by an agent share the same history and storage. The web SSE route persists
+best-effort *after* streaming the result (off the delivery critical path), keyed
+by `idempotencyKey` so reconnects don't duplicate or re-charge.
+
+Thin transports sit over this core:
+1. **`POST /api/generate`** — SSE adapter for the web UI; streams `onProgress`,
+   then persists the result and emits a `saved` event with the job id.
 2. **`/api/v1/resumes`** — public, API-key-authed, job-based agent API (see
    `docs/api/v1.md`).
+3. **`/api/resumes`** — cookie-session (or Bearer) WEB history API over the same
+   `generationJobs` table: `GET` (list, `?q`/`limit`/`offset`), `GET [id]`
+   (detail, powers free editor re-open), `DELETE [id]` (also drops stored R2
+   PDFs), and `GET [id]/cover-letter/pdf`. Owner-checked → NotFound for non-owners.
 
 ### Conventions (apply to all backend code)
 - **Errors are machine-readable, never prose.** Throw an `AppError` subclass;
@@ -146,10 +161,17 @@ carrying `Retry-After` + `X-RateLimit-*` headers; success responses also carry
   **Do NOT use `drizzle-kit generate`** here: it prompts interactively (snapshot
   drift from the historical copilot→agent rename) and breaks automation. When you
   add a table/column, add idempotent DDL to `scripts/migrate.ts`.
-- Key tables: `resumes`, `credits`, `credit_transactions`, `api_keys`,
-  `generation_jobs`, `stripe_events`, `rate_limits`, plus `job_descriptions`,
-  `tailored_resumes`, `applications`, `agent_*`. JSONB columns are typed via
-  Drizzle `.$type<...>()`.
+- **Active tables**: `generation_jobs` (the single persistence model for ALL
+  generations — web + v1 API; columns include `title`, `input`, `result` JSONB,
+  `pdf_url`, `charged`, `idempotency_key`), `credits`, `credit_transactions`,
+  `api_keys`, `stripe_events`, `rate_limits`. JSONB columns are typed via Drizzle
+  `.$type<...>()`.
+- **Unused scaffolding** (defined in schema + migrate.ts but NO CRUD anywhere —
+  do not assume they hold data): `resumes` (+ its dead `pdf_blob_url`/`pdf_updated_at`
+  columns), `tailored_resumes`, `applications`, `job_descriptions`,
+  `agent_threads`/`agent_messages`, `resume_versions`. Kept deliberately as
+  forward scaffolding; the live "My Resumes" history uses `generation_jobs`, not
+  these.
 
 ## Testing
 
@@ -158,6 +180,9 @@ carrying `Retry-After` + `X-RateLimit-*` headers; success responses also carry
 - Money-path is covered: `src/server/core/pipeline.test.ts` (billing gating:
   charge once on success, no charge on failure, fast-fail on no credits) and
   `src/server/billing/stripeWebhook.test.ts` (credit grants / pro renewal).
+- Pure helpers are covered: `src/server/jobs/persist.test.ts` (toWireResult /
+  deriveJobTitle) and `src/server/storage/blobStore.test.ts` (key derivation +
+  no-op store). DB/route/R2 I/O is left to integration runs, not unit tests.
 - Prefer testing the **core with injected fakes** over hitting the DB/LLM.
 
 ## Data-Driven Architecture
@@ -289,11 +314,25 @@ The UI follows a **Neobrutalism** design aesthetic with these key characteristic
 - **Auth required**: generation now needs a signed-in user (you cannot charge an anonymous caller); the SSE error event carries the structured envelope
 - **Result state**: PDF preview + ATS score badge + matched skills + cover letter
 - **Export actions**: Download PDF, Download .typ, Copy Code, Show Cover Letter
-- **Refinement input**: Natural language feedback → re-runs pipeline
+- **Refinement input**: Natural language feedback → re-runs pipeline (a deliberate new charge)
+- **Persisted + resumable**: a successful generation is saved (see "Backend
+  Architecture"); the SSE `saved` event deep-links the URL to `/editor?job=<id>`
+  so a refresh restores the result. `/editor?job=<id>` (used by My Resumes "Open")
+  loads a past result from `GET /api/resumes/[id]` — **free, no pipeline re-run, no
+  re-charge** (wrapped in `<Suspense>` for `useSearchParams`).
+
+#### My Resumes Page (`src/app/resumes/page.tsx`)
+- **Generation history** for the signed-in user (the web view of `generationJobs`).
+- Debounced search (`?q` matches title or JD text), result count, and "Load more"
+  pagination over `GET /api/resumes`.
+- Per row: **Open** (`/editor?job=<id>`, free re-open), **Download PDF**
+  (`/api/v1/resumes/[id]/pdf`), **Cover Letter** (`/api/resumes/[id]/cover-letter/pdf`),
+  and **Delete** (inline confirm → `DELETE /api/resumes/[id]`, which also removes the
+  stored R2 PDFs). Linked from the Navbar (logged-in only).
 
 #### Dashboard Page (`src/app/dashboard/page.tsx`)
 - **Credits & Billing**: current balance, subscription tier, transaction history, "Buy Credits" button
-- Requires authentication
+- Requires authentication (generation **history** lives on the separate My Resumes page)
 
 #### Pricing Page (`src/app/pricing/page.tsx`)
 - Subscription tiers and credit packs
@@ -329,14 +368,16 @@ src/
 │   ├── layout.tsx            # Root layout with metadata
 │   ├── globals.css           # Global styles and CSS variables
 │   ├── api/
-│   │   ├── generate/route.ts # SSE adapter for web UI → pipeline core
+│   │   ├── generate/route.ts # SSE adapter for web UI → pipeline core (persists result)
 │   │   ├── compile/route.ts  # Thin wrapper over compileTypstToPdf core
 │   │   ├── keys/route.ts     # API key mint/list/revoke (cookie-session protected)
+│   │   ├── resumes/          # WEB history API: route (GET list, q/limit/offset) + [id] (GET/DELETE) + [id]/cover-letter/pdf
 │   │   ├── v1/resumes/       # PUBLIC agent API (job-based): route + [id] + [id]/pdf
 │   │   └── credits/          # Credit balance + Stripe webhook
 │   ├── editor/
-│   │   ├── page.tsx          # Editor page wrapper
-│   │   └── AIEditorContent.tsx # Result review + refinement UI
+│   │   ├── page.tsx          # Editor wrapper (Suspense; reads ?job=<id> to re-open)
+│   │   └── AIEditorContent.tsx # Result review + refinement + load-past-job mode
+│   ├── resumes/page.tsx      # "My Resumes" history (list/search/open/download/delete)
 │   ├── dashboard/page.tsx    # Credits & billing
 │   ├── pricing/page.tsx      # Pricing tiers
 │   └── handler/[...stack]/   # Neon Auth (Stack Auth) pages
@@ -344,7 +385,8 @@ src/
 │   ├── core/                 # pipeline.ts, pipeline.types.ts, compile.ts, deps.ts
 │   ├── billing/              # meter.ts, stripeWebhook.ts (+ *.test.ts)
 │   ├── auth/                 # apiKeys.ts, caller.ts
-│   ├── jobs/                 # runner.ts (in-process v1 job runner)
+│   ├── jobs/                 # runner.ts (v1 job runner), persist.ts (shared persistence + R2 store/delete)
+│   ├── storage/              # blobStore.ts (R2 seam) + r2.ts (S3-compatible impl) + *.test.ts
 │   ├── errors/               # AppError.ts, envelope.ts
 │   ├── log/                  # logger.ts (structured JSON)
 │   └── ratelimit.ts          # Postgres fixed-window rate limiting
