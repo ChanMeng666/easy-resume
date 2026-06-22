@@ -253,6 +253,7 @@ export const generationJobs = pgTable("generation_jobs", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id").notNull(),
   status: varchar("status", { length: 20 }).notNull().default("queued"), // queued, running, succeeded, failed
+  title: text("title"), // human-friendly label for the My Resumes list (derived at persist time)
   input: jsonb("input").$type<{ jobDescription: string; background: string; templateId?: string }>().notNull(),
   result: jsonb("result").$type<Record<string, unknown>>(), // wire-shaped GenerateResult (no PDF bytes)
   error: jsonb("error").$type<Record<string, unknown>>(), // error envelope on failure

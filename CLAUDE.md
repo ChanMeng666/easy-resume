@@ -564,6 +564,28 @@ This project underwent multiple architectural transformations:
     - **Added**: `rate_limits` table + `src/server/ratelimit.ts` (always-on, no extra
       dependency, immune to idle deletion). Retry-After / X-RateLimit-* headers.
 
+12. **Web-UI generation persistence + "My Resumes" history** (current):
+    - **Fixed**: web-UI generations were fire-and-forget — a paid result lived only
+      in React state/sessionStorage and was lost on refresh/return. Now the SSE
+      route persists each completed generation to `generationJobs` (the same model
+      the v1 API uses), so "the API is the UI" holds at the storage layer too.
+    - **Added**: `src/server/jobs/persist.ts` (shared `toWireResult` /
+      `deriveJobTitle` / best-effort `persistCompletedJob`), web history API
+      `/api/resumes` (GET list) + `/api/resumes/[id]` (GET detail / DELETE,
+      owner-checked → NotFound for non-owners), a Neobrutalism `/resumes` page +
+      Navbar link, and an editor `?job=<id>` re-open path that loads a past result
+      for **free** (no pipeline re-run, no re-charge). The generation URL now
+      deep-links to `?job=<id>` so a refresh restores the result.
+    - **Schema**: `generation_jobs.title` column + `idx_generation_jobs_user_created`
+      (idempotent DDL in `scripts/migrate.ts`).
+    - **Invariant preserved**: persistence only records an already-computed result;
+      it never touches the pipeline or billing, so no double-charge is possible.
+      The dead `resumes`/`tailoredResumes`/`applications` tables stay as future
+      scaffolding (unused).
+    - **Key files**: `src/server/jobs/persist.ts`, `src/app/api/resumes/**`,
+      `src/app/resumes/page.tsx`, `src/app/editor/{page,AIEditorContent}.tsx`,
+      `src/app/api/generate/route.ts`.
+
 **Legacy reference**: `A4_RESUME_USAGE.md` documents the original HTML/CSS approach (not currently used)
 
 ## Type System

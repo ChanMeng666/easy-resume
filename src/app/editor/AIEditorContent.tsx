@@ -58,8 +58,10 @@ interface GenerateResult {
 }
 
 interface AIEditorContentProps {
-  jd: string;
-  bg: string;
+  jd?: string;
+  bg?: string;
+  /** When set, load this persisted generation instead of running a new one. */
+  jobId?: string;
 }
 
 type ErrorKind = 'timeout' | 'server' | 'network' | 'credits' | 'auth' | 'other';
@@ -72,6 +74,8 @@ interface GenerationError {
 interface StreamCallbacks {
   onProgress: (step: number) => void;
   onResult: (data: GenerateResult) => void;
+  /** Fired once the generation is persisted, carrying its history job id. */
+  onSaved?: (jobId: string) => void;
 }
 
 /**
@@ -83,7 +87,7 @@ async function runGenerationStream(
   jd: string,
   bg: string,
   signal: AbortSignal,
-  { onProgress, onResult }: StreamCallbacks
+  { onProgress, onResult, onSaved }: StreamCallbacks
 ): Promise<void> {
   let response: Response;
   try {
@@ -169,6 +173,7 @@ async function runGenerationStream(
           const event = JSON.parse(dataLine);
           if (event.type === 'progress') onProgress(event.step);
           else if (event.type === 'result') onResult(event.data);
+          else if (event.type === 'saved') onSaved?.(event.jobId);
           else if (event.type === 'error') {
             // Prefer the structured envelope; fall back to the flat message.
             const code: string | undefined = event.error?.code;
@@ -183,7 +188,7 @@ async function runGenerationStream(
                     : 'other';
             throw Object.assign(new Error(message), { kind, message });
           }
-          // 'heartbeat' and 'done' events fall through silently.
+          // 'heartbeat', 'saved', and 'done' events fall through silently.
         } catch (parseErr) {
           if (parseErr instanceof SyntaxError) continue;
           throw parseErr;
@@ -216,11 +221,16 @@ function classifyError(err: unknown): GenerationError {
  * Calls /api/generate with JD and background, streams progress,
  * then displays the compiled PDF with export actions and refinement.
  */
-export function AIEditorContent({ jd, bg }: AIEditorContentProps) {
+export function AIEditorContent({ jd = '', bg = '', jobId }: AIEditorContentProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [isGenerating, setIsGenerating] = useState(true);
   const [error, setError] = useState<GenerationError | null>(null);
   const [result, setResult] = useState<GenerateResult | null>(null);
+  // In job mode (re-opening a past generation), the original JD/background come
+  // from the persisted job so Refine/Retry can re-run with the same inputs.
+  const [jobInput, setJobInput] = useState<{ jd: string; bg: string } | null>(null);
+  const effJd = jobInput?.jd ?? jd;
+  const effBg = jobInput?.bg ?? bg;
   const [refinementText, setRefinementText] = useState('');
   const [copySuccess, setCopySuccess] = useState(false);
   const [coverLetterCopied, setCoverLetterCopied] = useState(false);
@@ -267,6 +277,15 @@ export function AIEditorContent({ jd, bg }: AIEditorContentProps) {
       runGenerationStream(currentJd, currentBg, controller.signal, {
         onProgress: setCurrentStep,
         onResult: (data) => setResult(data),
+        onSaved: (savedJobId) => {
+          // Deep-link the URL to the persisted job so a refresh restores the
+          // result for free instead of failing with ERR·NO_INPUT.
+          try {
+            window.history.replaceState(null, '', `/editor?job=${savedJobId}`);
+          } catch {
+            // Ignore — non-critical URL sync.
+          }
+        },
       })
         .catch((err) => {
           if ((err as Error)?.name === 'AbortError') return;
@@ -281,9 +300,46 @@ export function AIEditorContent({ jd, bg }: AIEditorContentProps) {
     []
   );
 
-  /** Run the generation pipeline once on mount. */
+  /** Load a persisted generation (job mode) — free, no pipeline re-run. */
+  const loadJob = useCallback(async (id: string) => {
+    setIsGenerating(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/resumes/${id}`);
+      if (!res.ok) {
+        const kind: ErrorKind = res.status === 401 ? 'auth' : res.status === 404 ? 'other' : 'server';
+        const message =
+          res.status === 404
+            ? 'This resume could not be found. It may have been deleted.'
+            : 'Could not load this resume. Please try again.';
+        setError({ kind, message });
+        return;
+      }
+      const job = await res.json();
+      if (job.status !== 'succeeded' || !job.result) {
+        setError({ kind: 'other', message: 'This resume is not available to view yet.' });
+        return;
+      }
+      setResult(job.result as GenerateResult);
+      if (job.input?.jobDescription || job.input?.background) {
+        setJobInput({ jd: job.input.jobDescription ?? '', bg: job.input.background ?? '' });
+      }
+    } catch (err) {
+      setError(classifyError(err));
+    } finally {
+      setIsGenerating(false);
+    }
+  }, []);
+
+  /** On mount: load a past job (job mode) or run a fresh generation. */
   useEffect(() => {
     if (generationStarted.current) return;
+    generationStarted.current = true;
+
+    if (jobId) {
+      loadJob(jobId);
+      return;
+    }
     if (!jd.trim() || !bg.trim()) {
       setError({
         kind: 'other',
@@ -292,10 +348,9 @@ export function AIEditorContent({ jd, bg }: AIEditorContentProps) {
       setIsGenerating(false);
       return;
     }
-    generationStarted.current = true;
     startGeneration(jd, bg);
     return () => abortRef.current?.abort();
-  }, [jd, bg, startGeneration]);
+  }, [jd, bg, jobId, loadJob, startGeneration]);
 
   const typstCode = result?.typstCode || '';
   const filename = result?.resumeData?.basics?.name?.replace(/\s+/g, '_') || 'resume';
@@ -370,16 +425,20 @@ export function AIEditorContent({ jd, bg }: AIEditorContentProps) {
 
   /** Re-run generation with refinement text appended to the background. */
   const handleRefine = useCallback(() => {
-    if (!refinementText.trim() || !result) return;
-    const refinedBg = `${bg}\n\nAdditional instructions: ${refinementText}`;
+    if (!refinementText.trim() || !result || !effJd.trim() || !effBg.trim()) return;
+    const refinedBg = `${effBg}\n\nAdditional instructions: ${refinementText}`;
     setRefinementText('');
-    startGeneration(jd, refinedBg);
-  }, [refinementText, result, bg, jd, startGeneration]);
+    startGeneration(effJd, refinedBg);
+  }, [refinementText, result, effBg, effJd, startGeneration]);
 
   /** Retry from the current error state with the original inputs. */
   const handleRetry = useCallback(() => {
-    startGeneration(jd, bg);
-  }, [jd, bg, startGeneration]);
+    if (jobId) {
+      loadJob(jobId);
+      return;
+    }
+    startGeneration(effJd, effBg);
+  }, [jobId, loadJob, effJd, effBg, startGeneration]);
 
   /** ATS score text tone. */
   const scoreTone = (score: number) =>

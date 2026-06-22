@@ -174,6 +174,10 @@ async function migrate() {
   `;
   await sql`CREATE INDEX IF NOT EXISTS idx_generation_jobs_user_id ON generation_jobs(user_id)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_generation_jobs_status ON generation_jobs(status)`;
+  // Human-friendly label surfaced in the "My Resumes" history list (derived at persist time).
+  await sql`ALTER TABLE generation_jobs ADD COLUMN IF NOT EXISTS title TEXT`;
+  // Composite index backs the per-user, newest-first history listing.
+  await sql`CREATE INDEX IF NOT EXISTS idx_generation_jobs_user_created ON generation_jobs(user_id, created_at DESC)`;
   console.log("Created generation_jobs table");
 
   // Create rate_limits table (Postgres-backed fixed-window rate limiting)
