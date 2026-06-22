@@ -104,24 +104,46 @@ export async function persistCompletedJob(
       .onConflictDoNothing({ target: generationJobs.idempotencyKey })
       .returning({ id: generationJobs.id });
 
+    let jobId: string;
     if (inserted) {
       // Backfill the pdfUrl now that we know the row id (mirrors the v1 runner).
       await db
         .update(generationJobs)
         .set({ pdfUrl: `/api/v1/resumes/${inserted.id}/pdf` })
         .where(eq(generationJobs.id, inserted.id));
-      return { jobId: inserted.id };
+      jobId = inserted.id;
+    } else {
+      // Conflict: a row for this idempotency key already exists — reuse its id.
+      const [existing] = await db
+        .select({ id: generationJobs.id })
+        .from(generationJobs)
+        .where(eq(generationJobs.idempotencyKey, idempotencyKey))
+        .limit(1);
+      if (!existing) return null;
+      jobId = existing.id;
     }
 
-    // Conflict: a row for this idempotency key already exists — reuse its id.
-    const [existing] = await db
-      .select({ id: generationJobs.id })
-      .from(generationJobs)
-      .where(eq(generationJobs.idempotencyKey, idempotencyKey))
-      .limit(1);
-    return existing ? { jobId: existing.id } : null;
+    // Persist the already-compiled PDF bytes to object storage (best-effort).
+    await storeResumePdf(jobId, result.pdf, logger);
+    return { jobId };
   } catch (err) {
     logger.error('persist.failed', { userId: caller.userId }, err);
     return null;
+  }
+}
+
+/**
+ * Upload the compiled resume PDF to the blob store (R2). No-op when storage is
+ * unconfigured; the PDF routes recompile from Typst in that case. Best-effort:
+ * any failure is logged and swallowed so it never affects the generation.
+ */
+export async function storeResumePdf(jobId: string, pdf: Uint8Array, logger: Logger): Promise<void> {
+  try {
+    const { getBlobStore, resumePdfKey } = await import('@/server/storage/blobStore');
+    const store = getBlobStore();
+    if (!store.enabled) return;
+    await store.put(resumePdfKey(jobId), pdf, 'application/pdf');
+  } catch (err) {
+    logger.warn('persist.pdf.failed', { jobId }, err);
   }
 }
