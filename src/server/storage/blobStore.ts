@@ -15,7 +15,7 @@
 import 'server-only';
 import { createR2Store } from './r2';
 
-/** A minimal blob store: best-effort put, optional get. Never throws. */
+/** A minimal blob store: best-effort put/get/delete. Never throws. */
 export interface BlobStore {
   /** Whether this store actually persists (false for the no-op store). */
   readonly enabled: boolean;
@@ -23,6 +23,8 @@ export interface BlobStore {
   put(key: string, bytes: Uint8Array, contentType: string): Promise<boolean>;
   /** Fetch bytes at `key`, or null if absent / on any failure. */
   get(key: string): Promise<Uint8Array | null>;
+  /** Delete `key`. Returns true on success (or already-absent), false on failure. */
+  delete(key: string): Promise<boolean>;
 }
 
 /** No-op store used when R2 is unconfigured. Callers recompile instead. */
@@ -33,6 +35,9 @@ const nullStore: BlobStore = {
   },
   async get() {
     return null;
+  },
+  async delete() {
+    return false;
   },
 };
 

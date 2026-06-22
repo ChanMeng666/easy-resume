@@ -16,6 +16,8 @@ import { eq } from 'drizzle-orm';
 import { db } from '@/lib/db/client';
 import { generationJobs } from '@/lib/db/schema';
 import { getCaller } from '@/server/auth/caller';
+import { deleteJobPdfs } from '@/server/jobs/persist';
+import { createLogger } from '@/server/log/logger';
 import { UnauthenticatedError, NotFoundError } from '@/server/errors/AppError';
 import { errorResponse } from '@/server/errors/envelope';
 
@@ -76,6 +78,8 @@ export async function DELETE(
     if (!job || job.userId !== caller.userId) throw new NotFoundError('Resume not found');
 
     await db.delete(generationJobs).where(eq(generationJobs.id, id));
+    // Best-effort: drop the stored PDFs so object storage doesn't keep orphans.
+    await deleteJobPdfs(id, createLogger({ requestId, route: 'resumes.delete' }));
 
     return NextResponse.json({ deleted: true }, { headers: { 'X-Request-Id': requestId } });
   } catch (error) {

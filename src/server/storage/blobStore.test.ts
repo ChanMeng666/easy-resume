@@ -20,5 +20,6 @@ describe('getBlobStore (unconfigured)', () => {
     expect(store.enabled).toBe(false);
     expect(await store.put('k', new Uint8Array([1]), 'application/pdf')).toBe(false);
     expect(await store.get('k')).toBeNull();
+    expect(await store.delete('k')).toBe(false);
   });
 });

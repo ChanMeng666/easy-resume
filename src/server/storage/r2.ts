@@ -83,5 +83,18 @@ export function createR2Store(cfg: R2Config): BlobStore {
         return null;
       }
     },
+
+    async delete(key) {
+      try {
+        const { DeleteObjectCommand } = await import('@aws-sdk/client-s3');
+        const c = await client();
+        // S3/R2 DeleteObject is idempotent — deleting an absent key succeeds.
+        await c.send(new DeleteObjectCommand({ Bucket: cfg.bucket, Key: key }));
+        return true;
+      } catch (err) {
+        log.warn('r2.delete.failed', { key }, err);
+        return false;
+      }
+    },
   };
 }
