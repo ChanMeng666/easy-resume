@@ -147,3 +147,22 @@ export async function storeResumePdf(jobId: string, pdf: Uint8Array, logger: Log
     logger.warn('persist.pdf.failed', { jobId }, err);
   }
 }
+
+/**
+ * Best-effort removal of a job's stored PDFs (resume + cover letter) from object
+ * storage, called when a generation is deleted so R2 doesn't accumulate orphans.
+ * No-op when storage is unconfigured; failures are logged and swallowed.
+ */
+export async function deleteJobPdfs(jobId: string, logger: Logger): Promise<void> {
+  try {
+    const { getBlobStore, resumePdfKey, coverLetterPdfKey } = await import('@/server/storage/blobStore');
+    const store = getBlobStore();
+    if (!store.enabled) return;
+    await Promise.all([
+      store.delete(resumePdfKey(jobId)),
+      store.delete(coverLetterPdfKey(jobId)),
+    ]);
+  } catch (err) {
+    logger.warn('persist.pdf.delete.failed', { jobId }, err);
+  }
+}
