@@ -43,7 +43,7 @@ export default function AIEditorPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#f0f0f0]">
-      <div ref={scrollContainerRef} className="flex-1 overflow-auto">
+      <div ref={scrollContainerRef} className="flex-1 overflow-auto baseline-grid">
         <Navbar
           currentPath="/editor"
           position="sticky"
@@ -51,11 +51,12 @@ export default function AIEditorPage() {
         />
 
         {inputs === null ? (
-          <div className="container mx-auto px-4 py-8">
+          <div className="container mx-auto px-4 pt-16 pb-20">
             <div className="flex items-center justify-center py-20">
-              <div className="rounded-xl border-2 border-black bg-white p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
-                <p className="font-bold text-muted-foreground animate-pulse">
-                  Loading editor...
+              <div className="flex items-center gap-3 rounded-xl border-2 border-black bg-white px-6 py-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
+                <span className="proof-label">compile.log</span>
+                <p className="font-mono text-sm font-medium text-muted-foreground animate-pulse">
+                  loading editor…
                 </p>
               </div>
             </div>
@@ -63,8 +64,9 @@ export default function AIEditorPage() {
         ) : hasInputs ? (
           <AIEditorContent jd={inputs.jd} bg={inputs.bg} />
         ) : (
-          <main className="container mx-auto max-w-[600px] px-4 py-12">
-            <div className="rounded-xl border-2 border-black bg-white p-6 sm:p-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
+          <main className="container mx-auto max-w-xl px-4 pt-12 md:pt-16 pb-20">
+            <div className="rounded-xl border-2 border-black bg-white p-6 sm:p-8 shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)]">
+              <p className="proof-label mb-3">ERR·NO_INPUT</p>
               <h2 className="mb-3 text-xl sm:text-2xl font-black">
                 No inputs found
               </h2>

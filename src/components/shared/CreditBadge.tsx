@@ -42,17 +42,18 @@ export function CreditBadge() {
 
   const isUnlimited = info.tier === 'unlimited';
   const isLow = !isUnlimited && info.balance <= 0;
-  const display = isUnlimited ? '∞' : String(info.balance);
+  // Render the balance as a typeset "meter": CR·003 / CR·∞
+  const display = isUnlimited ? 'CR·∞' : `CR·${String(info.balance).padStart(3, '0')}`;
 
   return (
     <Link
       href="/dashboard"
       title="View credits & billing"
-      className={`hidden sm:flex items-center gap-1.5 text-sm font-black px-3 py-2 rounded-lg border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)] transition-all hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,0.9)] ${
+      className={`hidden sm:flex items-center gap-1.5 font-mono text-xs font-bold tracking-[0.12em] px-3 py-2 rounded-lg border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)] transition-all hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,0.9)] ${
         isLow ? 'bg-red-100 text-red-900' : 'bg-cyan-100 text-foreground'
       }`}
     >
-      <Coins className="w-4 h-4" />
+      <Coins className="w-3.5 h-3.5" />
       {display}
     </Link>
   );

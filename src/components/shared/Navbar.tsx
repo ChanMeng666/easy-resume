@@ -41,10 +41,10 @@ function isActivePath(currentPath: string, targetPath: string): boolean {
  */
 function getNavLinkStyles(currentPath: string, targetPath: string): string {
   const isActive = isActivePath(currentPath, targetPath);
-  return `text-sm font-bold transition-all hover:bg-gray-100 px-3 py-2 rounded-lg border-2 border-transparent hover:border-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)] flex items-center gap-2 ${
-    isActive 
-      ? 'text-primary bg-primary/10 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]' 
-      : 'text-foreground'
+  return `font-mono text-[11px] font-medium uppercase tracking-[0.18em] transition-all px-3 py-2 rounded-lg border-2 flex items-center gap-2 ${
+    isActive
+      ? 'text-primary bg-primary/10 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]'
+      : 'text-foreground border-transparent hover:border-black hover:bg-gray-100 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]'
   }`;
 }
 
@@ -182,11 +182,11 @@ export function Navbar({ currentPath = '/', rightContent, position, fixed, exter
   return (
     <>
       <nav className={`${positionClasses} bg-white border-b-2 border-black`}>
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+        <div className="container mx-auto px-4">
+          <div className="flex h-[4.5rem] items-center justify-between">
             {/* Logo */}
-            <Link href="/" className="flex items-center">
-              <Image src="/logo/vitex-logo-black.svg" alt="Vitex" width={120} height={52} className="h-auto" />
+            <Link href="/" className="flex items-center" aria-label="Vitex home">
+              <Image src="/logo/vitex-logo-black.svg" alt="Vitex" width={120} height={52} priority className="h-9 w-auto" />
             </Link>
 
             {/* Right Content - Custom or Default Navigation */}
@@ -197,7 +197,7 @@ export function Navbar({ currentPath = '/', rightContent, position, fixed, exter
                   <Suspense fallback={
                     <Link
                       href="/pricing"
-                      className="text-sm font-bold transition-all hover:bg-gray-100 px-3 py-2 rounded-lg flex items-center gap-2"
+                      className="font-mono text-[11px] font-medium uppercase tracking-[0.18em] transition-all hover:bg-gray-100 px-3 py-2 rounded-lg flex items-center gap-2"
                     >
                       <CreditCard className="w-4 h-4" />
                       Pricing

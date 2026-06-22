@@ -161,23 +161,19 @@ export function LivePdfPreview({
   return (
     <div className="space-y-2">
       {/* Status bar */}
-      <div className="flex items-center justify-between rounded-lg border bg-green-50 px-3 sm:px-4 py-2">
+      <div className="flex items-center justify-between rounded-lg border-2 border-black bg-green-50 px-3 sm:px-4 py-2">
         <div className="flex items-center gap-2">
           {isCompiling ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-              <span className="text-xs sm:text-sm text-blue-700">
-                Updating preview...
-              </span>
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              <span className="proof-label !text-primary">Updating preview…</span>
             </>
           ) : (
             <>
               <CheckCircle2 className="h-4 w-4 text-green-600" />
-              <span className="text-xs sm:text-sm text-green-700">
-                Preview ready
-                {isCached && (
-                  <span className="ml-2 text-xs text-gray-500">(cached)</span>
-                )}
+              <span className="proof-label !text-green-700">
+                resume.pdf · ready
+                {isCached && <span className="ml-2 !text-gray-500">cached</span>}
               </span>
             </>
           )}

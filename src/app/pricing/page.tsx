@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { Navbar } from '@/components/shared/Navbar';
 import { Footer } from '@/components/shared/Footer';
 import { Button } from '@/components/ui/button';
+import { CropFrame } from '@/components/shared/CropFrame';
 import { CheckCircle, Sparkles, Zap, Crown, Info } from 'lucide-react';
 
 const plans = [
@@ -120,21 +121,22 @@ function PricingContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f0f0f0]">
+    <div className="min-h-screen baseline-grid bg-[#f0f0f0]">
       <Navbar currentPath="/pricing" />
 
-      <main className="pt-20 pb-12 container mx-auto px-4">
+      <main className="page-shell page-pad-b container mx-auto px-4">
         {/* Hero */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center max-w-2xl mx-auto mb-16"
         >
+          <p className="proof-label mb-3">§ Pricing — Pay per result</p>
           <h1 className="text-4xl md:text-5xl font-brand mb-4">
-            Simple, Transparent Pricing
+            Sell results, not tools.
           </h1>
           <p className="text-lg text-muted-foreground font-medium">
-            Free to build. Pay per result when you need AI-powered career tools.
+            Free to build. You&apos;re only charged when a real PDF is composed.
           </p>
         </motion.div>
 
@@ -162,51 +164,57 @@ function PricingContent() {
         )}
 
         {/* Plans Grid */}
-        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto mb-16">
+        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto mb-20">
           {plans.map((plan, idx) => (
             <motion.div
               key={plan.name}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.1 }}
-              className={`relative bg-white rounded-xl p-6 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] ${
-                plan.popular ? 'ring-2 ring-purple-500 ring-offset-2' : ''
-              }`}
             >
-              {plan.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-purple-600 text-white text-xs font-black rounded-full border-2 border-black">
-                  Most Popular
-                </div>
-              )}
-
-              <div className={`inline-flex p-3 ${plan.color} rounded-xl mb-4`}>
-                <plan.icon className="h-6 w-6" />
-              </div>
-
-              <h2 className="text-2xl font-black">{plan.name}</h2>
-              <div className="flex items-baseline gap-1 mt-2 mb-2">
-                <span className="text-4xl font-black">{plan.price}</span>
-                <span className="text-muted-foreground font-medium">{plan.period}</span>
-              </div>
-              <p className="text-sm text-muted-foreground font-medium mb-6">{plan.description}</p>
-
-              <Button
-                variant={plan.ctaVariant}
-                className="w-full mb-6"
-                disabled={isLoading !== null}
-                onClick={() => (plan.priceType ? handlePurchase(plan.priceType) : router.push('/'))}
+              <CropFrame
+                className={`relative h-full bg-white rounded-xl p-6 border-2 border-black ${
+                  plan.popular
+                    ? 'shadow-[8px_8px_0px_0px_rgba(108,60,233,0.9)]'
+                    : 'shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]'
+                }`}
               >
-                {plan.priceType && isLoading === plan.priceType ? 'Redirecting...' : plan.cta}
-              </Button>
+                {plan.popular && (
+                  <div className="absolute -top-3 right-4 px-3 py-1 bg-primary text-white font-mono text-[10px] font-bold uppercase tracking-[0.18em] rounded border-2 border-black">
+                    Most Popular
+                  </div>
+                )}
 
-              <ul className="space-y-3">
-                {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2 text-sm">
-                    <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span className="font-medium">{feature}</span>
-                  </li>
-                ))}
-              </ul>
+                <div className="inline-flex p-3 rounded-xl border-2 border-black bg-white mb-4">
+                  <plan.icon className="h-6 w-6 text-primary" />
+                </div>
+
+                <p className="proof-label mb-1">{`PLAN·${String(idx + 1).padStart(2, '0')}`}</p>
+                <h2 className="text-2xl font-black">{plan.name}</h2>
+                <div className="flex items-baseline gap-1 mt-2 mb-2">
+                  <span className="font-brand text-4xl">{plan.price}</span>
+                  <span className="font-mono text-sm text-muted-foreground">{plan.period}</span>
+                </div>
+                <p className="text-sm text-muted-foreground font-medium mb-6">{plan.description}</p>
+
+                <Button
+                  variant={plan.ctaVariant}
+                  className="w-full mb-6"
+                  disabled={isLoading !== null}
+                  onClick={() => (plan.priceType ? handlePurchase(plan.priceType) : router.push('/'))}
+                >
+                  {plan.priceType && isLoading === plan.priceType ? 'Redirecting...' : plan.cta}
+                </Button>
+
+                <ul className="space-y-3">
+                  {plan.features.map((feature) => (
+                    <li key={feature} className="flex items-start gap-2 text-sm">
+                      <CheckCircle className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                      <span className="font-medium">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CropFrame>
             </motion.div>
           ))}
         </div>
@@ -218,15 +226,17 @@ function PricingContent() {
           viewport={{ once: true }}
           className="max-w-2xl mx-auto"
         >
-          <h2 className="text-2xl font-black text-center mb-6">Need Just a Few Credits?</h2>
+          <p className="proof-label text-center mb-2">§ Top-up</p>
+          <h2 className="text-2xl font-black text-center mb-6">Need just a few credits?</h2>
           <div className="flex justify-center gap-4">
             {creditPacks.map((pack) => (
-              <div
+              <CropFrame
                 key={pack.credits}
                 className="bg-white rounded-xl p-6 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] text-center"
               >
+                <p className="proof-label mb-1">{`CR·${String(pack.credits).padStart(3, '0')}`}</p>
                 <p className="text-3xl font-black mb-1">{pack.credits} Credits</p>
-                <p className="text-xl font-black text-purple-600 mb-4">{pack.price}</p>
+                <p className="font-brand text-xl text-purple-600 mb-4">{pack.price}</p>
                 <Button
                   variant="outline"
                   onClick={() => handlePurchase(pack.priceType)}
@@ -234,7 +244,7 @@ function PricingContent() {
                 >
                   {isLoading === pack.priceType ? 'Redirecting...' : 'Buy Now'}
                 </Button>
-              </div>
+              </CropFrame>
             ))}
           </div>
         </motion.div>
@@ -246,8 +256,9 @@ function PricingContent() {
           viewport={{ once: true }}
           className="max-w-2xl mx-auto mt-12 sm:mt-16"
         >
+          <p className="proof-label text-center mb-2">§ Ledger</p>
           <h2 className="text-xl sm:text-2xl font-black text-center mb-4 sm:mb-6">
-            What Credits Get You
+            What credits get you
           </h2>
 
           {(() => {
@@ -273,7 +284,7 @@ function PricingContent() {
                       {rows.map((row) => (
                         <tr key={row.action} className="border-b border-gray-100">
                           <td className="p-4 text-sm font-medium">{row.action}</td>
-                          <td className="p-4 text-sm font-black text-center">{row.credits}</td>
+                          <td className="p-4 font-mono text-sm font-bold text-center">{row.credits}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -290,7 +301,7 @@ function PricingContent() {
                       <span className="text-sm font-medium leading-snug">
                         {row.action}
                       </span>
-                      <span className="text-sm font-black flex-shrink-0">
+                      <span className="font-mono text-sm font-bold flex-shrink-0">
                         {row.credits}
                       </span>
                     </div>
@@ -315,7 +326,7 @@ export default function PricingPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#f0f0f0]">
+        <div className="min-h-screen baseline-grid bg-[#f0f0f0]">
           <Navbar currentPath="/pricing" />
         </div>
       }

@@ -124,7 +124,7 @@ export function PdfViewer({
               variant="ghost"
               size="sm"
               onClick={resetZoom}
-              className="min-w-[60px]"
+              className="min-w-[60px] font-mono text-xs"
               title="Reset zoom"
             >
               {scale}%

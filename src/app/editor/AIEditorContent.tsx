@@ -4,8 +4,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { LivePdfPreview } from '@/components/preview/LivePdfPreview';
+import { CropFrame } from '@/components/shared/CropFrame';
 import { compilePdf, downloadTypFile, copyToClipboard } from '@/lib/typst/compiler';
 import { ResumeData } from '@/lib/validation/schema';
 import {
@@ -381,12 +381,14 @@ export function AIEditorContent({ jd, bg }: AIEditorContentProps) {
     startGeneration(jd, bg);
   }, [jd, bg, startGeneration]);
 
-  /** ATS score badge color. */
-  const getScoreBadgeStyle = (score: number) => {
-    if (score >= 80) return 'bg-green-100 text-green-800 border-green-600';
-    if (score >= 60) return 'bg-yellow-100 text-yellow-800 border-yellow-600';
-    return 'bg-red-100 text-red-800 border-red-600';
-  };
+  /** ATS score text tone. */
+  const scoreTone = (score: number) =>
+    score >= 80 ? 'text-green-600' : score >= 60 ? 'text-yellow-600' : 'text-red-600';
+  /** ATS score meter-bar fill. */
+  const scoreBar = (score: number) =>
+    score >= 80 ? 'bg-green-500' : score >= 60 ? 'bg-yellow-400' : 'bg-red-500';
+  /** Two-digit zero padding for typeset line/step numbers. */
+  const pad2 = (n: number) => String(n).padStart(2, '0');
 
   // --- Error State ---
   if (error && !isGenerating && !result) {
@@ -398,26 +400,40 @@ export function AIEditorContent({ jd, bg }: AIEditorContentProps) {
       auth: 'Sign in to continue',
       other: 'Generation failed',
     }[error.kind];
+    const errCode = {
+      timeout: 'ERR·TIMEOUT',
+      server: 'ERR·5XX',
+      network: 'ERR·NET',
+      credits: 'ERR·402',
+      auth: 'ERR·401',
+      other: 'ERR·GEN',
+    }[error.kind];
 
     return (
-      <main className="container mx-auto max-w-[900px] px-4 py-8 sm:py-12">
+      <main className="container mx-auto max-w-2xl px-4 pt-12 md:pt-16 pb-16">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-xl border-2 border-red-400 bg-red-50 p-6 sm:p-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
+          className="overflow-hidden rounded-xl border-2 border-black bg-white shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)]"
         >
+          {/* Proof error header */}
+          <div className="flex items-center justify-between border-b-2 border-black bg-red-50 px-4 py-3">
+            <span className="proof-label !text-red-700">compile.error</span>
+            <span className="proof-label !text-red-700">{errCode}</span>
+          </div>
+          <div className="p-6 sm:p-8">
           <div className="flex items-center gap-3 mb-3 sm:mb-4">
             <AlertCircle className="h-6 w-6 flex-shrink-0 text-red-600" />
-            <h2 className="text-lg sm:text-xl font-black text-red-800">{headline}</h2>
+            <h2 className="text-lg sm:text-xl font-black text-foreground">{headline}</h2>
           </div>
-          <p className="text-sm sm:text-base text-red-700 mb-4">{error.message}</p>
+          <p className="text-sm sm:text-base text-muted-foreground font-medium mb-4">{error.message}</p>
           {error.kind === 'credits' && (
-            <p className="text-xs sm:text-sm text-red-700 mb-4">
+            <p className="text-xs sm:text-sm text-muted-foreground mb-4">
               Each generation costs 1 credit. Top up to keep going.
             </p>
           )}
           {wasHiddenDuringGeneration && (
-            <p className="text-xs sm:text-sm text-red-700 mb-4 italic">
+            <p className="text-xs sm:text-sm text-muted-foreground mb-4 italic">
               Tip: switching tabs or locking your phone during generation can drop the
               connection. Keep this page in the foreground until it finishes.
             </p>
@@ -463,24 +479,31 @@ export function AIEditorContent({ jd, bg }: AIEditorContentProps) {
               Go back
             </Button>
           </div>
+          </div>
         </motion.div>
       </main>
     );
   }
 
-  // --- Progress State ---
+  // --- Progress State (typeset "compile log" galley) ---
   if (isGenerating) {
+    const shownStep = Math.min(Math.max(currentStep, 1), PROGRESS_STEPS.length);
     return (
-      <main className="container mx-auto max-w-[900px] px-4 py-8 sm:py-12">
+      <main className="container mx-auto max-w-2xl px-4 pt-12 md:pt-16 pb-16">
+        <CropFrame>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-xl border-2 border-black bg-white p-4 sm:p-6 md:p-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
+          className="overflow-hidden rounded-xl border-2 border-black bg-white shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)]"
         >
-          <h2 className="mb-6 sm:mb-8 text-center text-xl sm:text-2xl font-black">
-            Generating Your Resume
-          </h2>
-          <div className="space-y-3 sm:space-y-4">
+          {/* Log header */}
+          <div className="flex items-center justify-between border-b-2 border-black bg-gray-50 px-4 py-3">
+            <span className="proof-label">compile.log — composing resume</span>
+            <span className="proof-label !text-primary">STEP {pad2(shownStep)} / {pad2(PROGRESS_STEPS.length)}</span>
+          </div>
+
+          {/* Line-numbered galley */}
+          <div className="px-2 sm:px-4 py-3 font-mono">
             {PROGRESS_STEPS.map((step, index) => {
               const StepIcon = step.icon;
               const stepNum = index + 1;
@@ -490,32 +513,31 @@ export function AIEditorContent({ jd, bg }: AIEditorContentProps) {
               return (
                 <motion.div
                   key={step.label}
-                  initial={{ opacity: 0, x: -20 }}
+                  initial={{ opacity: 0, x: -12 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className={`flex items-center gap-3 sm:gap-4 rounded-lg border-2 px-3 sm:px-5 py-2 sm:py-3 transition-all duration-300 ${
-                    isActive
-                      ? 'border-purple-600 bg-purple-50'
-                      : isCompleted
-                        ? 'border-green-500 bg-green-50'
-                        : 'border-gray-200 bg-gray-50'
+                  transition={{ delay: index * 0.08 }}
+                  className={`flex items-center gap-3 rounded-md px-2 sm:px-3 py-2 transition-colors duration-300 ${
+                    isActive ? 'bg-primary/10' : ''
                   }`}
                 >
-                  <div className="flex h-8 w-8 sm:h-9 sm:w-9 flex-shrink-0 items-center justify-center rounded-lg border-2 border-black bg-white">
+                  <span className="w-6 flex-shrink-0 text-right text-xs text-gray-400 select-none">
+                    {pad2(stepNum)}
+                  </span>
+                  <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center">
                     {isCompleted ? (
-                      <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
+                      <CheckCircle2 className="h-4 w-4 text-green-600" />
                     ) : isActive ? (
-                      <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin text-purple-600" />
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
                     ) : (
-                      <StepIcon className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
+                      <StepIcon className="h-4 w-4 text-gray-300" />
                     )}
                   </div>
                   <span
-                    className={`text-xs sm:text-sm font-bold leading-snug ${
+                    className={`text-xs sm:text-sm leading-snug ${
                       isActive
-                        ? 'text-purple-800'
+                        ? 'font-semibold text-foreground'
                         : isCompleted
-                          ? 'text-green-700'
+                          ? 'text-muted-foreground'
                           : 'text-gray-400'
                     }`}
                   >
@@ -525,11 +547,16 @@ export function AIEditorContent({ jd, bg }: AIEditorContentProps) {
               );
             })}
           </div>
-          <p className="mt-6 text-center text-xs text-muted-foreground font-medium px-2">
-            Keep this page open until generation completes — closing or backgrounding
-            the tab on mobile can interrupt the stream.
-          </p>
+
+          {/* Footer advisory */}
+          <div className="border-t-2 border-black bg-gray-50 px-4 py-3">
+            <p className="text-xs text-muted-foreground font-medium">
+              Keep this page open until generation completes — closing or backgrounding
+              the tab on mobile can interrupt the stream.
+            </p>
+          </div>
         </motion.div>
+        </CropFrame>
       </main>
     );
   }
@@ -538,90 +565,116 @@ export function AIEditorContent({ jd, bg }: AIEditorContentProps) {
 
   // --- Result State ---
   return (
-    <main className="container mx-auto max-w-[900px] px-4 py-6 sm:py-8">
-      {/* PDF Preview */}
+    <main className="container mx-auto max-w-6xl px-4 pt-10 md:pt-14 pb-16">
+      {/* Header */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="rounded-xl border-2 border-black bg-white p-3 sm:p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
+        className="mb-6"
       >
-        <LivePdfPreview typstCode={typstCode} filename={filename} />
+        <p className="proof-label mb-2">§ Composed · {result.templateId}</p>
+        <h1 className="font-brand text-2xl sm:text-3xl">Your resume is ready.</h1>
       </motion.div>
 
-      {/* ATS Score + Match Info */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="mt-4 flex flex-wrap items-center justify-center gap-2 sm:gap-3"
-      >
-        <Badge
-          className={`border-2 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-black ${getScoreBadgeStyle(result.atsScore)}`}
+      <div className="vitex-grid">
+        {/* Left (60%): PDF proof */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
         >
-          ATS Match Score: {result.atsScore}%
-        </Badge>
-        {result.matchAnalysis.matchedSkills.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {result.matchAnalysis.matchedSkills.slice(0, 8).map((skill) => (
-              <Badge key={skill} variant="outline" className="border-green-400 text-green-700 text-xs">
-                {skill}
-              </Badge>
-            ))}
-            {result.matchAnalysis.matchedSkills.length > 8 && (
-              <Badge variant="outline" className="border-gray-300 text-gray-500 text-xs">
-                +{result.matchAnalysis.matchedSkills.length - 8} more
-              </Badge>
-            )}
+          <CropFrame className="rounded-xl border-2 border-black bg-white p-3 sm:p-4 shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)]">
+            <LivePdfPreview typstCode={typstCode} filename={filename} />
+          </CropFrame>
+        </motion.div>
+
+        {/* Right (40%): score, skills, actions */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="space-y-4 md:sticky md:top-24 md:self-start"
+        >
+          {/* ATS proof stamp */}
+          <div className="rounded-xl border-2 border-black bg-white p-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
+            <p className="proof-label mb-2">ATS Match Score</p>
+            <div className="flex items-baseline gap-1.5">
+              <span className={`font-mono text-5xl font-bold ${scoreTone(result.atsScore)}`}>
+                {pad2(result.atsScore)}
+              </span>
+              <span className="font-mono text-lg text-muted-foreground">/100</span>
+            </div>
+            <div className="mt-3 h-2.5 w-full overflow-hidden rounded border-2 border-black bg-gray-100">
+              <div
+                className={`h-full ${scoreBar(result.atsScore)}`}
+                style={{ width: `${Math.max(0, Math.min(100, result.atsScore))}%` }}
+              />
+            </div>
           </div>
-        )}
-      </motion.div>
 
-      {/* Action Buttons */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="mt-6 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-center sm:gap-3"
-      >
-        <Button
-          size="lg"
-          className="w-full sm:w-auto border-2 border-black bg-purple-600 font-bold text-white text-sm sm:text-base shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:bg-purple-700 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
-          onClick={handleDownloadPdf}
-        >
-          <Download className="mr-2 h-4 w-4" />
-          Download PDF
-        </Button>
+          {/* Matched skills */}
+          {result.matchAnalysis.matchedSkills.length > 0 && (
+            <div className="rounded-xl border-2 border-black bg-white p-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
+              <p className="proof-label mb-3">Matched Skills</p>
+              <div className="flex flex-wrap gap-1.5">
+                {result.matchAnalysis.matchedSkills.slice(0, 8).map((skill) => (
+                  <span
+                    key={skill}
+                    className="rounded border-2 border-black bg-cyan-100 px-2 py-0.5 font-mono text-xs font-medium"
+                  >
+                    {skill}
+                  </span>
+                ))}
+                {result.matchAnalysis.matchedSkills.length > 8 && (
+                  <span className="rounded border-2 border-dashed border-gray-300 px-2 py-0.5 font-mono text-xs text-gray-500">
+                    +{result.matchAnalysis.matchedSkills.length - 8} more
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
 
-        <Button
-          variant="outline"
-          size="lg"
-          className="w-full sm:w-auto border-2 border-black font-bold text-sm sm:text-base shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
-          onClick={handleDownloadTyp}
-        >
-          <FileCode className="mr-2 h-4 w-4" />
-          Download .typ
-        </Button>
+          {/* Actions */}
+          <div className="grid grid-cols-1 gap-2">
+            <Button
+              size="lg"
+              className="w-full border-2 border-black bg-purple-600 font-bold text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:bg-purple-700 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
+              onClick={handleDownloadPdf}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Download PDF
+            </Button>
 
-        <Button
-          variant="outline"
-          size="lg"
-          className="w-full sm:w-auto border-2 border-black font-bold text-sm sm:text-base shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
-          onClick={handleCopy}
-        >
-          {copySuccess ? <Check className="mr-2 h-4 w-4 text-green-600" /> : <Copy className="mr-2 h-4 w-4" />}
-          {copySuccess ? 'Copied!' : 'Copy Code'}
-        </Button>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant="outline"
+                className="w-full border-2 border-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
+                onClick={handleDownloadTyp}
+              >
+                <FileCode className="mr-2 h-4 w-4" />
+                .typ
+              </Button>
 
-        <Button
-          variant="outline"
-          size="lg"
-          className="w-full sm:w-auto border-2 border-black font-bold text-sm sm:text-base shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
-          onClick={() => setShowCoverLetter(!showCoverLetter)}
-        >
-          <Mail className="mr-2 h-4 w-4" />
-          {showCoverLetter ? 'Hide' : 'Show'} Cover Letter
-        </Button>
-      </motion.div>
+              <Button
+                variant="outline"
+                className="w-full border-2 border-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
+                onClick={handleCopy}
+              >
+                {copySuccess ? <Check className="mr-2 h-4 w-4 text-green-600" /> : <Copy className="mr-2 h-4 w-4" />}
+                {copySuccess ? 'Copied!' : 'Copy'}
+              </Button>
+            </div>
+
+            <Button
+              variant="outline"
+              className="w-full border-2 border-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
+              onClick={() => setShowCoverLetter(!showCoverLetter)}
+            >
+              <Mail className="mr-2 h-4 w-4" />
+              {showCoverLetter ? 'Hide' : 'Show'} Cover Letter
+            </Button>
+          </div>
+        </motion.div>
+      </div>
 
       {/* Cover Letter (expandable) */}
       {showCoverLetter && result.coverLetter && (
@@ -630,6 +683,7 @@ export function AIEditorContent({ jd, bg }: AIEditorContentProps) {
           animate={{ opacity: 1, height: 'auto' }}
           className="mt-4 rounded-xl border-2 border-black bg-white p-4 sm:p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
         >
+          <p className="proof-label mb-1">§ cover-letter.pdf</p>
           <h3 className="mb-3 sm:mb-4 text-base sm:text-lg font-black">Cover Letter</h3>
 
           {/* PDF preview */}
@@ -701,6 +755,7 @@ export function AIEditorContent({ jd, bg }: AIEditorContentProps) {
         transition={{ delay: 0.3 }}
         className="mt-6 rounded-xl border-2 border-black bg-white p-4 sm:p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
       >
+        <p className="proof-label mb-1">§ recompile</p>
         <h3 className="mb-2 sm:mb-3 text-base sm:text-lg font-black">Refine Your Resume</h3>
         <p className="text-xs sm:text-sm text-gray-500 mb-3">
           Describe what to change and we&apos;ll regenerate your resume.

@@ -884,10 +884,45 @@ xl: 1280px  /* Extra large devices */
 
 ---
 
+## Appendix D: "Typeset Proof" Evolution (v2.1)
+
+Neobrutalism is retained in full (2px ink borders, hard offset shadows, light
+`#f0f0f0` theme, purple/cyan). v2.1 layers a **typesetting "proof" identity** on
+top, derived from what Vitex *is* — a Typst-engine resume composer that produces a
+real compiled PDF.
+
+### Typography roles
+- **Display / brand — Titan One** (`.font-brand`): hero H1 + the "Vitex" wordmark
+  only. Used with restraint so it stays special.
+- **Body & headings — Geist** (`--font-geist-sans`): the default body font.
+- **Utility / structure — Geist Mono** (`.font-mono`): the *precision voice*.
+  Eyebrows, line/step numbers, ATS scores, dates, metadata, crop-mark labels.
+
+### Signature utilities (in `globals.css`)
+| Class | Purpose |
+|-------|---------|
+| `.proof-label` | Uppercase mono coordinate label (`§01 — COMPOSE`, `ATS·094`, `STEP 03 / 08`). The eyebrow/numbering device site-wide. |
+| `.crop-frame` | Print-proof registration ("crop") marks at all four corners. Use the `<CropFrame>` component (`src/components/shared/CropFrame.tsx`). Auto-hides ≤480px. |
+| `.baseline-grid` | Faint ruled-galley page texture on a 28px baseline. Apply to page backgrounds. |
+| `.vitex-grid` | 60/40 editorial grid mirroring the resume's own layout (`generator.ts`). Stacks on mobile. |
+
+### Page shell & vertical rhythm
+- `--nav-h: 4.5rem` is the single source of truth for the fixed navbar height.
+- `.page-shell` clears the navbar **plus** a deliberate gap (`calc(var(--nav-h) + 2.5rem)`, more on `md+`). Use it on every route instead of bare `pt-20` so content never crowds the nav.
+- `.section-y` for uniform inter-section rhythm; `.page-pad-b` for bottom spacing.
+
+### Motion & accessibility
+- The homepage hero "composes" raw text into a typeset page (`.compile-line` / `.compile-sweep`).
+- A global `prefers-reduced-motion` guard reduces all animation/transition to near-zero and freezes the compile reveal to its final state.
+- `:focus-visible` shows a crisp purple ring on every interactive element.
+
+---
+
 ## Appendix C: Version History
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 2.1.0 | Jun 2026 | "Typeset Proof" evolution: mono precision voice, crop marks, baseline grid, 60/40 grid, page-shell rhythm |
 | 2.0.0 | Dec 2024 | Complete redesign with Neobrutalism system |
 | 1.0.0 | Dec 2024 | Initial brand system creation |
 

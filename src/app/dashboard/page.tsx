@@ -6,6 +6,7 @@ import { useUser } from "@stackframe/stack";
 import { motion } from "framer-motion";
 import { CheckCircle2, AlertCircle } from "lucide-react";
 import { Navbar } from "@/components/shared/Navbar";
+import { CropFrame } from "@/components/shared/CropFrame";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -90,12 +91,13 @@ function DashboardContent() {
 
   if (user === undefined) {
     return (
-      <div className="min-h-screen bg-[#f0f0f0]">
+      <div className="min-h-screen baseline-grid bg-[#f0f0f0]">
         <Navbar currentPath="/dashboard" />
-        <div className="pt-20 container mx-auto px-4">
+        <div className="page-shell container mx-auto px-4">
           <div className="flex items-center justify-center h-[60vh]">
-            <div className="p-6 bg-white rounded-xl">
-              <p className="font-bold text-muted-foreground animate-pulse">Loading...</p>
+            <div className="flex items-center gap-3 rounded-xl border-2 border-black bg-white px-6 py-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
+              <span className="proof-label">dashboard</span>
+              <p className="font-mono text-sm font-medium text-muted-foreground animate-pulse">loading…</p>
             </div>
           </div>
         </div>
@@ -109,16 +111,17 @@ function DashboardContent() {
     creditInfo != null && creditInfo.subscriptionTier !== "free";
 
   return (
-    <div className="min-h-screen bg-[#f0f0f0]">
+    <div className="min-h-screen baseline-grid bg-[#f0f0f0]">
       <Navbar currentPath="/dashboard" />
 
-      <main className="pt-20 pb-12 container mx-auto px-4">
+      <main className="page-shell page-pad-b container mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h1 className="text-3xl font-brand">Credits & Billing</h1>
+          <p className="proof-label mb-2">§ Account — Credits &amp; Billing</p>
+          <h1 className="text-3xl font-brand">Credits &amp; Billing</h1>
           <p className="text-muted-foreground mt-1 font-medium">
             Manage your credit balance and subscription.
           </p>
@@ -173,26 +176,29 @@ function DashboardContent() {
               </Button>
             </div>
           ) : creditInfo ? (
-            <div className="space-y-6">
-              {/* Balance Card */}
-              <div className="bg-white rounded-xl p-6 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
-                <div className="flex items-center justify-between">
+            <div className="space-y-8">
+              {/* Balance meter */}
+              <CropFrame className="bg-white rounded-xl p-6 border-2 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)]">
+                <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-sm font-bold text-muted-foreground">Current Balance</p>
-                    <p className="text-4xl font-black">
+                    <p className="proof-label mb-2">Current Balance</p>
+                    <p className="font-mono text-5xl font-bold leading-none">
                       {creditInfo.subscriptionTier === "unlimited"
-                        ? "Unlimited"
-                        : `${creditInfo.balance} credits`}
+                        ? "∞"
+                        : creditInfo.balance}
+                    </p>
+                    <p className="font-mono text-xs text-muted-foreground mt-2">
+                      {creditInfo.subscriptionTier === "unlimited"
+                        ? "unlimited credits"
+                        : "credits available"}
                     </p>
                   </div>
-                  <div className="px-4 py-2 rounded-lg bg-purple-100 border-2 border-black">
-                    <p className="text-sm font-black capitalize">
-                      {creditInfo.subscriptionTier} Plan
-                    </p>
-                  </div>
+                  <span className="px-3 py-1.5 rounded-lg bg-primary text-white border-2 border-black font-mono text-[10px] font-bold uppercase tracking-[0.18em]">
+                    {creditInfo.subscriptionTier} plan
+                  </span>
                 </div>
                 {isPaidTier && (
-                  <div className="mt-4 pt-4 border-t-2 border-gray-100">
+                  <div className="mt-5 pt-5 border-t-2 border-gray-100">
                     <Button
                       variant="outline"
                       onClick={handleManageSubscription}
@@ -202,12 +208,15 @@ function DashboardContent() {
                     </Button>
                   </div>
                 )}
-              </div>
+              </CropFrame>
 
-              {/* Transaction History */}
+              {/* Transaction ledger */}
               <div className="bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] overflow-hidden">
-                <div className="p-4 border-b-2 border-black">
-                  <h3 className="font-black">Transaction History</h3>
+                <div className="flex items-center justify-between p-4 border-b-2 border-black bg-gray-50">
+                  <h3 className="proof-label !text-foreground">Ledger — Transaction History</h3>
+                  <span className="proof-label">
+                    {String(creditInfo.transactions.length).padStart(2, "0")} entries
+                  </span>
                 </div>
                 {creditInfo.transactions.length === 0 ? (
                   <div className="p-8 text-center">
@@ -216,20 +225,20 @@ function DashboardContent() {
                     </p>
                   </div>
                 ) : (
-                  <div className="divide-y divide-gray-100">
+                  <div className="divide-y-2 divide-gray-100">
                     {creditInfo.transactions.map((tx) => (
                       <div
                         key={tx.id}
-                        className="flex items-center justify-between p-4"
+                        className="flex items-center justify-between gap-4 p-4"
                       >
-                        <div>
-                          <p className="text-sm font-bold">{tx.description}</p>
-                          <p className="text-xs text-muted-foreground">
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold truncate">{tx.description}</p>
+                          <p className="font-mono text-xs text-muted-foreground">
                             {new Date(tx.createdAt).toLocaleDateString()}
                           </p>
                         </div>
                         <span
-                          className={`font-black text-sm ${
+                          className={`font-mono font-bold text-sm flex-shrink-0 ${
                             tx.amount > 0 ? "text-green-600" : "text-red-600"
                           }`}
                         >
@@ -258,9 +267,9 @@ export default function DashboardPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#f0f0f0]">
+        <div className="min-h-screen baseline-grid bg-[#f0f0f0]">
           <Navbar currentPath="/dashboard" />
-          <div className="pt-20 container mx-auto px-4">
+          <div className="page-shell container mx-auto px-4">
             <Skeleton className="h-[200px] w-full max-w-2xl rounded-xl" />
           </div>
         </div>
