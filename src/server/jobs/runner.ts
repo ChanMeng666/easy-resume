@@ -18,7 +18,7 @@ import { runGenerationPipeline } from '@/server/core/pipeline';
 import { defaultDeps } from '@/server/core/deps';
 import { toErrorEnvelope } from '@/server/errors/envelope';
 import { createLogger } from '@/server/log/logger';
-import { toWireResult, deriveJobTitle } from '@/server/jobs/persist';
+import { toWireResult, deriveJobTitle, storeResumePdf } from '@/server/jobs/persist';
 import type { Caller, GenerateInput } from '@/server/core/pipeline.types';
 
 /**
@@ -81,6 +81,10 @@ async function runJob(jobId: string, caller: Caller): Promise<void> {
         updatedAt: new Date(),
       })
       .where(eq(generationJobs.id, jobId));
+
+    // Persist the compiled PDF bytes to object storage (best-effort, no-op if
+    // R2 unconfigured). Mirrors the web SSE path via the shared helper.
+    await storeResumePdf(jobId, result.pdf, log);
 
     log.info('job.succeeded', { charged: result.usage.charged });
   } catch (err) {

@@ -3,10 +3,12 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@stackframe/stack";
+import { useDebounce } from "use-debounce";
 import { motion } from "framer-motion";
-import { AlertCircle, FileText, Download, Trash2, Sparkles, Mail } from "lucide-react";
+import { AlertCircle, FileText, Download, Trash2, Sparkles, Mail, Search, Loader2 } from "lucide-react";
 import { Navbar } from "@/components/shared/Navbar";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface ResumeListItem {
@@ -19,6 +21,9 @@ interface ResumeListItem {
   createdAt: string;
   pdfUrl?: string;
 }
+
+/** Page size for the history list (must be <= the API's MAX_LIMIT). */
+const PAGE_SIZE = 20;
 
 /** Format an ISO timestamp as a compact, locale-aware date + time. */
 function formatDate(iso: string): string {
@@ -36,9 +41,14 @@ function ResumesContent() {
   const router = useRouter();
   const user = useUser();
   const [items, setItems] = useState<ResumeListItem[] | null>(null);
+  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [debouncedQuery] = useDebounce(query, 350);
 
   useEffect(() => {
     if (user === null) {
@@ -46,25 +56,43 @@ function ResumesContent() {
     }
   }, [user, router]);
 
-  const fetchResumes = useCallback(async () => {
-    try {
-      setLoadError(false);
-      const response = await fetch("/api/resumes");
-      if (response.ok) {
+  /** Fetch a page; `append` keeps existing items (Load more), else replaces. */
+  const fetchPage = useCallback(
+    async (q: string, offset: number, append: boolean) => {
+      try {
+        setLoadError(false);
+        if (append) setLoadingMore(true);
+        else setItems(null);
+        const params = new URLSearchParams({ limit: String(PAGE_SIZE), offset: String(offset) });
+        if (q) params.set("q", q);
+        const response = await fetch(`/api/resumes?${params.toString()}`);
+        if (!response.ok) {
+          setLoadError(true);
+          return;
+        }
         const data = await response.json();
-        setItems(data.items ?? []);
-      } else {
+        setTotal(data.total ?? 0);
+        setHasMore(Boolean(data.hasMore));
+        setItems((cur) => (append && cur ? [...cur, ...(data.items ?? [])] : data.items ?? []));
+      } catch (error) {
+        console.error("Failed to fetch resumes:", error);
         setLoadError(true);
+      } finally {
+        setLoadingMore(false);
       }
-    } catch (error) {
-      console.error("Failed to fetch resumes:", error);
-      setLoadError(true);
-    }
-  }, []);
+    },
+    []
+  );
 
+  // (Re)load the first page whenever the user or the debounced search changes.
   useEffect(() => {
-    if (user) fetchResumes();
-  }, [user, fetchResumes]);
+    if (user) fetchPage(debouncedQuery, 0, false);
+  }, [user, debouncedQuery, fetchPage]);
+
+  /** Load the next page and append it. */
+  const handleLoadMore = useCallback(() => {
+    if (items) fetchPage(debouncedQuery, items.length, true);
+  }, [items, debouncedQuery, fetchPage]);
 
   /** Delete a generation, optimistically removing it from the list. */
   const handleDelete = useCallback(
@@ -72,6 +100,7 @@ function ResumesContent() {
       setDeletingId(id);
       const previous = items;
       setItems((cur) => cur?.filter((it) => it.id !== id) ?? cur);
+      setTotal((t) => Math.max(0, t - 1));
       try {
         const res = await fetch(`/api/resumes/${id}`, { method: "DELETE" });
         if (!res.ok) throw new Error(`Delete failed (${res.status})`);
@@ -79,6 +108,7 @@ function ResumesContent() {
         console.error("Failed to delete resume:", error);
         // Roll back on failure.
         setItems(previous ?? null);
+        setTotal((t) => t + 1);
       } finally {
         setDeletingId(null);
         setConfirmingId(null);
@@ -129,6 +159,26 @@ function ResumesContent() {
         </motion.div>
 
         <div className="max-w-3xl">
+          {/* Search + count */}
+          <div className="mb-6 flex items-center gap-3">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search by title or job description…"
+                className="pl-9"
+                aria-label="Search resumes"
+              />
+            </div>
+            {items !== null && (
+              <span className="proof-label whitespace-nowrap">
+                {String(total).padStart(2, "0")} {total === 1 ? "result" : "results"}
+              </span>
+            )}
+          </div>
+
           {loadError ? (
             <div className="bg-white rounded-xl p-6 border-2 border-red-400 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
               <div className="flex items-center gap-3 mb-3">
@@ -138,7 +188,7 @@ function ResumesContent() {
               <p className="text-sm text-red-700 mb-4 font-medium">
                 Something went wrong fetching your history.
               </p>
-              <Button variant="outline" onClick={fetchResumes}>
+              <Button variant="outline" onClick={() => fetchPage(debouncedQuery, 0, false)}>
                 Try again
               </Button>
             </div>
@@ -149,17 +199,27 @@ function ResumesContent() {
               <Skeleton className="h-[104px] w-full rounded-xl" />
             </div>
           ) : items.length === 0 ? (
-            <div className="bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] p-10 text-center">
-              <FileText className="h-10 w-10 mx-auto mb-4 text-muted-foreground" />
-              <p className="font-black text-lg mb-1">No resumes yet</p>
-              <p className="text-sm text-muted-foreground font-medium mb-6">
-                Generate your first tailored resume and it&apos;ll show up here.
-              </p>
-              <Button onClick={() => router.push("/")} className="gap-2">
-                <Sparkles className="w-4 h-4" />
-                Generate a Resume
-              </Button>
-            </div>
+            debouncedQuery ? (
+              <div className="bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] p-10 text-center">
+                <Search className="h-10 w-10 mx-auto mb-4 text-muted-foreground" />
+                <p className="font-black text-lg mb-1">No matches</p>
+                <p className="text-sm text-muted-foreground font-medium">
+                  No resumes match &ldquo;{debouncedQuery}&rdquo;. Try a different search.
+                </p>
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] p-10 text-center">
+                <FileText className="h-10 w-10 mx-auto mb-4 text-muted-foreground" />
+                <p className="font-black text-lg mb-1">No resumes yet</p>
+                <p className="text-sm text-muted-foreground font-medium mb-6">
+                  Generate your first tailored resume and it&apos;ll show up here.
+                </p>
+                <Button onClick={() => router.push("/")} className="gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  Generate a Resume
+                </Button>
+              </div>
+            )
           ) : (
             <div className="space-y-4">
               {items.map((item) => {
@@ -191,12 +251,6 @@ function ResumesContent() {
                               {item.templateId}
                             </span>
                           )}
-                          {item.hasCoverLetter && (
-                            <span className="px-2 py-1 rounded-lg bg-gray-50 border-2 border-black font-mono text-[10px] font-bold uppercase tracking-[0.14em] flex items-center gap-1">
-                              <Mail className="w-3 h-3" />
-                              Cover Letter
-                            </span>
-                          )}
                         </div>
                       </div>
                     </div>
@@ -214,6 +268,18 @@ function ResumesContent() {
                           <Button size="sm" variant="outline" className="gap-2">
                             <Download className="w-4 h-4" />
                             PDF
+                          </Button>
+                        </a>
+                      )}
+                      {isSucceeded && item.hasCoverLetter && (
+                        <a
+                          href={`/api/resumes/${item.id}/cover-letter/pdf`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <Button size="sm" variant="outline" className="gap-2">
+                            <Mail className="w-4 h-4" />
+                            Cover Letter
                           </Button>
                         </a>
                       )}
@@ -257,6 +323,26 @@ function ResumesContent() {
                   </div>
                 );
               })}
+
+              {hasMore && (
+                <div className="pt-2 text-center">
+                  <Button
+                    variant="outline"
+                    onClick={handleLoadMore}
+                    disabled={loadingMore}
+                    className="gap-2"
+                  >
+                    {loadingMore ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Loading…
+                      </>
+                    ) : (
+                      "Load more"
+                    )}
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </div>

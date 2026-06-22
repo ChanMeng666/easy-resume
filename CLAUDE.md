@@ -220,6 +220,20 @@ carrying `Retry-After` + `X-RateLimit-*` headers; success responses also carry
 - Thin wrapper over `compileTypstToPdf`: validates input, returns
   `application/pdf` with `X-Cache: HIT|MISS`, renders errors via the envelope.
 
+### Object Storage for PDFs (`src/server/storage/`)
+- **`getBlobStore()`** (`blobStore.ts`) is the storage seam (mirrors the compile
+  seam): returns a Cloudflare **R2** store (`r2.ts`, S3-compatible via
+  `@aws-sdk/client-s3`) when all `R2_*` env vars are set, else a no-op
+  `NullBlobStore`. Keys: `resumes/{jobId}.pdf`, `cover-letters/{jobId}.pdf`.
+- On a successful generation the compiled resume PDF is uploaded best-effort
+  (`storeResumePdf` in `src/server/jobs/persist.ts`, called from both the web SSE
+  path and the v1 job runner). All storage ops are best-effort: failures are
+  logged and swallowed — they never affect generation or billing.
+- The PDF routes (`/api/v1/resumes/[id]/pdf`, `/api/resumes/[id]/cover-letter/pdf`)
+  serve the stored copy when present, else recompile from the stored Typst on
+  demand and lazily backfill to R2 (`X-Pdf-Source: r2|compiled`). With R2
+  unconfigured everything still works via recompile (<100ms).
+
 ### Client-side Export (`src/lib/typst/compiler.ts`)
 - `compilePdf()`: Calls `/api/compile`, returns PDF blob with client-side caching
 - `downloadTypFile()`: Download .typ source file
@@ -485,11 +499,21 @@ STRIPE_PRICE_UNLIMITED_MONTHLY=
 # Typst (compilation) — usually only set in Docker
 TYPST_BIN=typst
 TYPST_FONT_PATH=/app/fonts
+
+# Object storage for compiled PDFs (Cloudflare R2) — OPTIONAL
+# When all four are set, compiled resume/cover-letter PDFs are persisted to R2
+# and served from there; otherwise the PDF routes recompile from Typst on demand.
+R2_ACCOUNT_ID=
+R2_ACCESS_KEY_ID=
+R2_SECRET_ACCESS_KEY=
+R2_BUCKET=
 ```
 
 **Removed dependencies** (do not reintroduce without a real need): Cloudinary
 (unused) and Upstash Redis / `KV_REST_API_*` (rate limiting moved to Postgres
-after the free-tier DB was idle-deleted).
+after the free-tier DB was idle-deleted). Note: object storage is now Cloudflare
+**R2** (S3-compatible, via `@aws-sdk/client-s3`), not the old Vercel Blob /
+Cloudinary — see `src/server/storage/`.
 
 ## Migration Context
 
@@ -585,6 +609,19 @@ This project underwent multiple architectural transformations:
     - **Key files**: `src/server/jobs/persist.ts`, `src/app/api/resumes/**`,
       `src/app/resumes/page.tsx`, `src/app/editor/{page,AIEditorContent}.tsx`,
       `src/app/api/generate/route.ts`.
+
+13. **R2 PDF storage + history search/pagination + cover-letter download** (current):
+    - **Added**: object-storage seam `src/server/storage/` (Cloudflare R2 via
+      `@aws-sdk/client-s3`, no-op when unconfigured). Compiled resume PDFs are
+      uploaded best-effort on success; PDF routes serve R2-first with recompile
+      fallback + lazy backfill. New cover-letter PDF route
+      `/api/resumes/[id]/cover-letter/pdf` (recompiled, R2-backed) with a download
+      button on the My Resumes list.
+    - **Added**: `/api/resumes` now supports `?q` search (title or JD text) +
+      `limit`/`offset` pagination (`{ items, total, hasMore }`); the `/resumes`
+      page has a debounced search box, result count, and Load more.
+    - **Env**: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`,
+      `R2_BUCKET` (all optional; wired into `deploy.yml` runtime env).
 
 **Legacy reference**: `A4_RESUME_USAGE.md` documents the original HTML/CSS approach (not currently used)
 
