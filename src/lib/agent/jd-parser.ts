@@ -1,6 +1,6 @@
 import { generateObject } from "ai";
 import { z } from "zod";
-import { extractModel } from "./models";
+import { extractModel, EXTRACT_TEMPERATURE } from "./models";
 import { aiTelemetry } from "./telemetry";
 
 /**
@@ -33,6 +33,7 @@ export async function parseJobDescription(rawText: string): Promise<ParsedJD> {
   const { object } = await generateObject({
     model: extractModel,
     schema: parsedJDSchema,
+    temperature: EXTRACT_TEMPERATURE,
     providerOptions: { openai: { strictJsonSchema: false } },
     experimental_telemetry: aiTelemetry("parse-jd"),
     prompt: `Parse the following job description into structured data.

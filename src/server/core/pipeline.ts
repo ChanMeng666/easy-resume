@@ -15,6 +15,8 @@
 
 import 'server-only';
 import { z } from 'zod';
+import { checkFaithfulness } from '@/lib/agent/faithfulness-check';
+import { sanitizeForPrompt, sanitizeDeep } from './sanitize';
 import {
   InsufficientCreditsError,
   PipelineStepError,
@@ -37,27 +39,6 @@ const inputSchema = z.object({
   background: z.string().trim().min(1, 'background is required').max(50_000),
   templateId: z.string().trim().max(50).optional(),
 });
-
-// Lines that try to override the system/instructions are neutralized. Pure ASCII.
-const INSTRUCTION_OVERRIDE = /(^|\n)\s*(ignore|disregard|forget)\b[^\n]*\binstructions?\b/gi;
-
-/**
- * Defang the most common prompt-injection vectors before user text reaches an
- * LLM prompt. Drops C0 control chars (keeping TAB/LF), DEL, and zero-width
- * chars by code point — no control characters appear in this source file — then
- * neutralizes instruction-override lines. Defense-in-depth, not a guarantee.
- */
-function sanitizeForPrompt(text: string): string {
-  let out = '';
-  for (const ch of text) {
-    const code = ch.codePointAt(0)!;
-    if (code < 0x20 && code !== 0x09 && code !== 0x0a) continue; // C0 controls except TAB/LF
-    if (code === 0x7f) continue; // DEL
-    if (code === 0x200b || code === 0x200c || code === 0x200d || code === 0xfeff) continue; // zero-width
-    out += ch;
-  }
-  return out.replace(INSTRUCTION_OVERRIDE, '$1[redacted]');
-}
 
 /** Run a single agent step, wrapping any failure as a typed PipelineStepError. */
 async function runStep<T>(step: PipelineStep, fn: () => Promise<T>): Promise<T> {
@@ -110,10 +91,15 @@ export async function runGenerationPipeline(
   // Steps 1 & 2 are independent (JD vs background) — run them concurrently.
   progress('parse_jd', 1, 'Analyzing job description...');
   progress('parse_background', 2, 'Parsing your background...');
-  const [parsedJD, baseResume] = await Promise.all([
+  const [rawParsedJD, rawBaseResume] = await Promise.all([
     runStep('parse_jd', () => deps.agent.parseJobDescription(jobDescription)),
     runStep('parse_background', () => deps.agent.parseBackground(background)),
   ]);
+  // Sanitize the LLM-reconstructed intermediates before they re-enter any prompt
+  // (or get rendered): a payload that slipped through the raw-input scrub as a
+  // plausible field value is defanged here. Shape/type preserved.
+  const parsedJD = sanitizeDeep(rawParsedJD);
+  const baseResume = sanitizeDeep(rawBaseResume);
 
   progress('analyze_match', 3, 'Analyzing match with job requirements...');
   const matchAnalysis = await runStep('analyze_match', () =>
@@ -121,9 +107,26 @@ export async function runGenerationPipeline(
   );
 
   progress('tailor', 4, 'Tailoring resume for the role...');
-  const tailoredResume = await runStep('tailor', () =>
-    deps.agent.tailorResume(baseResume, parsedJD, matchAnalysis)
+  let tailoredResume = sanitizeDeep(
+    await runStep('tailor', () => deps.agent.tailorResume(baseResume, parsedJD, matchAnalysis))
   );
+
+  // Grounding gate: tailoring can drift into inventing skills/employers. Verify
+  // the tailored resume stays faithful to the base; if it fabricated facts, run
+  // exactly one corrective re-tailor pass with the violations as feedback. This
+  // is deterministic + free (no LLM) and bounded to a single retry.
+  const faithfulness = checkFaithfulness(baseResume, tailoredResume);
+  if (!faithfulness.isFaithful) {
+    log.warn('pipeline.faithfulness.violations', {
+      count: faithfulness.violations.length,
+      fields: faithfulness.violations.map((v) => v.field),
+    });
+    tailoredResume = sanitizeDeep(
+      await runStep('tailor', () =>
+        deps.agent.tailorResume(baseResume, parsedJD, matchAnalysis, faithfulness.feedback)
+      )
+    );
+  }
 
   // Steps 5 & 6 both depend only on the tailored resume + JD, not on each
   // other — run them concurrently.

@@ -2,7 +2,8 @@ import { generateObject } from "ai";
 import { z } from "zod";
 import { ResumeData } from "@/lib/validation/schema";
 import { ParsedJD } from "./jd-parser";
-import { reasonModel } from "./models";
+import { reasonModel, EXTRACT_TEMPERATURE } from "./models";
+import { computeSkillOverlap } from "./keyword-coverage";
 import { aiTelemetry } from "./telemetry";
 
 /**
@@ -31,31 +32,10 @@ export const matchAnalysisSchema = z.object({
 export type MatchAnalysis = z.infer<typeof matchAnalysisSchema>;
 
 /**
- * Performs deterministic skill overlap analysis.
- */
-function computeSkillOverlap(resumeSkills: string[], jdSkills: string[]): {
-  matched: string[];
-  missing: string[];
-} {
-  const normalizedResume = resumeSkills.map(s => s.toLowerCase().trim());
-  const matched: string[] = [];
-  const missing: string[] = [];
-
-  for (const skill of jdSkills) {
-    const normalizedSkill = skill.toLowerCase().trim();
-    if (normalizedResume.some(rs => rs.includes(normalizedSkill) || normalizedSkill.includes(rs))) {
-      matched.push(skill);
-    } else {
-      missing.push(skill);
-    }
-  }
-
-  return { matched, missing };
-}
-
-/**
  * Analyzes how well a resume matches a job description.
- * Uses hybrid approach: deterministic skill matching + LLM for nuanced analysis.
+ * Uses hybrid approach: deterministic skill matching (computeSkillOverlap) +
+ * LLM for nuanced analysis. Runs at extract temperature so the analysis is
+ * reproducible for a given resume/JD pair.
  */
 export async function analyzeMatch(
   resume: ResumeData,
@@ -69,6 +49,7 @@ export async function analyzeMatch(
   const { object } = await generateObject({
     model: reasonModel,
     schema: matchAnalysisSchema,
+    temperature: EXTRACT_TEMPERATURE,
     experimental_telemetry: aiTelemetry("analyze-match"),
     prompt: `Analyze how well this resume matches the job description.
 

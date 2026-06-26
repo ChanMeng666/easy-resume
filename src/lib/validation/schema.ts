@@ -8,12 +8,20 @@ export const profileSchema = z.object({
 });
 
 // Basic information schema
+// Contact fields (email/phone/location) are intentionally optional: the AI must
+// NEVER invent them. When the user omits a contact detail, the field stays empty
+// and the Typst generator simply skips that row — far better than a fake
+// "+1 (555) 000-0000" on a real, submittable resume.
 export const basicsSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   label: z.string().min(1, 'Professional title is required'),
-  email: z.string().email('Must be a valid email'),
-  phone: z.string().min(1, 'Phone number is required'),
-  location: z.string().min(1, 'Location is required'),
+  email: z
+    .string()
+    .email('Must be a valid email')
+    .optional()
+    .or(z.literal('')),
+  phone: z.string().optional(),
+  location: z.string().optional(),
   summary: z.string().optional(),
   photo: z.string().optional(), // Optional photo filename or URL
   profiles: z.array(profileSchema),

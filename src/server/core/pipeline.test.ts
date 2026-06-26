@@ -98,6 +98,29 @@ describe('runGenerationPipeline billing gating', () => {
     expect(onProgress).toHaveBeenCalledTimes(8);
   });
 
+  it('re-tailors once when the tailored resume fabricates a skill, then charges once', async () => {
+    // Base resume (parseBackground fake) has no skills; the first tailor draft
+    // invents "Rust" -> faithfulness gate fires -> exactly one corrective pass.
+    const tailorResume = vi
+      .fn()
+      .mockResolvedValueOnce({ basics: { name: 'Jane' }, skills: [{ name: 'X', keywords: ['Rust'] }] })
+      .mockResolvedValueOnce({ basics: { name: 'Jane' }, skills: [] });
+    const { deps, meter } = makeDeps({ tailorResume });
+
+    await runGenerationPipeline(input, caller, deps, opts);
+
+    expect(tailorResume).toHaveBeenCalledTimes(2);
+    // The corrective pass receives the violation feedback as a 4th argument.
+    expect(tailorResume.mock.calls[1][3]).toContain('Rust');
+    expect(meter.chargeForResult).toHaveBeenCalledTimes(1);
+  });
+
+  it('does NOT re-tailor when the tailored resume is faithful', async () => {
+    const { deps, agent } = makeDeps();
+    await runGenerationPipeline(input, caller, deps, opts);
+    expect(agent.tailorResume).toHaveBeenCalledTimes(1);
+  });
+
   it('does NOT charge when an LLM step fails', async () => {
     const { deps, meter } = makeDeps({
       tailorResume: vi.fn().mockRejectedValue(new Error('model exploded')),
