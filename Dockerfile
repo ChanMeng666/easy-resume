@@ -15,30 +15,22 @@ FROM node:22-bookworm-slim AS builder
 
 WORKDIR /app
 
-# Build arguments for environment variables required at build time
+# Public, build-time-inlined config (baked into the client bundle by Next.js).
+# These are NOT secret — NEXT_PUBLIC_* values ship to the browser by design.
 ARG NEXT_PUBLIC_APP_URL
 ARG NEXT_PUBLIC_STACK_PROJECT_ID
 ARG NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY
-ARG DATABASE_URL
-ARG OPENAI_API_KEY
-ARG STRIPE_SECRET_KEY
-ARG STRIPE_WEBHOOK_SECRET
+# Stripe price IDs are public identifiers (not credentials).
 ARG STRIPE_PRICE_CREDITS_5
 ARG STRIPE_PRICE_PRO_MONTHLY
 ARG STRIPE_PRICE_UNLIMITED_MONTHLY
-ARG STACK_SECRET_SERVER_KEY
 
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 ENV NEXT_PUBLIC_STACK_PROJECT_ID=$NEXT_PUBLIC_STACK_PROJECT_ID
 ENV NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY=$NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY
-ENV DATABASE_URL=$DATABASE_URL
-ENV OPENAI_API_KEY=$OPENAI_API_KEY
-ENV STRIPE_SECRET_KEY=$STRIPE_SECRET_KEY
-ENV STRIPE_WEBHOOK_SECRET=$STRIPE_WEBHOOK_SECRET
 ENV STRIPE_PRICE_CREDITS_5=$STRIPE_PRICE_CREDITS_5
 ENV STRIPE_PRICE_PRO_MONTHLY=$STRIPE_PRICE_PRO_MONTHLY
 ENV STRIPE_PRICE_UNLIMITED_MONTHLY=$STRIPE_PRICE_UNLIMITED_MONTHLY
-ENV STACK_SECRET_SERVER_KEY=$STACK_SECRET_SERVER_KEY
 
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
@@ -48,8 +40,26 @@ COPY --from=deps /app/package-lock.json ./package-lock.json
 # Copy source code
 COPY . .
 
-# Build Next.js (standalone output)
-RUN npm run build
+# Build Next.js (standalone output).
+#
+# Real secrets are injected via BuildKit secret mounts, NOT ARG/ENV: they're
+# readable only for this single RUN and are never persisted into image layers,
+# history, or the final image (which is what `SecretsUsedInArgOrEnv` warns
+# against). DATABASE_URL and STACK_SECRET_SERVER_KEY are needed at build time
+# because db/client.ts and lib/auth/stack.ts instantiate their clients at module
+# import, and Next.js imports route modules during the build. The others are
+# mounted too so any build-time access keeps working.
+RUN --mount=type=secret,id=DATABASE_URL \
+    --mount=type=secret,id=OPENAI_API_KEY \
+    --mount=type=secret,id=STRIPE_SECRET_KEY \
+    --mount=type=secret,id=STRIPE_WEBHOOK_SECRET \
+    --mount=type=secret,id=STACK_SECRET_SERVER_KEY \
+    DATABASE_URL="$(cat /run/secrets/DATABASE_URL)" \
+    OPENAI_API_KEY="$(cat /run/secrets/OPENAI_API_KEY)" \
+    STRIPE_SECRET_KEY="$(cat /run/secrets/STRIPE_SECRET_KEY)" \
+    STRIPE_WEBHOOK_SECRET="$(cat /run/secrets/STRIPE_WEBHOOK_SECRET)" \
+    STACK_SECRET_SERVER_KEY="$(cat /run/secrets/STACK_SECRET_SERVER_KEY)" \
+    npm run build
 
 # --- Stage 3: Production runner ---
 FROM node:22-bookworm-slim AS runner
