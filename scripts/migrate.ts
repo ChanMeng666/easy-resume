@@ -269,6 +269,14 @@ async function migrate() {
   await sql`CREATE INDEX IF NOT EXISTS idx_generation_jobs_root ON generation_jobs(user_id, root_job_id)`;
   console.log("Created generation_jobs table");
 
+  // Application tracker: link an application to the live generation_jobs model
+  // (the dormant tailored_resume_id/job_description_id FKs point at unused tables).
+  // Added here, AFTER generation_jobs exists, so the FK target is present.
+  // ON DELETE SET NULL: deleting a resume keeps the application, just unlinks it.
+  await sql`ALTER TABLE applications ADD COLUMN IF NOT EXISTS generation_job_id UUID REFERENCES generation_jobs(id) ON DELETE SET NULL`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_applications_generation_job ON applications(generation_job_id)`;
+  console.log("Linked applications.generation_job_id -> generation_jobs");
+
   // Create rate_limits table (Postgres-backed fixed-window rate limiting)
   await sql`
     CREATE TABLE IF NOT EXISTS rate_limits (

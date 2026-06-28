@@ -8,7 +8,7 @@ import { CreditBadge } from '@/components/shared/CreditBadge';
 import { ReactNode, Suspense, useState } from 'react';
 import { useScrollDirection } from '@/lib/hooks/useScrollDirection';
 import { useUser } from "@stackframe/stack";
-import { Sparkles, Menu, X, LayoutDashboard, CreditCard, Files, User } from 'lucide-react';
+import { Sparkles, Menu, X, LayoutDashboard, CreditCard, Files, User, Briefcase } from 'lucide-react';
 
 interface NavbarProps {
   currentPath?: string;
@@ -69,6 +69,14 @@ function NavLinksInner({ currentPath }: { currentPath: string }) {
         <Link href="/profiles" className={getNavLinkStyles(currentPath, '/profiles')}>
           <User className="w-4 h-4" />
           Profiles
+        </Link>
+      )}
+
+      {/* Applications - Only show for logged-in users */}
+      {user && (
+        <Link href="/applications" className={getNavLinkStyles(currentPath, '/applications')}>
+          <Briefcase className="w-4 h-4" />
+          Applications
         </Link>
       )}
 
@@ -146,6 +154,18 @@ function MobileMenu({
             >
               <User className="w-4 h-4" />
               Profiles
+            </Link>
+          )}
+
+          {/* Applications - Only for logged-in users */}
+          {user && (
+            <Link
+              href="/applications"
+              onClick={onClose}
+              className={`${getNavLinkStyles(currentPath, '/applications')} w-full`}
+            >
+              <Briefcase className="w-4 h-4" />
+              Applications
             </Link>
           )}
 

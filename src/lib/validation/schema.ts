@@ -99,6 +99,42 @@ export const candidateProfileUpdateSchema = z.object({
 });
 export type CandidateProfileUpdate = z.infer<typeof candidateProfileUpdateSchema>;
 
+// Application tracker status state machine. Any status is reachable from any
+// other (the tracker is a simple manual log, not an enforced workflow): a user
+// may jump straight to "offer" or move back from "interview" to "applied".
+export const APPLICATION_STATUSES = [
+  'draft',
+  'applied',
+  'interview',
+  'offer',
+  'rejected',
+] as const;
+export type ApplicationStatus = (typeof APPLICATION_STATUSES)[number];
+
+// Create payload for POST /api/applications. company + position are required;
+// everything else is optional. `generationJobId` optionally links the
+// application to the live generation that produced the resume (ownership of the
+// linked job is verified server-side).
+export const applicationCreateSchema = z.object({
+  company: z.string().trim().min(1, 'Company is required').max(255),
+  position: z.string().trim().min(1, 'Position is required').max(255),
+  status: z.enum(APPLICATION_STATUSES).optional(),
+  notes: z.string().trim().max(10_000).optional(),
+  generationJobId: z.string().uuid().optional(),
+});
+export type ApplicationCreate = z.infer<typeof applicationCreateSchema>;
+
+// Partial update payload for PATCH /api/applications/{id}. Every field optional;
+// the route enforces that at least one is present. `notes` accepts an empty
+// string so a user can clear it.
+export const applicationUpdateSchema = z.object({
+  company: z.string().trim().min(1).max(255).optional(),
+  position: z.string().trim().min(1).max(255).optional(),
+  status: z.enum(APPLICATION_STATUSES).optional(),
+  notes: z.string().trim().max(10_000).optional(),
+});
+export type ApplicationUpdate = z.infer<typeof applicationUpdateSchema>;
+
 // Type inference from Zod schema
 export type ResumeData = z.infer<typeof resumeDataSchema>;
 export type Basics = z.infer<typeof basicsSchema>;

@@ -79,7 +79,6 @@ const creditPacks = [
 // direction is real) but label them honestly so the pricing page never
 // over-promises a capability the product doesn't have today.
 const COMING_SOON_FEATURES = new Set<string>([
-  'Application tracking',
   'Priority AI responses',
   'Bulk application support',
   'Priority support',
