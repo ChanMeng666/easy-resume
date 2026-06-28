@@ -75,6 +75,16 @@ const creditPacks = [
   { credits: 5, price: '$15', priceType: 'credits_5' },
 ];
 
+// Features that are on the roadmap but NOT yet shipped. We keep them listed (the
+// direction is real) but label them honestly so the pricing page never
+// over-promises a capability the product doesn't have today.
+const COMING_SOON_FEATURES = new Set<string>([
+  'Application tracking',
+  'Priority AI responses',
+  'Bulk application support',
+  'Priority support',
+]);
+
 /**
  * Pricing page content with Neobrutalism design.
  * Shows subscription tiers and credit pack purchases. Reads the
@@ -207,12 +217,26 @@ function PricingContent() {
                 </Button>
 
                 <ul className="space-y-3">
-                  {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-2 text-sm">
-                      <CheckCircle className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
-                      <span className="font-medium">{feature}</span>
-                    </li>
-                  ))}
+                  {plan.features.map((feature) => {
+                    const soon = COMING_SOON_FEATURES.has(feature);
+                    return (
+                      <li key={feature} className="flex items-start gap-2 text-sm">
+                        <CheckCircle
+                          className={`h-4 w-4 flex-shrink-0 mt-0.5 ${
+                            soon ? 'text-gray-300' : 'text-primary'
+                          }`}
+                        />
+                        <span className={`font-medium ${soon ? 'text-muted-foreground' : ''}`}>
+                          {feature}
+                          {soon && (
+                            <span className="ml-2 rounded border-2 border-black bg-gray-100 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.1em] align-middle">
+                              Coming soon
+                            </span>
+                          )}
+                        </span>
+                      </li>
+                    );
+                  })}
                 </ul>
               </CropFrame>
             </motion.div>
