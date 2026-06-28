@@ -1,6 +1,6 @@
 import { getDb } from "@/lib/db/client";
 import { credits, creditTransactions, stripeEvents } from "@/lib/db/schema";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 
 /** Postgres unique-violation error code (SQLSTATE 23505). */
 const PG_UNIQUE_VIOLATION = "23505";
@@ -56,10 +56,11 @@ export const creditService = {
     return record.balance;
   },
 
-  /** Check if user has enough credits. */
+  /** Check if user has enough credits. Unlimited-tier users always pass. */
   async hasCredits(userId: string, amount: number) {
-    const balance = await this.getBalance(userId);
-    return balance >= amount;
+    const record = await this.getOrCreate(userId);
+    if (record.subscriptionTier === "unlimited") return true;
+    return record.balance >= amount;
   },
 
   /**
@@ -184,26 +185,36 @@ export const creditService = {
       }
     }
 
-    if (record.balance < amount) return { ok: false };
-
-    // Insert the usage txn first. A partial UNIQUE index on
-    // (reference_id) WHERE type='usage' makes this the atomic guard against a
-    // concurrent request charging the same idempotencyKey twice: only one
-    // insert can win. The losing insert throws 23505 — we then return the
-    // winner's transaction without deducting again.
-    let tx: { id: string };
+    // Atomic debit + audit write in ONE SQL statement. The CTE deducts only when
+    // the balance still covers the charge, and the usage txn row is inserted
+    // ONLY when that deduction matched a row (`INSERT ... SELECT FROM deducted`).
+    // Doing both atomically gives us:
+    //  - no over-delivery / lost update: concurrent *distinct* keys serialize on
+    //    the row lock; the second statement sees the debited balance, matches no
+    //    row, and charges nothing.
+    //  - crash-consistency under Neon HTTP autocommit (each call is its own
+    //    implicit txn): there is no window where a usage txn commits without its
+    //    debit — which would otherwise mark the key "charged" forever.
+    // Same-key concurrency is still guarded by the partial UNIQUE index on
+    // (reference_id) WHERE type='usage': the losing INSERT raises 23505, which
+    // rolls back the WHOLE CTE (including its UPDATE) so no double-debit happens;
+    // we then return the winner's txn.
+    let rows: Array<{ id: string }>;
     try {
-      [tx] = await db
-        .insert(creditTransactions)
-        .values({
-          userId,
-          type: "usage",
-          amount: -amount,
-          description,
-          referenceType,
-          referenceId: idempotencyKey,
-        })
-        .returning();
+      const res = (await db.execute(sql`
+        WITH deducted AS (
+          UPDATE credits
+             SET balance = balance - ${amount}, updated_at = now()
+           WHERE user_id = ${userId} AND balance >= ${amount}
+          RETURNING user_id
+        )
+        INSERT INTO credit_transactions
+          (user_id, type, amount, description, reference_type, reference_id)
+        SELECT ${userId}, 'usage', ${-amount}, ${description}, ${referenceType}, ${idempotencyKey}
+          FROM deducted
+        RETURNING id
+      `)) as unknown as { rows?: Array<{ id: string }> } | Array<{ id: string }>;
+      rows = Array.isArray(res) ? res : res.rows ?? [];
     } catch (err) {
       if (isUniqueViolation(err)) {
         const [winner] = await db
@@ -221,14 +232,12 @@ export const creditService = {
       throw err;
     }
 
-    // Deduct only after we won the insert race, so a duplicate request never
-    // double-debits the balance.
-    await db
-      .update(credits)
-      .set({ balance: record.balance - amount, updatedAt: new Date() })
-      .where(eq(credits.userId, userId));
-
-    return { ok: true, transactionId: tx.id };
+    // No row inserted ⇒ the conditional UPDATE matched nothing ⇒ the balance was
+    // insufficient. Nothing was debited and no usage txn exists, so the key stays
+    // free for a legitimate retry after a top-up.
+    const row = rows[0];
+    if (!row) return { ok: false };
+    return { ok: true, transactionId: row.id };
   },
 
   /** Add credits (from purchase). */

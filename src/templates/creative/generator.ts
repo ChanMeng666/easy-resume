@@ -6,6 +6,7 @@
 import { ResumeData } from '@/lib/validation/schema';
 import {
   escapeTypst,
+  escapeTypstString,
   formatDateRange,
   cleanURL,
   networkToIcon,
@@ -111,7 +112,7 @@ function generateHeader(basics: ResumeData['basics']): string {
 
   if (basics.email) {
     contactParts.push(
-      `#link("mailto:${basics.email}")[✉ ${escapeTypst(basics.email)}]`
+      `#link("mailto:${escapeTypstString(basics.email)}")[✉ ${escapeTypst(basics.email)}]`
     );
   }
   if (basics.phone) {
@@ -126,7 +127,7 @@ function generateHeader(basics: ResumeData['basics']): string {
       const icon = networkToIcon(profile.network);
       const displayText = profile.label || cleanURL(profile.url);
       contactParts.push(
-        `#link("${profile.url}")[${icon} ${escapeTypst(displayText)}]`
+        `#link("${escapeTypstString(profile.url)}")[${icon} ${escapeTypst(displayText)}]`
       );
     }
   });
@@ -162,7 +163,7 @@ function generateSkillsSection(skills?: ResumeData['skills']): string {
 
   const groups = skills.map((skillGroup) => {
     const tags = skillGroup.keywords
-      .map((kw) => `#cv-tag("${escapeTypst(kw)}")`)
+      .map((kw) => `#cv-tag("${escapeTypstString(kw)}")`)
       .join(' ');
     return `*#text(fill: purple)[${escapeTypst(skillGroup.name)}:]*  ${tags}`;
   });
@@ -181,7 +182,7 @@ function generateExperienceSection(work?: ResumeData['work']): string {
   const entries = work.map((job) => {
     const dateRange = formatDateRange(job.startDate, job.endDate);
 
-    let content = `#cv-event("${escapeTypst(job.position)}", "${escapeTypst(job.company)}", "${dateRange}", "${escapeTypst(job.location)}")`;
+    let content = `#cv-event("${escapeTypstString(job.position)}", "${escapeTypstString(job.company)}", "${escapeTypstString(dateRange)}", "${escapeTypstString(job.location)}")`;
 
     if (job.highlights && job.highlights.length > 0) {
       content += '\n' + job.highlights.map((h) => `- ${escapeTypst(h)}`).join('\n');
@@ -204,7 +205,7 @@ function generateProjectsSection(projects?: ResumeData['projects']): string {
   const entries = projects.map((project) => {
     let header = `*#text(size: 12pt, fill: purple)[${escapeTypst(project.name)}]*`;
     if (project.url) {
-      header = `#link("${project.url}")[${header}]`;
+      header = `#link("${escapeTypstString(project.url)}")[${header}]`;
     }
 
     let content = header;
@@ -236,7 +237,7 @@ function generateEducationSection(education?: ResumeData['education']): string {
     const dateRange = formatDateRange(edu.startDate, edu.endDate);
 
     let content = `*#text(size: 12pt, fill: purple)[${escapeTypst(degree)}]*
-_${escapeTypst(edu.institution)}_ #h(1fr) #text(fill: secondary-text)[${dateRange}]`;
+_${escapeTypst(edu.institution)}_ #h(1fr) #text(fill: secondary-text)[${escapeTypst(dateRange)}]`;
 
     if (edu.location) {
       content += `\n#text(fill: secondary-text)[${escapeTypst(edu.location)}]`;
