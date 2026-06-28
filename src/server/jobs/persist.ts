@@ -12,6 +12,10 @@
 import 'server-only';
 import { and, eq, inArray, lt } from 'drizzle-orm';
 import { generationJobs } from '@/lib/db/schema';
+import { generateTypstCode } from '@/lib/typst/generator';
+import { getTemplateById } from '@/templates/registry';
+import { NotFoundError, ValidationError } from '@/server/errors/AppError';
+import type { ResumeData } from '@/lib/validation/schema';
 import type { runGenerationPipeline } from '@/server/core/pipeline';
 import type { Caller, GenerateInput } from '@/server/core/pipeline.types';
 import type { Logger } from '@/server/log/logger';
@@ -257,6 +261,104 @@ export async function finalizeSucceededJob(args: {
     logger.error('job.finalize_failed', { jobId }, err);
     return false;
   }
+}
+
+/**
+ * Re-render the Typst source from resume data using the chosen template
+ * (falling back to the base generator). Mirrors the pipeline's render step so a
+ * persisted manual edit produces the same layout — server-side, so the client's
+ * Typst is never trusted (defends against an injected/forged document).
+ */
+function renderTypst(data: ResumeData, templateId: string | undefined): string {
+  const template = templateId ? getTemplateById(templateId) : undefined;
+  return template ? template.generator(data) : generateTypstCode(data);
+}
+
+/**
+ * Persist a free, client-edited resume as a NEW version in the parent's refine
+ * chain — WITHOUT running the pipeline and WITHOUT charging.
+ *
+ * This is the durable counterpart to the editor's in-memory structured edit: it
+ * is pure user-owned storage (like "save as profile"), so it deliberately does
+ * NOT touch the money path. There is no `meter`/credit/pipeline call anywhere in
+ * here; the row is written `charged: false` with a fresh random idempotency key
+ * that is never used to charge (the charge is keyed on a reserved jobId inside
+ * the pipeline, which this never invokes). The Typst is re-rendered server-side
+ * from the validated `resumeData`, and the ATS score / match analysis / cover
+ * letter are carried over from the parent (the parent's last AI run remains the
+ * authoritative analysis — a manual edit doesn't re-score).
+ *
+ * Owner-scoped: a missing/cross-user parent throws NotFound (existence hidden).
+ */
+export async function createManualVersion(args: {
+  caller: Caller;
+  parentJobId: string;
+  resumeData: ResumeData;
+  templateId?: string;
+  versionLabel?: string;
+}): Promise<{ id: string }> {
+  const { caller, parentJobId, resumeData } = args;
+  const { db } = await import('@/lib/db/client');
+
+  // Resolve the parent owner-scoped (hide existence on miss/cross-user) and
+  // derive the chain root, exactly like reserveJob's refine path.
+  const [parent] = await db
+    .select({
+      id: generationJobs.id,
+      userId: generationJobs.userId,
+      status: generationJobs.status,
+      rootJobId: generationJobs.rootJobId,
+      input: generationJobs.input,
+      result: generationJobs.result,
+      title: generationJobs.title,
+    })
+    .from(generationJobs)
+    .where(eq(generationJobs.id, parentJobId))
+    .limit(1);
+  if (!parent || parent.userId !== caller.userId) throw new NotFoundError('Resume not found');
+  // A version can only branch from a COMPLETED resume with a real persisted
+  // result — never from a failed/running/queued job (which would otherwise seed
+  // a free durable version off a non-artifact and corrupt the chain root).
+  if (parent.status !== 'succeeded' || !parent.result) {
+    throw new ValidationError('This resume is not ready to version yet.');
+  }
+
+  const rootJobId = parent.rootJobId ?? parent.id;
+  const prev = (parent.result ?? {}) as Partial<WireResult> & { templateId?: string };
+  const templateId = args.templateId ?? prev.templateId ?? 'two-column';
+  const typstCode = renderTypst(resumeData, templateId);
+
+  // Carry the parent's AI-derived analysis forward unchanged — a manual edit
+  // doesn't re-run scoring. usage.charged is false: this never bills.
+  const result = {
+    resumeData,
+    typstCode,
+    coverLetter: prev.coverLetter ?? '',
+    coverLetterTypst: prev.coverLetterTypst ?? '',
+    atsScore: prev.atsScore,
+    matchAnalysis: prev.matchAnalysis,
+    templateId,
+    usage: { charged: false },
+  };
+
+  const [created] = await db
+    .insert(generationJobs)
+    .values({
+      userId: caller.userId,
+      status: 'succeeded',
+      title: parent.title ?? deriveJobTitle((parent.input ?? {}) as GenerateInput),
+      versionLabel: args.versionLabel?.trim() ? args.versionLabel.trim() : null,
+      input: parent.input,
+      result,
+      charged: false,
+      // Satisfies the NOT NULL UNIQUE column; never used to charge (no meter call).
+      idempotencyKey: crypto.randomUUID(),
+      parentJobId: parent.id,
+      rootJobId,
+    })
+    .returning({ id: generationJobs.id });
+
+  return { id: created.id };
 }
 
 /**

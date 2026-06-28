@@ -39,6 +39,8 @@ import {
   BookmarkPlus,
   Pencil,
   History,
+  X,
+  Columns2,
 } from 'lucide-react';
 
 /**
@@ -55,9 +57,21 @@ function renderTypstFromResume(data: ResumeData, templateId: string): string {
 interface VersionItem {
   id: string;
   title: string;
+  versionLabel?: string;
   version: number;
   atsScore?: number;
   isCurrent: boolean;
+}
+
+/** A version's comparable detail, from GET .../versions/compare. */
+interface CompareDetail {
+  id: string;
+  title: string;
+  versionLabel?: string;
+  atsScore?: number;
+  matchedSkills: string[];
+  missingSkills: string[];
+  summary: string;
 }
 
 /** Progress steps displayed during generation. */
@@ -303,6 +317,16 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
   const [editMode, setEditMode] = useState(false);
   // Versions in the current refine chain (for the version strip).
   const [versions, setVersions] = useState<VersionItem[]>([]);
+  // Inline rename of the current version's label.
+  const [renaming, setRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState('');
+  // Persisting a free structured edit as a new version (no charge).
+  const [savingVersion, setSavingVersion] = useState(false);
+  // Read-only side-by-side compare of two versions.
+  const [compareOpen, setCompareOpen] = useState(false);
+  const [compareAgainst, setCompareAgainst] = useState<string>('');
+  const [compareData, setCompareData] = useState<{ a: CompareDetail; b: CompareDetail } | null>(null);
+  const [compareLoading, setCompareLoading] = useState(false);
   // "Save as profile" — persist the background as a reusable candidate_profile.
   const [saveProfileOpen, setSaveProfileOpen] = useState(false);
   const [saveProfileLabel, setSaveProfileLabel] = useState('');
@@ -584,6 +608,83 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
   );
 
   /**
+   * Persist a free structured edit as a NEW version (no charge). The server
+   * re-renders the Typst and writes an uncharged generation_jobs row in the same
+   * chain; we then deep-link to it so a refresh restores the saved version. This
+   * is pure storage — NO LLM, NO credit (unlike the billable Refine).
+   */
+  const handleSaveAsVersion = useCallback(
+    async (next: ResumeData) => {
+      if (!result || !currentJobId) return;
+      setSavingVersion(true);
+      try {
+        const res = await fetch(`/api/resumes/${currentJobId}/versions`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ resumeData: next, templateId: result.templateId }),
+        });
+        if (!res.ok) throw new Error(`Save failed (${res.status})`);
+        const { id: newId } = await res.json();
+        setEditMode(false);
+        try {
+          window.history.replaceState(null, '', `/editor?job=${newId}`);
+        } catch {
+          // Ignore — non-critical URL sync.
+        }
+        await loadJob(newId);
+      } catch (err) {
+        console.error('Failed to save version:', err);
+      } finally {
+        setSavingVersion(false);
+      }
+    },
+    [result, currentJobId, loadJob]
+  );
+
+  /** Persist a rename of the current version's label (owner-scoped PATCH). */
+  const handleRenameVersion = useCallback(async () => {
+    if (!currentJobId) return;
+    const label = renameValue.trim();
+    try {
+      const res = await fetch(`/api/resumes/${currentJobId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ versionLabel: label }),
+      });
+      if (!res.ok) throw new Error(`Rename failed (${res.status})`);
+      setVersions((cur) =>
+        cur.map((v) => (v.id === currentJobId ? { ...v, versionLabel: label || undefined } : v))
+      );
+      setRenaming(false);
+    } catch (err) {
+      console.error('Failed to rename version:', err);
+    }
+  }, [currentJobId, renameValue]);
+
+  /** Open the compare dialog against another version (read-only, free). */
+  const openCompare = useCallback(
+    async (againstId: string) => {
+      if (!currentJobId || !againstId) return;
+      setCompareAgainst(againstId);
+      setCompareOpen(true);
+      setCompareLoading(true);
+      setCompareData(null);
+      try {
+        const res = await fetch(
+          `/api/resumes/${currentJobId}/versions/compare?against=${againstId}`
+        );
+        if (!res.ok) throw new Error(`Compare failed (${res.status})`);
+        setCompareData(await res.json());
+      } catch (err) {
+        console.error('Failed to compare versions:', err);
+      } finally {
+        setCompareLoading(false);
+      }
+    },
+    [currentJobId]
+  );
+
+  /**
    * Save the current background as a reusable profile. We POST the RAW
    * background (not the JD-tailored result) and let the server parse it once, so
    * the profile stays a clean, JD-agnostic source of truth. This is free — no
@@ -833,28 +934,77 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
             <History className="h-3.5 w-3.5" />
             Versions:
           </span>
-          {versions.map((v) =>
-            v.isCurrent ? (
-              <span
-                key={v.id}
-                className="rounded-lg border-2 border-black bg-primary px-2.5 py-1 font-mono text-xs font-bold text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]"
-                title={v.title}
-              >
-                v{v.version}
-                {typeof v.atsScore === 'number' ? ` · ATS ${v.atsScore}` : ''} · current
-              </span>
-            ) : (
+          {versions.map((v) => {
+            const labelText = v.versionLabel || `v${v.version}`;
+            const ats = typeof v.atsScore === 'number' ? ` · ATS ${v.atsScore}` : '';
+            if (v.isCurrent) {
+              // Current version: editable label (rename) — free, no re-render.
+              if (renaming) {
+                return (
+                  <span key={v.id} className="inline-flex items-center gap-1">
+                    <Input
+                      value={renameValue}
+                      onChange={(e) => setRenameValue(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleRenameVersion();
+                        if (e.key === 'Escape') setRenaming(false);
+                      }}
+                      maxLength={120}
+                      placeholder={`v${v.version}`}
+                      aria-label="Version name"
+                      className="h-8 w-44 font-mono text-xs"
+                      autoFocus
+                    />
+                    <Button size="sm" variant="outline" className="h-8 px-2" onClick={handleRenameVersion} aria-label="Save name">
+                      <Check className="h-4 w-4" />
+                    </Button>
+                    <Button size="sm" variant="outline" className="h-8 px-2" onClick={() => setRenaming(false)} aria-label="Cancel rename">
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </span>
+                );
+              }
+              return (
+                <button
+                  key={v.id}
+                  onClick={() => {
+                    setRenameValue(v.versionLabel ?? '');
+                    setRenaming(true);
+                  }}
+                  className="inline-flex items-center gap-1 rounded-lg border-2 border-black bg-primary px-2.5 py-1 font-mono text-xs font-bold text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]"
+                  title="Rename this version"
+                >
+                  {labelText}
+                  {ats} · current
+                  <Pencil className="ml-1 h-3 w-3" />
+                </button>
+              );
+            }
+            return (
               <a
                 key={v.id}
                 href={`/editor?job=${v.id}`}
                 className="rounded-lg border-2 border-black bg-white px-2.5 py-1 font-mono text-xs font-bold transition-all duration-200 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-1px] hover:translate-y-[-1px]"
                 title={v.title}
               >
-                v{v.version}
-                {typeof v.atsScore === 'number' ? ` · ATS ${v.atsScore}` : ''}
+                {labelText}
+                {ats}
               </a>
-            )
-          )}
+            );
+          })}
+          {/* Compare the current version against the previous one (read-only). */}
+          <Button
+            size="sm"
+            variant="outline"
+            className="ml-auto h-8 gap-2"
+            onClick={() => {
+              const others = versions.filter((v) => !v.isCurrent);
+              if (others.length > 0) openCompare(others[others.length - 1].id);
+            }}
+          >
+            <Columns2 className="h-4 w-4" />
+            Compare
+          </Button>
         </div>
       )}
 
@@ -865,9 +1015,88 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
             resume={result.resumeData}
             onApply={handleApplyEdit}
             onCancel={() => setEditMode(false)}
+            onSaveAsVersion={currentJobId ? handleSaveAsVersion : undefined}
+            saving={savingVersion}
           />
         </div>
       )}
+
+      {/* Version compare dialog (read-only, free). */}
+      <Dialog open={compareOpen} onOpenChange={setCompareOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="font-brand inline-flex items-center gap-2">
+              <Columns2 className="h-5 w-5" />
+              Compare versions
+            </DialogTitle>
+            <DialogDescription>
+              Side-by-side ATS score and skill coverage. Read-only — no credit used.
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Pick which other version to compare the current one against. */}
+          {versions.length > 1 && (
+            <div className="flex items-center gap-2">
+              <label className="proof-label !text-muted-foreground">Against</label>
+              <select
+                value={compareAgainst}
+                onChange={(e) => openCompare(e.target.value)}
+                className="rounded-lg border-2 border-black bg-white px-2 py-1 font-mono text-xs font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)] focus:outline-none"
+              >
+                {versions
+                  .filter((v) => !v.isCurrent)
+                  .map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.versionLabel || `v${v.version}`}
+                    </option>
+                  ))}
+              </select>
+            </div>
+          )}
+
+          {compareLoading ? (
+            <div className="flex items-center justify-center py-10">
+              <Loader2 className="h-5 w-5 animate-spin" />
+            </div>
+          ) : compareData ? (
+            <div className="grid grid-cols-2 gap-4">
+              {[compareData.b, compareData.a].map((d, idx) => (
+                <div
+                  key={d.id}
+                  className="rounded-xl border-2 border-black bg-white p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
+                >
+                  <p className="proof-label !text-muted-foreground mb-1">
+                    {idx === 1 ? 'Current' : 'Compared'}
+                  </p>
+                  <p className="font-mono text-xs font-bold truncate" title={d.title}>
+                    {d.versionLabel || d.title}
+                  </p>
+                  <p className="mt-3 font-brand text-3xl">
+                    {typeof d.atsScore === 'number' ? d.atsScore : '—'}
+                    <span className="ml-1 text-xs text-muted-foreground">ATS</span>
+                  </p>
+                  <p className="mt-3 font-mono text-[11px] font-bold uppercase tracking-[0.1em] text-green-700">
+                    Matched ({d.matchedSkills.length})
+                  </p>
+                  <p className="text-xs text-muted-foreground break-words">
+                    {d.matchedSkills.join(', ') || '—'}
+                  </p>
+                  <p className="mt-2 font-mono text-[11px] font-bold uppercase tracking-[0.1em] text-red-700">
+                    Missing ({d.missingSkills.length})
+                  </p>
+                  <p className="text-xs text-muted-foreground break-words">
+                    {d.missingSkills.join(', ') || '—'}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="py-6 text-center text-sm text-muted-foreground font-medium">
+              Could not load the comparison.
+            </p>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <div className="vitex-grid">
         {/* Left (60%): PDF proof */}

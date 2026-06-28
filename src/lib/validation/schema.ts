@@ -99,6 +99,63 @@ export const candidateProfileUpdateSchema = z.object({
 });
 export type CandidateProfileUpdate = z.infer<typeof candidateProfileUpdateSchema>;
 
+// Rename a version in a refine chain (PATCH /api/resumes/[id]). An empty string
+// clears the label (falls back to the derived title). Capped to keep the strip
+// chip readable.
+export const versionLabelUpdateSchema = z.object({
+  versionLabel: z.string().trim().max(120),
+});
+export type VersionLabelUpdate = z.infer<typeof versionLabelUpdateSchema>;
+
+// Persist a free, client-edited resume as a NEW uncharged version
+// (POST /api/resumes/[id]/versions). The server re-renders Typst itself, so the
+// client only sends the structured data + optional label/template. This never
+// runs the LLM pipeline and never charges — it is pure user-owned storage.
+// Bounds for a client-supplied manual version. The base resumeDataSchema is
+// intentionally lenient (it validates LLM output we trust), but here the client
+// sends the structured data directly, so we cap total size + array counts to
+// stop cheap unbounded storage / pathological render cost (rate limiting only
+// bounds frequency). A real resume is a few KB and a handful of entries.
+const MANUAL_VERSION_MAX_BYTES = 60_000;
+const MANUAL_VERSION_MAX_ENTRIES = 50; // top-level sections (work/projects/…)
+const MANUAL_VERSION_MAX_LIST = 100; // flat string lists (achievements/certifications)
+const MANUAL_VERSION_MAX_NESTED = 50; // nested arrays (highlights/keywords/profiles)
+
+export const manualVersionCreateSchema = z
+  .object({
+    resumeData: resumeDataSchema,
+    templateId: z.string().trim().min(1).max(50).optional(),
+    versionLabel: z.string().trim().max(120).optional(),
+  })
+  .superRefine((val, ctx) => {
+    const r = val.resumeData;
+    const tooBig = () =>
+      ctx.addIssue({ code: 'custom', message: 'Resume data is too large', path: ['resumeData'] });
+
+    if (JSON.stringify(r).length > MANUAL_VERSION_MAX_BYTES) return tooBig();
+    if (
+      r.work.length > MANUAL_VERSION_MAX_ENTRIES ||
+      r.projects.length > MANUAL_VERSION_MAX_ENTRIES ||
+      r.education.length > MANUAL_VERSION_MAX_ENTRIES ||
+      r.skills.length > MANUAL_VERSION_MAX_ENTRIES ||
+      r.achievements.length > MANUAL_VERSION_MAX_LIST ||
+      r.certifications.length > MANUAL_VERSION_MAX_LIST
+    ) {
+      return tooBig();
+    }
+    // Cap NESTED arrays too: each feeds Typst element generation directly
+    // (skill tags, bullet lists, profile rows), so an unbounded nested array is
+    // a render-cost vector even under the byte/top-level caps.
+    if (
+      r.basics.profiles.length > MANUAL_VERSION_MAX_NESTED ||
+      r.work.some((w) => w.highlights.length > MANUAL_VERSION_MAX_NESTED) ||
+      r.projects.some((p) => p.highlights.length > MANUAL_VERSION_MAX_NESTED) ||
+      r.skills.some((s) => s.keywords.length > MANUAL_VERSION_MAX_NESTED)
+    ) {
+      return tooBig();
+    }
+  });
+export type ManualVersionCreate = z.infer<typeof manualVersionCreateSchema>;
 // Application tracker status state machine. Any status is reachable from any
 // other (the tracker is a simple manual log, not an enforced workflow): a user
 // may jump straight to "offer" or move back from "interview" to "applied".

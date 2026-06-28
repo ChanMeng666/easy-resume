@@ -16,10 +16,17 @@ import { and, asc, eq, or } from 'drizzle-orm';
 import { db } from '@/lib/db/client';
 import { generationJobs } from '@/lib/db/schema';
 import { getCaller } from '@/server/auth/caller';
-import { UnauthenticatedError, NotFoundError } from '@/server/errors/AppError';
+import { createManualVersion } from '@/server/jobs/persist';
+import { manualVersionCreateSchema } from '@/lib/validation/schema';
+import { UnauthenticatedError, NotFoundError, ValidationError } from '@/server/errors/AppError';
 import { errorResponse } from '@/server/errors/envelope';
+import { enforceRateLimit, rateLimitHeaders } from '@/server/ratelimit';
 
 export const runtime = 'nodejs';
+
+// Persisting a manual version is a cheap write (re-render only, no LLM); cap per user.
+const VERSION_WRITE_LIMIT = 60;
+const VERSION_WRITE_WINDOW_SECONDS = 60;
 
 interface VersionResultSummary {
   atsScore?: number;
@@ -52,6 +59,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       .select({
         id: generationJobs.id,
         title: generationJobs.title,
+        versionLabel: generationJobs.versionLabel,
         result: generationJobs.result,
         createdAt: generationJobs.createdAt,
       })
@@ -70,6 +78,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return {
         id: row.id,
         title: row.title ?? 'Untitled resume',
+        versionLabel: row.versionLabel ?? undefined,
         version: index + 1,
         atsScore: result?.atsScore,
         createdAt: row.createdAt,
@@ -78,6 +87,57 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     });
 
     return NextResponse.json({ items, rootId }, { headers: { 'X-Request-Id': requestId } });
+  } catch (error) {
+    return errorResponse(error, requestId);
+  }
+}
+
+/**
+ * POST /api/resumes/{id}/versions — persist a free, client-edited resume as a
+ * NEW version in {id}'s refine chain. The server re-renders the Typst and writes
+ * the row `charged: false` (see createManualVersion): NO LLM, NO credit. Returns
+ * the new job id so the editor can deep-link to it.
+ */
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const requestId = crypto.randomUUID();
+  try {
+    const caller = await getCaller(request);
+    if (!caller) throw new UnauthenticatedError();
+
+    const rl = await enforceRateLimit(
+      `versionwrite:${caller.userId}`,
+      VERSION_WRITE_LIMIT,
+      VERSION_WRITE_WINDOW_SECONDS
+    );
+
+    const { id } = await params;
+
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      throw new ValidationError('Invalid JSON body');
+    }
+
+    const parsed = manualVersionCreateSchema.safeParse(body);
+    if (!parsed.success) {
+      throw new ValidationError('Invalid version payload', {
+        issues: parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
+      });
+    }
+
+    const { id: newId } = await createManualVersion({
+      caller,
+      parentJobId: id,
+      resumeData: parsed.data.resumeData,
+      templateId: parsed.data.templateId,
+      versionLabel: parsed.data.versionLabel,
+    });
+
+    return NextResponse.json(
+      { id: newId, pdfUrl: `/api/v1/resumes/${newId}/pdf` },
+      { status: 201, headers: { 'X-Request-Id': requestId, ...rateLimitHeaders(rl) } }
+    );
   } catch (error) {
     return errorResponse(error, requestId);
   }

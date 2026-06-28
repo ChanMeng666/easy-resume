@@ -18,10 +18,21 @@ import { generationJobs } from '@/lib/db/schema';
 import { getCaller } from '@/server/auth/caller';
 import { deleteJobPdfs } from '@/server/jobs/persist';
 import { createLogger } from '@/server/log/logger';
-import { UnauthenticatedError, NotFoundError, ConflictError } from '@/server/errors/AppError';
+import { versionLabelUpdateSchema } from '@/lib/validation/schema';
+import {
+  UnauthenticatedError,
+  NotFoundError,
+  ConflictError,
+  ValidationError,
+} from '@/server/errors/AppError';
 import { errorResponse } from '@/server/errors/envelope';
+import { enforceRateLimit, rateLimitHeaders } from '@/server/ratelimit';
 
 export const runtime = 'nodejs';
+
+// Renaming a version is a cheap write (no LLM); cap it per user as a basic guard.
+const RESUME_WRITE_LIMIT = 60;
+const RESUME_WRITE_WINDOW_SECONDS = 60;
 
 export async function GET(
   request: NextRequest,
@@ -59,6 +70,61 @@ export async function GET(
         createdAt: job.createdAt,
       },
       { headers: { 'X-Request-Id': requestId } }
+    );
+  } catch (error) {
+    return errorResponse(error, requestId);
+  }
+}
+
+/**
+ * PATCH /api/resumes/{id} — rename a version (set/clear version_label).
+ * Owner-scoped: a non-owner row is never updated and surfaces as NotFound.
+ */
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const requestId = crypto.randomUUID();
+  try {
+    const caller = await getCaller(request);
+    if (!caller) throw new UnauthenticatedError();
+
+    const rl = await enforceRateLimit(
+      `reswrite:${caller.userId}`,
+      RESUME_WRITE_LIMIT,
+      RESUME_WRITE_WINDOW_SECONDS
+    );
+
+    const { id } = await params;
+
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      throw new ValidationError('Invalid JSON body');
+    }
+
+    const parsed = versionLabelUpdateSchema.safeParse(body);
+    if (!parsed.success) {
+      throw new ValidationError('Invalid version label', {
+        issues: parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
+      });
+    }
+
+    // An empty label clears it (falls back to the derived title in the strip).
+    const versionLabel = parsed.data.versionLabel.length > 0 ? parsed.data.versionLabel : null;
+
+    // Owner-scoped conditional update; a non-owner/missing row updates nothing.
+    const [updated] = await db
+      .update(generationJobs)
+      .set({ versionLabel, updatedAt: new Date() })
+      .where(and(eq(generationJobs.id, id), eq(generationJobs.userId, caller.userId)))
+      .returning({ id: generationJobs.id, versionLabel: generationJobs.versionLabel });
+    if (!updated) throw new NotFoundError('Resume not found');
+
+    return NextResponse.json(
+      { id: updated.id, versionLabel: updated.versionLabel },
+      { headers: { 'X-Request-Id': requestId, ...rateLimitHeaders(rl) } }
     );
   } catch (error) {
     return errorResponse(error, requestId);

@@ -5,13 +5,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Check, X } from 'lucide-react';
+import { Check, X, Save, Loader2 } from 'lucide-react';
 import type { ResumeData } from '@/lib/validation/schema';
 
 interface StructuredEditorProps {
   resume: ResumeData;
   onApply: (next: ResumeData) => void;
   onCancel: () => void;
+  /** Persist the edit as a new version (free — no LLM/charge). Optional. */
+  onSaveAsVersion?: (next: ResumeData) => void;
+  /** True while a save-as-version request is in flight. */
+  saving?: boolean;
 }
 
 /**
@@ -23,7 +27,7 @@ interface StructuredEditorProps {
  * Scope is intentionally the high-signal fields a user most often fixes; dates,
  * education, and projects stay as generated (edit via Refine if needed).
  */
-export function StructuredEditor({ resume, onApply, onCancel }: StructuredEditorProps) {
+export function StructuredEditor({ resume, onApply, onCancel, onSaveAsVersion, saving }: StructuredEditorProps) {
   // Deep-clone so edits stay local until Apply (structuredClone — not Date/random).
   const [draft, setDraft] = useState<ResumeData>(() => structuredClone(resume));
 
@@ -142,6 +146,18 @@ export function StructuredEditor({ resume, onApply, onCancel }: StructuredEditor
           <Check className="mr-2 h-4 w-4" />
           Apply changes
         </Button>
+        {onSaveAsVersion && (
+          <Button
+            variant="outline"
+            onClick={() => onSaveAsVersion(draft)}
+            disabled={saving}
+            className="border-2 border-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
+            title="Save these edits as a new version — free, no AI"
+          >
+            {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+            Save as new version
+          </Button>
+        )}
         <Button
           variant="outline"
           onClick={onCancel}
