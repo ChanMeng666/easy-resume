@@ -10,7 +10,7 @@
  */
 
 import 'server-only';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray, lt } from 'drizzle-orm';
 import { generationJobs } from '@/lib/db/schema';
 import type { runGenerationPipeline } from '@/server/core/pipeline';
 import type { Caller, GenerateInput } from '@/server/core/pipeline.types';
@@ -90,6 +90,47 @@ export interface ReserveJobArgs {
 }
 
 /**
+ * A job stuck in `queued`/`running` past this age is presumed dead — the
+ * in-process runner died (VPS restart / crash) mid-generation. Generations take
+ * seconds, so this threshold is deliberately generous and can't catch a healthy
+ * in-flight run.
+ */
+const STALE_JOB_MS = 10 * 60 * 1000;
+
+/**
+ * Sweep abandoned jobs: mark any `queued`/`running` row older than STALE_JOB_MS
+ * as `failed` (retriable) so it stops blocking same-key retries with `in_progress`
+ * and its key can be reclaimed. Best-effort and cheap (one indexed UPDATE that
+ * matches nothing on a healthy system). Run opportunistically from the reserve
+ * paths — no cron / external worker, consistent with the in-process job model.
+ */
+export async function sweepStaleRunningJobs(logger?: Logger): Promise<void> {
+  try {
+    const { db } = await import('@/lib/db/client');
+    const cutoff = new Date(Date.now() - STALE_JOB_MS);
+    await db
+      .update(generationJobs)
+      .set({
+        status: 'failed',
+        error: {
+          code: 'INTERNAL',
+          message: 'Generation did not complete (the server restarted or it timed out).',
+          retriable: true,
+        },
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          inArray(generationJobs.status, ['queued', 'running']),
+          lt(generationJobs.updatedAt, cutoff)
+        )
+      );
+  } catch (err) {
+    logger?.warn('job.sweep_failed', {}, err);
+  }
+}
+
+/**
  * Reserve (or resolve) the generation slot for (caller, idempotencyKey).
  *
  * Closes the over-delivery vectors that a charge-only idempotency left open:
@@ -103,6 +144,10 @@ export interface ReserveJobArgs {
 export async function reserveJob(args: ReserveJobArgs): Promise<ReserveResult> {
   const { caller, input, idempotencyKey } = args;
   const { db } = await import('@/lib/db/client');
+
+  // Reconcile abandoned jobs first, so a same-key row left `running` by a crash
+  // is already `failed` here and gets reclaimed (rather than stuck `in_progress`).
+  await sweepStaleRunningJobs();
 
   // Claim the key with a fresh running row. Only one concurrent caller wins.
   const [created] = await db
