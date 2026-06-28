@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useUser } from "@stackframe/stack";
 import { useDebounce } from "use-debounce";
 import { motion } from "framer-motion";
-import { AlertCircle, FileText, Download, Trash2, Sparkles, Mail, Search, Loader2 } from "lucide-react";
+import { AlertCircle, FileText, Download, Trash2, Sparkles, Mail, Search, Loader2, Briefcase } from "lucide-react";
 import { Navbar } from "@/components/shared/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -282,6 +282,21 @@ function ResumesContent() {
                             Cover Letter
                           </Button>
                         </a>
+                      )}
+                      {isSucceeded && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-2"
+                          onClick={() =>
+                            router.push(
+                              `/applications?jobId=${item.id}&position=${encodeURIComponent(item.title ?? "")}`
+                            )
+                          }
+                        >
+                          <Briefcase className="w-4 h-4" />
+                          Track
+                        </Button>
                       )}
                       <div className="ml-auto">
                         {confirmingId === item.id ? (

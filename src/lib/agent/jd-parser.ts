@@ -2,6 +2,7 @@ import { generateObject } from "ai";
 import { z } from "zod";
 import { extractModel, EXTRACT_TEMPERATURE } from "./models";
 import { aiTelemetry } from "./telemetry";
+import { PROMPT_VERSIONS } from "./prompt-registry";
 
 /**
  * Schema for a parsed job description.
@@ -38,7 +39,7 @@ export async function parseJobDescription(rawText: string): Promise<ParsedJD> {
     schema: parsedJDSchema,
     temperature: EXTRACT_TEMPERATURE,
     providerOptions: { openai: { strictJsonSchema: false } },
-    experimental_telemetry: aiTelemetry("parse-jd"),
+    experimental_telemetry: aiTelemetry("parse-jd", { promptVersion: PROMPT_VERSIONS["parse-jd"] }),
     prompt: `Parse the following job description into structured data.
 Extract all relevant information including skills, keywords, requirements, and responsibilities.
 For keywords, focus on terms that ATS systems would scan for.

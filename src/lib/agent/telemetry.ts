@@ -21,7 +21,25 @@ const ENABLED = process.env.AI_TELEMETRY_ENABLED === 'true';
 // still carry timing, token, and cost data — just not the raw text.
 const RECORD_IO = process.env.AI_TELEMETRY_RECORD_IO === 'true';
 
-/** Build the `experimental_telemetry` option for an AI SDK call. */
-export function aiTelemetry(functionId: string) {
-  return { isEnabled: ENABLED, functionId, recordInputs: RECORD_IO, recordOutputs: RECORD_IO };
+import type { PromptFunctionId } from './prompt-registry';
+
+/**
+ * Build the `experimental_telemetry` option for an AI SDK call.
+ *
+ * `functionId` is typed to the prompt registry so every instrumented step is a
+ * known agent step (an unregistered id is a compile error). `metadata` is
+ * deliberately narrowed to `{ promptVersion }` — a non-PII version string — so a
+ * caller can't accidentally route PII (e.g. resume/JD text) through metadata and
+ * bypass the RECORD_IO gate (which governs raw prompt input/output text). The
+ * version is emitted regardless of RECORD_IO so traces stay filterable/comparable
+ * by prompt version even with raw I/O recording off.
+ */
+export function aiTelemetry(functionId: PromptFunctionId, metadata?: { promptVersion: string }) {
+  return {
+    isEnabled: ENABLED,
+    functionId,
+    recordInputs: RECORD_IO,
+    recordOutputs: RECORD_IO,
+    ...(metadata ? { metadata } : {}),
+  };
 }

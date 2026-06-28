@@ -94,6 +94,8 @@ describe('runGenerationPipeline billing gating', () => {
     expect(result.usage.charged).toBe(true);
     expect(result.pdf.byteLength).toBeGreaterThan(0);
     expect(result.atsScore).toBe(90);
+    // The result records which prompt versions produced it (registry snapshot).
+    expect(result.promptVersions['parse-jd']).toMatch(/^v\d+$/);
   });
 
   it('emits progress for all 8 steps', async () => {
@@ -259,6 +261,10 @@ describe('runGenerationPipeline with a pre-parsed profile background', () => {
     expect(meter.chargeForResult).toHaveBeenCalledTimes(1);
     expect(result.usage.charged).toBe(true);
     expect(result.pdf.byteLength).toBeGreaterThan(0);
+    // Prompt attribution reflects ONLY executed steps: parse-background was
+    // skipped, so it must NOT appear in the recorded prompt versions.
+    expect(result.promptVersions['parse-background']).toBeUndefined();
+    expect(result.promptVersions['parse-jd']).toMatch(/^v\d+$/);
   });
 
   it('still emits progress for all 8 steps when reusing a profile', async () => {
