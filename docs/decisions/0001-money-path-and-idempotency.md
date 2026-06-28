@@ -1,6 +1,6 @@
 # ADR 0001 — Money-path correctness, Typst safety, and the idempotency contract
 
-- **Status**: Accepted (P0-1, P0-3 shipped; P0-2 partially shipped; reservation + per-user scope pending)
+- **Status**: Accepted (P0-1, P0-3, P0-2, **P0-2b shipped** — money-path idempotency fully closed; P0-4/P0-5/P1 pending)
 - **Date**: 2026-06-28
 - **Authors**: Claude (implementation lead) × Codex (adversarial reviewer)
 - **Scope**: Outcome-based billing, public/web idempotency, Typst rendering safety
@@ -56,43 +56,30 @@ invalid; a raw `"` terminates the string and allows injection). (Fixed — P0-3.
 | **P0-3** `escapeTypstString` for all string-literal sites across the base generator **and all 6 industry templates** (the ones the pipeline actually renders); `escapeTypst` now escapes `[`/`]` | `16c087d` | Adversarial inputs (`"`, `\`, `#`, `$`, `]`, `C#`, emoji, CJK) compile to PDF across all 7 generators with the real `typst` binary |
 | **P0-2 (partial)** web SSE replays a stored result on key reuse (closes the *sequential* reuse-with-different-input vector; free reconnect); client sends a stable per-intent `Idempotency-Key` (retry reuses, refine mints new); v1 `createJob` race-safe; homepage copy corrected | `75aec54` | 70 tests + tsc + lint + production build |
 
-## Open: the idempotency contract is not fully closed
+## Idempotency contract — CLOSED (P0-2b, commit `c337083`)
 
-Codex's adversarial review confirmed residual vectors. These are **pre-existing**
-(P0-2 improved on baseline, regressed nothing) and require a focused redesign of
-the money-path table semantics — to be done carefully against a real DB, not
-rushed. Concrete attack sequences to defeat:
+The three residual over-delivery vectors are now closed by one insight: **the
+credit charge is keyed on the reserved `jobId`** (server-generated, per-user,
+deleted with the job) — **not** the client `Idempotency-Key` — and the web path
+**reserves a `generation_jobs` row before running**, unifying it with the v1 job
+model. This needed **no risky live-DB constraint migration**.
 
-1. **Concurrent same-key over-delivery (web).** Two simultaneous `/api/generate`
-   with the same key both pass the "succeeded job?" check (none yet), both run,
-   the charge dedupes to one, but **both deliver**. Root cause: the web path has
-   no *in-flight reservation* (v1 reserves a job row up front; the web path runs
-   immediately and persists after).
-2. **Delete/persist-failure then key-reuse.** The usage txn outlives its job, so
-   replaying a key whose `generation_jobs` row is gone (deleted, or persist
-   failed) re-runs the pipeline; the charge dedupes on the orphan txn →
-   `charged:true` → a free result.
-3. **Cross-user / global key scope (security).** The usage unique index is global
-   on `reference_id`. User B reusing user A's chosen key sees A's txn → charged
-   `true` without debiting B → free result across accounts via the public API.
+| Vector | How it's closed |
+|--------|-----------------|
+| **Concurrent same-key (web)** | `reserveJob` claims the key with an atomic `onConflictDoNothing`; only the winner gets a runnable `jobId`, the rest get `in_progress` / `replay`. |
+| **Delete-then-reuse** | Charge keys on `jobId` (gone on delete) → reusing the key makes a NEW job and re-charges instead of replaying the orphan txn. |
+| **Cross-user key** | `reserveJob` / `createJob` resolve the existing row owner-scoped → another user's key → `conflict`, before any run or charge. |
+| **Failed-job retry** | `reclaim` flips status out of `failed` atomically; a reclaimed run reuses the same `jobId` and dedupes the charge. |
 
-### Resolution plan (next task — P0-2b)
-- **Per-user idempotency scope.** Change the partial unique index to
-  `(user_id, reference_id) WHERE type='usage'` (idempotent DDL in
-  `scripts/migrate.ts`, with a dedup pass), and scope the prior-txn lookup +
-  23505 winner-lookup in `useCreditsIdempotent` by `userId`. Also scope
-  `generation_jobs.idempotencyKey` uniqueness/lookups per user. Closes (3).
-- **Up-front reservation on the web path.** Reserve a `generation_jobs` row
-  (status `running`) keyed by `(user_id, idempotencyKey)` *before* running, then
-  update it to `succeeded` after. A concurrent same-key request that finds a
-  `running` row returns 409 / waits; a `succeeded` row replays. Unifies the web
-  path with v1 and closes (1). For (2), tie "already delivered" to the live
-  reservation row (not the standalone txn), or have `DELETE` invalidate the key.
-- Add money-path tests for each sequence above before shipping.
+Hardened by the review loop: the pipeline call is isolated so the *only* `failJob`
+path is a genuine pipeline failure (a client disconnect can't mark a
+charged+delivered job failed → no free re-run); history lists only `succeeded`
+jobs; `DELETE` refuses non-terminal jobs via a single atomic conditional delete
+(closing the check-then-delete TOCTOU). New `ConflictError` (409).
 
-Severity note: (1) and (2) require deliberate API abuse by an authenticated
-caller and are rate-limited (15/min web, 30/min v1); (3) is the most serious
-(cross-account) and should lead P0-2b.
+Tests: `src/server/jobs/reserveJob.test.ts` pins each reservation outcome;
+`creditService.idempotent.test.ts` + `pipeline.test.ts` pin the charge gating.
+Codex adversarial review: **SHIP**.
 
 ## Remaining roadmap (unchanged from the plan)
 - **P0-4** migration source-of-truth drift (`scripts/migrate.ts` is authoritative
