@@ -210,7 +210,7 @@ export default function HomePage() {
                   </div>
 
                   <div className="mt-5 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="proof-label">First resume free · No account required</p>
+                    <p className="proof-label">3 free resumes on sign-up · No credit card required</p>
                     <Button
                       size="lg"
                       onClick={handleGenerate}

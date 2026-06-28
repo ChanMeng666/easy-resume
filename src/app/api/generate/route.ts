@@ -13,7 +13,7 @@ import { NextRequest } from 'next/server';
 import { getCaller } from '@/server/auth/caller';
 import { runGenerationPipeline } from '@/server/core/pipeline';
 import { defaultDeps } from '@/server/core/deps';
-import { persistCompletedJob } from '@/server/jobs/persist';
+import { persistCompletedJob, findCompletedJobByKey } from '@/server/jobs/persist';
 import { UnauthenticatedError, ValidationError } from '@/server/errors/AppError';
 import { toErrorEnvelope, errorResponse } from '@/server/errors/envelope';
 import { createLogger } from '@/server/log/logger';
@@ -64,6 +64,21 @@ export async function POST(request: NextRequest) {
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
+      // Idempotency replay: if this key already produced a result, stream THAT
+      // stored result instead of re-running the pipeline. Re-running would
+      // deliver a fresh result under the already-settled (deduped) charge — i.e.
+      // one credit buying multiple PDFs when a key is reused (a real abuse
+      // vector with attacker-controlled inputs). It also makes a reconnect/retry
+      // of a completed run free. Done before any heavy work or heartbeat.
+      const prior = await findCompletedJobByKey(caller.userId, idempotencyKey);
+      if (prior) {
+        sendEvent(controller, encoder, { type: 'result', data: prior.result });
+        sendEvent(controller, encoder, { type: 'saved', jobId: prior.jobId });
+        sendEvent(controller, encoder, { type: 'done' });
+        controller.close();
+        return;
+      }
+
       // Heartbeat keeps proxies/mobile browsers from dropping the long stream.
       const heartbeatId = setInterval(() => {
         try {

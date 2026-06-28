@@ -37,10 +37,24 @@ export async function createJob(
     .limit(1);
   if (existing) return existing;
 
+  // Race-safe insert: onConflictDoNothing on the unique idempotencyKey means two
+  // concurrent identical POSTs can't both create a job (and thus can't both
+  // charge). The loser gets no row back and returns the winner instead of
+  // erroring — so a duplicate key is always idempotent, even under contention.
   const [job] = await db
     .insert(generationJobs)
     .values({ userId: caller.userId, status: 'queued', input, idempotencyKey })
+    .onConflictDoNothing({ target: generationJobs.idempotencyKey })
     .returning();
+
+  if (!job) {
+    const [winner] = await db
+      .select()
+      .from(generationJobs)
+      .where(eq(generationJobs.idempotencyKey, idempotencyKey))
+      .limit(1);
+    return winner;
+  }
 
   // Detached: the long-lived VPS process keeps running this after the POST returns.
   void runJob(job.id, caller);

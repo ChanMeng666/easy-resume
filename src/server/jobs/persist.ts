@@ -10,7 +10,7 @@
  */
 
 import 'server-only';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { generationJobs } from '@/lib/db/schema';
 import type { runGenerationPipeline } from '@/server/core/pipeline';
 import type { Caller, GenerateInput } from '@/server/core/pipeline.types';
@@ -60,6 +60,45 @@ export function deriveJobTitle(input: GenerateInput, result?: PipelineResult): s
 /** Trim a string to MAX_TITLE_LEN, appending an ellipsis when cut. */
 function truncate(s: string): string {
   return s.length > MAX_TITLE_LEN ? `${s.slice(0, MAX_TITLE_LEN - 1).trimEnd()}…` : s;
+}
+
+/**
+ * Look up a previously-completed generation for this (user, idempotencyKey).
+ *
+ * This is the idempotency contract for the web SSE path: a reused key must
+ * return the SAME result it produced the first time — never re-run the pipeline
+ * (which would deliver a fresh result under the already-settled, deduped charge)
+ * and never re-charge. It also makes a reconnect/retry after a completed-but-
+ * lost run free. Owner-scoped so one user's key can't read another's result.
+ *
+ * Fail-open: any DB error returns null (treat as "no prior result" and run
+ * normally) so a transient lookup failure never blocks a legitimate generation.
+ */
+export async function findCompletedJobByKey(
+  userId: string,
+  idempotencyKey: string
+): Promise<{ jobId: string; result: ReturnType<typeof toWireResult> } | null> {
+  try {
+    const { db } = await import('@/lib/db/client');
+    const [row] = await db
+      .select({
+        id: generationJobs.id,
+        status: generationJobs.status,
+        result: generationJobs.result,
+      })
+      .from(generationJobs)
+      .where(
+        and(
+          eq(generationJobs.idempotencyKey, idempotencyKey),
+          eq(generationJobs.userId, userId)
+        )
+      )
+      .limit(1);
+    if (!row || row.status !== 'succeeded' || !row.result) return null;
+    return { jobId: row.id, result: row.result as ReturnType<typeof toWireResult> };
+  } catch {
+    return null;
+  }
 }
 
 export interface PersistCompletedJobArgs {
