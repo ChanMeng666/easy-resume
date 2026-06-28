@@ -159,6 +159,18 @@ export async function runGenerationPipeline(
     opts.idempotencyKey
   );
 
+  // Never deliver an unbilled result. The pre-flight hasCredits() check above is
+  // best-effort: between it and this atomic post-compile charge, a concurrent
+  // generation by the same user can drain the balance. When that happens the
+  // charge returns charged:false; refusing to return the result here is what
+  // makes "one credit buys at most one PDF" hold even under that race. (The
+  // wasted compile is the bounded cost of losing the race; the user is not
+  // charged.) Same-key SSE reconnects and unlimited-tier users return
+  // charged:true, so they are never affected.
+  if (!usage.charged) {
+    throw new InsufficientCreditsError();
+  }
+
   log.info('pipeline.succeeded', {
     durationMs: Date.now() - startedAt,
     templateId,

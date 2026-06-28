@@ -86,6 +86,7 @@ interface StreamCallbacks {
 async function runGenerationStream(
   jd: string,
   bg: string,
+  idempotencyKey: string,
   signal: AbortSignal,
   { onProgress, onResult, onSaved }: StreamCallbacks
 ): Promise<void> {
@@ -93,7 +94,13 @@ async function runGenerationStream(
   try {
     response = await fetch('/api/generate', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        // Stable per-intent key: a retry/reconnect of the same generation reuses
+        // it so the server returns the original result instead of re-charging;
+        // a refine uses a new key (a deliberate new charge).
+        'Idempotency-Key': idempotencyKey,
+      },
       body: JSON.stringify({ jobDescription: jd, background: bg }),
       signal,
     });
@@ -240,6 +247,10 @@ export function AIEditorContent({ jd = '', bg = '', jobId }: AIEditorContentProp
   const generationStarted = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
   const isGeneratingRef = useRef(true);
+  // Stable idempotency key for the current generation intent. A retry of the
+  // same intent reuses it (so a completed-but-lost run isn't re-charged); a new
+  // run or a refine mints a fresh key.
+  const idempotencyKeyRef = useRef<string | null>(null);
 
   // Keep a ref in sync so the visibilitychange handler can read the current
   // generation state without re-binding on every state change.
@@ -261,12 +272,22 @@ export function AIEditorContent({ jd = '', bg = '', jobId }: AIEditorContentProp
     return () => document.removeEventListener('visibilitychange', onVisibility);
   }, []);
 
-  /** Kick off a fresh generation (used both for initial run and Retry). */
+  /**
+   * Kick off a generation. By default mints a fresh idempotency key (a new
+   * intent / a deliberate refine charge); pass `reuseKey` on Retry so a run that
+   * actually completed server-side returns its stored result instead of charging
+   * again.
+   */
   const startGeneration = useCallback(
-    (currentJd: string, currentBg: string) => {
+    (currentJd: string, currentBg: string, reuseKey = false) => {
       abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;
+
+      if (!reuseKey || !idempotencyKeyRef.current) {
+        idempotencyKeyRef.current = crypto.randomUUID();
+      }
+      const idempotencyKey = idempotencyKeyRef.current;
 
       setIsGenerating(true);
       setCurrentStep(0);
@@ -274,7 +295,7 @@ export function AIEditorContent({ jd = '', bg = '', jobId }: AIEditorContentProp
       setError(null);
       setWasHiddenDuringGeneration(false);
 
-      runGenerationStream(currentJd, currentBg, controller.signal, {
+      runGenerationStream(currentJd, currentBg, idempotencyKey, controller.signal, {
         onProgress: setCurrentStep,
         onResult: (data) => setResult(data),
         onSaved: (savedJobId) => {
@@ -437,7 +458,10 @@ export function AIEditorContent({ jd = '', bg = '', jobId }: AIEditorContentProp
       loadJob(jobId);
       return;
     }
-    startGeneration(effJd, effBg);
+    // Reuse the same idempotency key: if the prior attempt actually completed
+    // server-side (we just lost the stream), the retry returns that stored
+    // result for free instead of charging a second time.
+    startGeneration(effJd, effBg, true);
   }, [jobId, loadJob, effJd, effBg, startGeneration]);
 
   /** ATS score text tone. */

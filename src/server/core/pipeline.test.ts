@@ -142,6 +142,22 @@ describe('runGenerationPipeline billing gating', () => {
     expect(meter.chargeForResult).not.toHaveBeenCalled();
   });
 
+  it('does NOT deliver an unbilled result when the post-compile charge loses the race', async () => {
+    // hasCredits passed pre-flight, but a concurrent generation drained the
+    // balance, so the atomic charge returns charged:false. The pipeline must
+    // refuse to return the (already compiled) result so one credit can never
+    // buy two PDFs.
+    const { deps, meter } = makeDeps();
+    meter.chargeForResult.mockResolvedValue({ charged: false, credits: 0 });
+
+    await expect(runGenerationPipeline(input, caller, deps, opts)).rejects.toBeInstanceOf(
+      InsufficientCreditsError
+    );
+    // It compiled (we reached the charge) but did not hand back a result.
+    expect(deps.compile).toHaveBeenCalledTimes(1);
+    expect(meter.chargeForResult).toHaveBeenCalledTimes(1);
+  });
+
   it('fails fast with no credits, before any LLM spend', async () => {
     const { deps, meter, agent } = makeDeps();
     meter.hasCredits.mockResolvedValue(false);

@@ -13,8 +13,8 @@ import { NextRequest } from 'next/server';
 import { getCaller } from '@/server/auth/caller';
 import { runGenerationPipeline } from '@/server/core/pipeline';
 import { defaultDeps } from '@/server/core/deps';
-import { persistCompletedJob } from '@/server/jobs/persist';
-import { UnauthenticatedError, ValidationError } from '@/server/errors/AppError';
+import { reserveJob, finalizeSucceededJob, failJob } from '@/server/jobs/persist';
+import { UnauthenticatedError, ValidationError, ConflictError } from '@/server/errors/AppError';
 import { toErrorEnvelope, errorResponse } from '@/server/errors/envelope';
 import { createLogger } from '@/server/log/logger';
 import { enforceRateLimit, rateLimitHeaders, type RateLimitResult } from '@/server/ratelimit';
@@ -56,14 +56,66 @@ export async function POST(request: NextRequest) {
     return errorResponse(new ValidationError('Invalid JSON body'), requestId);
   }
 
-  // A stable idempotency key lets a reconnecting client avoid double-charging.
+  // A stable client idempotency key dedupes a generation intent across retries /
+  // reconnects. It is the RESERVATION key (not the charge key): the charge is
+  // keyed on the reserved job id below.
   const headerKey = request.headers.get('Idempotency-Key');
   const idempotencyKey =
     headerKey && /^[0-9a-f-]{36}$/i.test(headerKey) ? headerKey : crypto.randomUUID();
 
+  const input = {
+    jobDescription: body.jobDescription ?? '',
+    background: body.background ?? '',
+    templateId: body.templateId,
+  };
+
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
+      // Reserve a generation slot up front. This is the idempotency anchor that
+      // makes "one credit, at most one delivered result" hold even under
+      // concurrent same-key requests, key reuse after a delete, or a cross-user
+      // key — see reserveJob. A reservation failure (DB down) surfaces as an
+      // error rather than running unguarded.
+      let jobId: string;
+      try {
+        const reservation = await reserveJob({ caller, input, idempotencyKey });
+        if (reservation.mode === 'replay') {
+          sendEvent(controller, encoder, { type: 'result', data: reservation.result });
+          sendEvent(controller, encoder, { type: 'saved', jobId: reservation.jobId });
+          sendEvent(controller, encoder, { type: 'done' });
+          controller.close();
+          return;
+        }
+        if (reservation.mode === 'in_progress' || reservation.mode === 'conflict') {
+          const err = new ConflictError(
+            reservation.mode === 'in_progress'
+              ? 'A generation for this request is already in progress.'
+              : 'This idempotency key is already in use.',
+            reservation.mode === 'in_progress'
+          );
+          const envelope = toErrorEnvelope(err, requestId);
+          sendEvent(controller, encoder, {
+            type: 'error',
+            message: envelope.error.message,
+            error: envelope.error,
+          });
+          controller.close();
+          return;
+        }
+        jobId = reservation.jobId;
+      } catch (error) {
+        const envelope = toErrorEnvelope(error, requestId);
+        log.error('generate.reserve_failed', { code: envelope.error.code }, error);
+        sendEvent(controller, encoder, {
+          type: 'error',
+          message: envelope.error.message,
+          error: envelope.error,
+        });
+        controller.close();
+        return;
+      }
+
       // Heartbeat keeps proxies/mobile browsers from dropping the long stream.
       const heartbeatId = setInterval(() => {
         try {
@@ -73,18 +125,27 @@ export async function POST(request: NextRequest) {
         }
       }, 15_000);
 
+      // Send that never throws into control flow — a closed stream (client
+      // disconnect) must not abort post-success bookkeeping.
+      const safeSend = (data: object) => {
+        try {
+          sendEvent(controller, encoder, data);
+        } catch {
+          /* stream closed */
+        }
+      };
+
+      // Run the pipeline in ITS OWN try. Only a genuine pipeline failure (no
+      // charge, or a charged:false race that throws) may mark the job failed.
+      let result;
       try {
-        const result = await runGenerationPipeline(
-          {
-            jobDescription: body.jobDescription ?? '',
-            background: body.background ?? '',
-            templateId: body.templateId,
-          },
+        result = await runGenerationPipeline(
+          input,
           caller,
           defaultDeps({
             requestId,
             onProgress: (e) =>
-              sendEvent(controller, encoder, {
+              safeSend({
                 type: 'progress',
                 step: e.index,
                 total: e.total,
@@ -92,55 +153,48 @@ export async function POST(request: NextRequest) {
                 stepName: e.step,
               }),
           }),
-          { idempotencyKey }
+          // Charge is keyed on the reserved jobId — per-user and per-job, so a
+          // deleted job's key can never replay an old charge.
+          { idempotencyKey: jobId }
         );
-
-        sendEvent(controller, encoder, {
-          type: 'result',
-          data: {
-            resumeData: result.resumeData,
-            typstCode: result.typstCode,
-            atsScore: result.atsScore,
-            matchAnalysis: result.matchAnalysis,
-            coverLetter: result.coverLetter,
-            coverLetterTypst: result.coverLetterTypst,
-            templateId: result.templateId,
-            usage: result.usage,
-          },
-        });
-
-        // Persist the finished generation so the web user keeps a history entry
-        // (same `generationJobs` model the v1 API uses). Best-effort and off the
-        // delivery critical path: the result is already streamed above, and a DB
-        // failure is swallowed inside persistCompletedJob. A `saved` event lets
-        // the client deep-link /editor?job=<id> and survive a refresh.
-        const saved = await persistCompletedJob({
-          caller,
-          input: {
-            jobDescription: body.jobDescription ?? '',
-            background: body.background ?? '',
-            templateId: body.templateId,
-          },
-          idempotencyKey,
-          result,
-          logger: log,
-        });
-        if (saved) sendEvent(controller, encoder, { type: 'saved', jobId: saved.jobId });
-
-        sendEvent(controller, encoder, { type: 'done' });
       } catch (error) {
         const envelope = toErrorEnvelope(error, requestId);
         log.error('generate.failed', { code: envelope.error.code, step: envelope.error.step }, error);
-        // Send both the envelope and a flat `message` for client back-compat.
-        sendEvent(controller, encoder, {
-          type: 'error',
-          message: envelope.error.message,
-          error: envelope.error,
-        });
-      } finally {
+        // Mark the reserved job failed so it isn't stuck in `running` and the key
+        // can be reclaimed by a retry.
+        await failJob(jobId, envelope.error, log);
+        safeSend({ type: 'error', message: envelope.error.message, error: envelope.error });
         clearInterval(heartbeatId);
         controller.close();
+        return;
       }
+
+      // Past this point the pipeline SUCCEEDED and the credit is charged (keyed on
+      // jobId). A delivery/persist error here must NEVER mark the job failed —
+      // doing so would let a retry reclaim and re-run it for free. So all sends
+      // are best-effort and finalize swallows its own errors.
+      clearInterval(heartbeatId);
+      safeSend({
+        type: 'result',
+        data: {
+          resumeData: result.resumeData,
+          typstCode: result.typstCode,
+          atsScore: result.atsScore,
+          matchAnalysis: result.matchAnalysis,
+          coverLetter: result.coverLetter,
+          coverLetterTypst: result.coverLetterTypst,
+          templateId: result.templateId,
+          usage: result.usage,
+        },
+      });
+
+      // Finalize the reserved row to `succeeded` + store the PDF. The `saved`
+      // event (only on a successful write) lets the client deep-link
+      // /editor?job=<id> and survive a refresh.
+      const finalized = await finalizeSucceededJob({ jobId, input, result, logger: log });
+      if (finalized) safeSend({ type: 'saved', jobId });
+      safeSend({ type: 'done' });
+      controller.close();
     },
   });
 

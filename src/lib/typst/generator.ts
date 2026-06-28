@@ -7,6 +7,7 @@
 import { ResumeData } from '@/lib/validation/schema';
 import {
   escapeTypst,
+  escapeTypstString,
   formatDateRange,
   cleanURL,
   networkToFaIcon,
@@ -124,7 +125,7 @@ function generateHeader(basics: ResumeData['basics']): string {
 
   if (basics.email) {
     contactLines.push(
-      `#fa-envelope(solid: true) #link("mailto:${basics.email}")[${escapeTypst(basics.email)}]`
+      `#fa-envelope(solid: true) #link("mailto:${escapeTypstString(basics.email)}")[${escapeTypst(basics.email)}]`
     );
   }
   if (basics.phone) {
@@ -138,7 +139,7 @@ function generateHeader(basics: ResumeData['basics']): string {
     const icon = networkToFaIcon(profile.network);
     const label = profile.label || cleanURL(profile.url);
     contactLines.push(
-      `${icon} #link("${profile.url}")[${escapeTypst(label)}]`
+      `${icon} #link("${escapeTypstString(profile.url)}")[${escapeTypst(label)}]`
     );
   });
 
@@ -223,9 +224,11 @@ function generateExperienceSection(work: ResumeData['work']): string {
 
   const entries = work.map((job, index) => {
     const dateRange = formatDateRange(job.startDate, job.endDate);
-    const subtitle = `${escapeTypst(job.company)} — ${escapeTypst(job.type)}`;
+    // These four values land inside cv-event's "..." string-literal args, so
+    // they need string-literal escaping (not content-mode escapeTypst).
+    const subtitle = `${escapeTypstString(job.company)} — ${escapeTypstString(job.type)}`;
 
-    let content = `#cv-event("${escapeTypst(job.position)}", "${subtitle}", "${dateRange}", "${escapeTypst(job.location)}")`;
+    let content = `#cv-event("${escapeTypstString(job.position)}", "${subtitle}", "${escapeTypstString(dateRange)}", "${escapeTypstString(job.location)}")`;
 
     if (job.highlights && job.highlights.length > 0) {
       const [description, ...bullets] = job.highlights;
@@ -295,7 +298,8 @@ function generateEducationSection(
     const dateRange = formatDateRange(edu.startDate, edu.endDate);
     const degree = `${edu.studyType} of ${edu.area}`;
 
-    let content = `#cv-event("${escapeTypst(degree)}", "${escapeTypst(edu.institution)}", "${dateRange}", "${escapeTypst(edu.location)}")`;
+    // String-literal args of cv-event — escape for the "..." context.
+    let content = `#cv-event("${escapeTypstString(degree)}", "${escapeTypstString(edu.institution)}", "${escapeTypstString(dateRange)}", "${escapeTypstString(edu.location)}")`;
 
     if (edu.gpa) {
       content += `\nGPA: ${escapeTypst(edu.gpa)}`;
@@ -324,9 +328,9 @@ function generateSkillsSection(skills: ResumeData['skills']): string {
 
   const categories = skills.map((skill) => {
     const tags = skill.keywords
-      .map((kw) => `#cv-tag("${escapeTypst(kw)}")`)
+      .map((kw) => `#cv-tag("${escapeTypstString(kw)}")`)
       .join('\n');
-    return `#cv-subsection("${escapeTypst(skill.name)}")
+    return `#cv-subsection("${escapeTypstString(skill.name)}")
 ${tags}`;
   });
 

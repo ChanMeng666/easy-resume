@@ -52,7 +52,13 @@ export async function GET(request: NextRequest) {
     const limit = Math.max(intParam(searchParams.get('limit'), DEFAULT_LIMIT, MAX_LIMIT), 1);
     const offset = intParam(searchParams.get('offset'), 0, Number.MAX_SAFE_INTEGER);
 
-    const conditions: SQL[] = [eq(generationJobs.userId, caller.userId)];
+    // Only completed generations belong in "My Resumes". This also hides the
+    // in-flight `running` reservation rows (and `failed` ones) from the history
+    // list, so they can't be opened or deleted mid-run.
+    const conditions: SQL[] = [
+      eq(generationJobs.userId, caller.userId),
+      eq(generationJobs.status, 'succeeded'),
+    ];
     if (q) {
       const pattern = `%${q}%`;
       const search = or(

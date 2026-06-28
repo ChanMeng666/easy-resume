@@ -6,7 +6,10 @@
 /**
  * Escape special Typst characters in content mode.
  * In Typst content mode, these characters have special meaning and must be
- * escaped with a preceding backslash: * _ ` $ # < > @ \
+ * escaped with a preceding backslash: * _ ` $ # < > @ [ ] \
+ * The square brackets matter because content is routinely placed inside content
+ * blocks like `#text(...)[...]`; an unescaped `]` closes the block early and
+ * aborts compilation ("unexpected closing bracket").
  * @param text - Raw text to escape
  * @returns Text safe for Typst content mode
  */
@@ -23,7 +26,28 @@ export function escapeTypst(text: string): string {
     .replace(/#/g, '\\#')
     .replace(/</g, '\\<')
     .replace(/>/g, '\\>')
-    .replace(/@/g, '\\@');
+    .replace(/@/g, '\\@')
+    .replace(/\[/g, '\\[')
+    .replace(/\]/g, '\\]');
+}
+
+/**
+ * Escape a string for use inside a Typst STRING LITERAL ("..."), e.g. the
+ * arguments of helper functions like `#cv-event("...")` or `#cv-tag("...")`.
+ *
+ * This is a DIFFERENT context from {@link escapeTypst}. Typst string literals
+ * recognize only a small set of escapes (`\\`, `\"`, `\n`, `\t`, `\u{...}`); the
+ * content-mode escapes that {@link escapeTypst} emits (`\#`, `\$`, `\*`, …) are
+ * INVALID inside a string literal and abort compilation — so e.g. a "C#" job
+ * title would otherwise break the PDF. A raw `"` would also terminate the
+ * literal early and permit Typst-code injection. We therefore escape only the
+ * two characters that are special between double quotes: backslash and quote.
+ * @param text - Raw text to embed inside a Typst "..." string literal
+ * @returns Text safe to place between double quotes in Typst code
+ */
+export function escapeTypstString(text: string): string {
+  if (!text) return '';
+  return text.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }
 
 /**

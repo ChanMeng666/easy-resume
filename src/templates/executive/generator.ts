@@ -7,6 +7,7 @@
 import { ResumeData } from '@/lib/validation/schema';
 import {
   escapeTypst,
+  escapeTypstString,
   formatDateRange,
   cleanURL,
   networkToIcon,
@@ -111,7 +112,7 @@ function generateHeader(basics: ResumeData['basics']): string {
 
   if (basics.email) {
     contactParts.push(
-      `#link("mailto:${basics.email}")[✉ ${escapeTypst(basics.email)}]`
+      `#link("mailto:${escapeTypstString(basics.email)}")[✉ ${escapeTypst(basics.email)}]`
     );
   }
   if (basics.phone) {
@@ -126,7 +127,7 @@ function generateHeader(basics: ResumeData['basics']): string {
       const icon = networkToIcon(profile.network);
       const label = cleanURL(profile.url);
       contactParts.push(
-        `#link("${profile.url}")[${icon} ${escapeTypst(label)}]`
+        `#link("${escapeTypstString(profile.url)}")[${icon} ${escapeTypst(label)}]`
       );
     }
   });
@@ -163,7 +164,7 @@ function generateExperienceSection(work?: ResumeData['work']): string {
   const entries = work.map((job) => {
     const dateRange = formatDateRange(job.startDate, job.endDate);
 
-    let content = `#cv-event("${escapeTypst(job.position)}", "${escapeTypst(job.company)}", "${dateRange}", "${escapeTypst(job.location)}")`;
+    let content = `#cv-event("${escapeTypstString(job.position)}", "${escapeTypstString(job.company)}", "${escapeTypstString(dateRange)}", "${escapeTypstString(job.location)}")`;
 
     if (job.highlights && job.highlights.length > 0) {
       content += '\n' + job.highlights.map((h) => `- ${escapeTypst(h)}`).join('\n');
@@ -187,7 +188,7 @@ function generateEducationSection(education?: ResumeData['education']): string {
     const degree = `${edu.studyType} in ${edu.area}`;
     const dateRange = formatDateRange(edu.startDate, edu.endDate);
 
-    let content = `#cv-event("${escapeTypst(degree)}", "${escapeTypst(edu.institution)}", "${dateRange}", "${escapeTypst(edu.location)}")`;
+    let content = `#cv-event("${escapeTypstString(degree)}", "${escapeTypstString(edu.institution)}", "${escapeTypstString(dateRange)}", "${escapeTypstString(edu.location)}")`;
 
     const details: string[] = [];
     if (edu.gpa) {
@@ -230,7 +231,7 @@ function generateSkillsSection(skills?: ResumeData['skills']): string {
 
   const groups = skills.map((skillGroup) => {
     const tags = skillGroup.keywords
-      .map((kw) => `#cv-tag("${escapeTypst(kw)}")`)
+      .map((kw) => `#cv-tag("${escapeTypstString(kw)}")`)
       .join(' ');
     return `*#text(fill: secondary)[${escapeTypst(skillGroup.name)}:]*
 ${tags}`;

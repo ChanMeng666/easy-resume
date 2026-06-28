@@ -10,7 +10,7 @@
  */
 
 import 'server-only';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { generationJobs } from '@/lib/db/schema';
 import type { runGenerationPipeline } from '@/server/core/pipeline';
 import type { Caller, GenerateInput } from '@/server/core/pipeline.types';
@@ -62,73 +62,142 @@ function truncate(s: string): string {
   return s.length > MAX_TITLE_LEN ? `${s.slice(0, MAX_TITLE_LEN - 1).trimEnd()}…` : s;
 }
 
-export interface PersistCompletedJobArgs {
+type WireResult = ReturnType<typeof toWireResult>;
+
+/**
+ * Outcome of reserving a generation slot for an idempotency key. The reservation
+ * row (a `running` generation_job created up front) is the idempotency anchor for
+ * the web SSE path — it makes the contract durable instead of charge-only:
+ *
+ *  - `created`/`reclaimed`: we own a fresh/retryable slot — run the pipeline and
+ *    charge keyed on `jobId` (a per-job, per-user id that vanishes if the job is
+ *    deleted, so a later key-reuse re-charges correctly).
+ *  - `replay`: this key already produced a result — stream it, never re-run.
+ *  - `in_progress`: a concurrent request owns the key — do not run a second time.
+ *  - `conflict`: the key belongs to another user — refuse.
+ */
+export type ReserveResult =
+  | { mode: 'created'; jobId: string }
+  | { mode: 'reclaimed'; jobId: string }
+  | { mode: 'replay'; jobId: string; result: WireResult }
+  | { mode: 'in_progress' }
+  | { mode: 'conflict' };
+
+export interface ReserveJobArgs {
   caller: Caller;
   input: GenerateInput;
   idempotencyKey: string;
-  result: PipelineResult;
-  logger: Logger;
 }
 
 /**
- * Best-effort insert of a terminal (`succeeded`) job row for a generation that
- * already ran and (if applicable) already charged. This NEVER re-runs the
- * pipeline or touches billing — it only records the computed result so the web
- * UI gains the same history the v1 API already has.
+ * Reserve (or resolve) the generation slot for (caller, idempotencyKey).
  *
- * Safety: any DB error is logged and swallowed (returns null) so persistence
- * can never block delivery of the SSE result. On an idempotency-key collision
- * (e.g. an SSE reconnect after the first run already persisted) it returns the
- * existing row's id instead of erroring.
+ * Closes the over-delivery vectors that a charge-only idempotency left open:
+ * concurrent same-key requests (only one gets `created`, the rest `in_progress`/
+ * `replay`), key-reuse after a delete (the old job id is gone, so a new slot is
+ * created and re-charged), and cross-user key reuse (`conflict`). The `running`
+ * row is claimed with an atomic onConflictDoNothing on the unique idempotency
+ * key; a failed prior attempt is reclaimed atomically so two retries can't both
+ * win.
  */
-export async function persistCompletedJob(
-  args: PersistCompletedJobArgs
-): Promise<{ jobId: string } | null> {
-  const { caller, input, idempotencyKey, result, logger } = args;
+export async function reserveJob(args: ReserveJobArgs): Promise<ReserveResult> {
+  const { caller, input, idempotencyKey } = args;
+  const { db } = await import('@/lib/db/client');
+
+  // Claim the key with a fresh running row. Only one concurrent caller wins.
+  const [created] = await db
+    .insert(generationJobs)
+    .values({ userId: caller.userId, status: 'running', input, idempotencyKey })
+    .onConflictDoNothing({ target: generationJobs.idempotencyKey })
+    .returning({ id: generationJobs.id });
+  if (created) return { mode: 'created', jobId: created.id };
+
+  // Key already exists — resolve against the existing (owner-checked) row.
+  const [existing] = await db
+    .select({
+      id: generationJobs.id,
+      userId: generationJobs.userId,
+      status: generationJobs.status,
+      result: generationJobs.result,
+    })
+    .from(generationJobs)
+    .where(eq(generationJobs.idempotencyKey, idempotencyKey))
+    .limit(1);
+
+  if (!existing || existing.userId !== caller.userId) return { mode: 'conflict' };
+  if (existing.status === 'succeeded' && existing.result) {
+    return { mode: 'replay', jobId: existing.id, result: existing.result as WireResult };
+  }
+  if (existing.status === 'failed') {
+    // Atomically reclaim a failed attempt: only the request that flips it out of
+    // 'failed' runs, so two concurrent retries can't both deliver.
+    const [reclaimed] = await db
+      .update(generationJobs)
+      .set({ status: 'running', error: null, updatedAt: new Date() })
+      .where(and(eq(generationJobs.id, existing.id), eq(generationJobs.status, 'failed')))
+      .returning({ id: generationJobs.id });
+    if (reclaimed) return { mode: 'reclaimed', jobId: reclaimed.id };
+  }
+  // queued / running (or someone else just reclaimed it): in flight.
+  return { mode: 'in_progress' };
+}
+
+/**
+ * Finalize a reserved job after a successful pipeline run: write the terminal
+ * `succeeded` state + result and persist the PDF. The charge has already
+ * happened inside the pipeline (keyed on this jobId) and the result has already
+ * been streamed, so this is BEST-EFFORT: a failure here must never throw into
+ * the caller's pipeline-error path (which would wrongly mark a succeeded+charged
+ * job as failed). Returns true on success; on failure the row simply stays
+ * `running` (the stale-job sweeper / a later retry reconciles it) and the caller
+ * skips the `saved` deep-link event.
+ */
+export async function finalizeSucceededJob(args: {
+  jobId: string;
+  input: GenerateInput;
+  result: PipelineResult;
+  logger: Logger;
+}): Promise<boolean> {
+  const { jobId, input, result, logger } = args;
   try {
-    // Imported lazily so the pure helpers above stay unit-testable without a DB
-    // connection (the Neon client initializes at import time).
     const { db } = await import('@/lib/db/client');
-    const [inserted] = await db
-      .insert(generationJobs)
-      .values({
-        userId: caller.userId,
+    await db
+      .update(generationJobs)
+      .set({
         status: 'succeeded',
         title: deriveJobTitle(input, result),
-        input,
         result: toWireResult(result),
         charged: result.usage.charged,
-        idempotencyKey,
+        pdfUrl: `/api/v1/resumes/${jobId}/pdf`,
         updatedAt: new Date(),
       })
-      .onConflictDoNothing({ target: generationJobs.idempotencyKey })
-      .returning({ id: generationJobs.id });
-
-    let jobId: string;
-    if (inserted) {
-      // Backfill the pdfUrl now that we know the row id (mirrors the v1 runner).
-      await db
-        .update(generationJobs)
-        .set({ pdfUrl: `/api/v1/resumes/${inserted.id}/pdf` })
-        .where(eq(generationJobs.id, inserted.id));
-      jobId = inserted.id;
-    } else {
-      // Conflict: a row for this idempotency key already exists — reuse its id.
-      const [existing] = await db
-        .select({ id: generationJobs.id })
-        .from(generationJobs)
-        .where(eq(generationJobs.idempotencyKey, idempotencyKey))
-        .limit(1);
-      if (!existing) return null;
-      jobId = existing.id;
-    }
-
-    // Persist the already-compiled PDF bytes to object storage (best-effort).
+      .where(eq(generationJobs.id, jobId));
     await storeResumePdf(jobId, result.pdf, logger);
-    return { jobId };
+    return true;
   } catch (err) {
-    logger.error('persist.failed', { userId: caller.userId }, err);
-    return null;
+    logger.error('job.finalize_failed', { jobId }, err);
+    return false;
+  }
+}
+
+/**
+ * Mark a reserved job failed (best-effort). Records the error envelope so the
+ * row isn't left dangling in `running`, and frees the key for a retry (the
+ * reclaim path in reserveJob).
+ */
+export async function failJob(
+  jobId: string,
+  error: Record<string, unknown>,
+  logger: Logger
+): Promise<void> {
+  try {
+    const { db } = await import('@/lib/db/client');
+    await db
+      .update(generationJobs)
+      .set({ status: 'failed', error, updatedAt: new Date() })
+      .where(eq(generationJobs.id, jobId));
+  } catch (err) {
+    logger.warn('job.fail.persist_failed', { jobId }, err);
   }
 }
 
