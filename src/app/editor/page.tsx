@@ -20,7 +20,7 @@ import { AIEditorContent } from './AIEditorContent';
 function AIEditorPageContent() {
   const searchParams = useSearchParams();
   const jobId = searchParams.get('job');
-  const [inputs, setInputs] = useState<{ jd: string; bg: string } | null>(null);
+  const [inputs, setInputs] = useState<{ jd: string; bg: string; profileId?: string } | null>(null);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const scrollDirection = useElementScrollDirection(scrollContainerRef);
@@ -30,18 +30,20 @@ function AIEditorPageContent() {
     if (jobId) return;
     const fromWindow = window.__vitexInputs;
     if (fromWindow && fromWindow.jd && fromWindow.bg) {
-      setInputs({ jd: fromWindow.jd, bg: fromWindow.bg });
+      setInputs({ jd: fromWindow.jd, bg: fromWindow.bg, profileId: fromWindow.profileId });
       return;
     }
     let jd = '';
     let bg = '';
+    let profileId: string | undefined;
     try {
       jd = sessionStorage.getItem('vitex_jd') ?? '';
       bg = sessionStorage.getItem('vitex_bg') ?? '';
+      profileId = sessionStorage.getItem('vitex_profile_id') ?? undefined;
     } catch {
       // sessionStorage may throw in private mode — treat as empty.
     }
-    setInputs({ jd, bg });
+    setInputs({ jd, bg, profileId });
   }, [jobId]);
 
   const hasInputs = inputs !== null && inputs.jd.trim() && inputs.bg.trim();
@@ -69,7 +71,7 @@ function AIEditorPageContent() {
             </div>
           </div>
         ) : hasInputs ? (
-          <AIEditorContent jd={inputs.jd} bg={inputs.bg} />
+          <AIEditorContent jd={inputs.jd} bg={inputs.bg} profileId={inputs.profileId} />
         ) : (
           <main className="container mx-auto max-w-xl px-4 pt-12 md:pt-16 pb-20">
             <div className="rounded-xl border-2 border-black bg-white p-6 sm:p-8 shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)]">

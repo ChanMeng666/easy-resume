@@ -255,6 +255,10 @@ async function migrate() {
   await sql`ALTER TABLE generation_jobs ADD COLUMN IF NOT EXISTS title TEXT`;
   // Composite index backs the per-user, newest-first history listing.
   await sql`CREATE INDEX IF NOT EXISTS idx_generation_jobs_user_created ON generation_jobs(user_id, created_at DESC)`;
+  // Records which saved candidate_profile (if any) seeded a generation — for
+  // "save as profile" provenance and future analytics. Nullable; not an FK
+  // (consistent with the rest of generation_jobs, which uses bare user_id text).
+  await sql`ALTER TABLE generation_jobs ADD COLUMN IF NOT EXISTS profile_id UUID`;
   console.log("Created generation_jobs table");
 
   // Create rate_limits table (Postgres-backed fixed-window rate limiting)
@@ -277,6 +281,24 @@ async function migrate() {
     )
   `;
   console.log("Created stripe_events table");
+
+  // Create candidate_profiles table (persistent background — "enter once, reuse
+  // across JDs"). `data` is the parsed ResumeData (reused at generation time to
+  // skip re-parsing the background); `raw_background` is the original free text
+  // so a profile can be re-parsed/edited later.
+  await sql`
+    CREATE TABLE IF NOT EXISTS candidate_profiles (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id TEXT NOT NULL,
+      label VARCHAR(255) NOT NULL DEFAULT 'My Background',
+      data JSONB NOT NULL,
+      raw_background TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_candidate_profiles_user_id ON candidate_profiles(user_id, updated_at DESC)`;
+  console.log("Created candidate_profiles table");
 
   console.log("Migration complete!");
 }

@@ -218,6 +218,7 @@ export async function finalizeSucceededJob(args: {
         result: toWireResult(result),
         charged: result.usage.charged,
         pdfUrl: `/api/v1/resumes/${jobId}/pdf`,
+        profileId: input.profileId ?? null,
         updatedAt: new Date(),
       })
       .where(eq(generationJobs.id, jobId));

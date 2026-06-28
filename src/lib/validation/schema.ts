@@ -76,6 +76,29 @@ export const resumeDataSchema = z.object({
   references: z.string().optional(),
 });
 
+// Candidate profile input (create payload for /api/profiles).
+//
+// We deliberately do NOT accept a client-supplied parsed `data`: the server
+// always parses `rawBackground` itself. Trusting client `data` would let a
+// caller inject an arbitrary, unbounded "base resume" that the pipeline embeds
+// verbatim into LLM prompts (bypassing the parse step's normalization) for the
+// cost of a single credit — an asymmetric token-cost abuse. Parsing server-side
+// keeps the stored data bounded and faithful to the raw text.
+export const candidateProfileInputSchema = z.object({
+  label: z.string().trim().min(1).max(255).optional(),
+  rawBackground: z.string().trim().min(1, 'Background is required').max(50_000),
+});
+export type CandidateProfileInput = z.infer<typeof candidateProfileInputSchema>;
+
+// Partial update payload — every field optional, but at least one is enforced
+// in the route. A `rawBackground` change re-parses server-side (same rationale
+// as above: no client-supplied `data`).
+export const candidateProfileUpdateSchema = z.object({
+  label: z.string().trim().min(1).max(255).optional(),
+  rawBackground: z.string().trim().min(1).max(50_000).optional(),
+});
+export type CandidateProfileUpdate = z.infer<typeof candidateProfileUpdateSchema>;
+
 // Type inference from Zod schema
 export type ResumeData = z.infer<typeof resumeDataSchema>;
 export type Basics = z.infer<typeof basicsSchema>;

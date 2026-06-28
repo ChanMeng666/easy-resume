@@ -41,12 +41,18 @@ export async function GET(
 
     if (!job || job.userId !== caller.userId) throw new NotFoundError('Resume not found');
 
+    // Don't ship the (potentially large) pre-parsed `baseResume` back to the
+    // client: only `jobDescription` + `background` are needed to re-open or
+    // refine, and refine deliberately re-parses anyway.
+    const inputForClient: Record<string, unknown> = { ...(job.input ?? {}) };
+    delete inputForClient.baseResume;
+
     return NextResponse.json(
       {
         id: job.id,
         status: job.status,
         title: job.title ?? undefined,
-        input: job.input,
+        input: inputForClient,
         result: job.result ?? undefined,
         error: job.error ?? undefined,
         pdfUrl: job.status === 'succeeded' ? `/api/v1/resumes/${job.id}/pdf` : undefined,

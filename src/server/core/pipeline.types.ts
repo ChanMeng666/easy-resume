@@ -24,6 +24,15 @@ export interface GenerateInput {
   background: string;
   /** Optional explicit template override; otherwise auto-selected from the JD. */
   templateId?: string;
+  /**
+   * Optional pre-parsed background, supplied when generating from a saved
+   * candidate profile. When present the pipeline reuses it as the base resume
+   * and SKIPS the parse_background LLM step ("enter once, reuse many"). Purely
+   * additive — the money path (compile-then-charge, jobId-keyed) is unchanged.
+   */
+  baseResume?: ResumeData;
+  /** The saved candidate_profile id that seeded this generation, if any. */
+  profileId?: string;
 }
 
 /** Progress event emitted before each step runs. */

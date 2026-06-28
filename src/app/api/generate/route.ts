@@ -13,7 +13,9 @@ import { NextRequest } from 'next/server';
 import { getCaller } from '@/server/auth/caller';
 import { runGenerationPipeline } from '@/server/core/pipeline';
 import { defaultDeps } from '@/server/core/deps';
+import { getProfile } from '@/server/profiles/store';
 import { reserveJob, finalizeSucceededJob, failJob } from '@/server/jobs/persist';
+import type { GenerateInput } from '@/server/core/pipeline.types';
 import { UnauthenticatedError, ValidationError, ConflictError } from '@/server/errors/AppError';
 import { toErrorEnvelope, errorResponse } from '@/server/errors/envelope';
 import { createLogger } from '@/server/log/logger';
@@ -49,7 +51,7 @@ export async function POST(request: NextRequest) {
     return errorResponse(error, requestId);
   }
 
-  let body: { jobDescription?: string; background?: string; templateId?: string };
+  let body: { jobDescription?: string; background?: string; templateId?: string; profileId?: string };
   try {
     body = await request.json();
   } catch {
@@ -63,11 +65,25 @@ export async function POST(request: NextRequest) {
   const idempotencyKey =
     headerKey && /^[0-9a-f-]{36}$/i.test(headerKey) ? headerKey : crypto.randomUUID();
 
-  const input = {
+  // Resolve a saved profile (owner-checked) up front so a NotFound surfaces as a
+  // clean error response rather than mid-stream. When present, the profile's raw
+  // background fills `background` and its parsed data seeds `baseResume`, letting
+  // the pipeline skip the parse_background LLM step ("enter once, reuse many").
+  const input: GenerateInput = {
     jobDescription: body.jobDescription ?? '',
     background: body.background ?? '',
     templateId: body.templateId,
   };
+  if (typeof body.profileId === 'string' && body.profileId.trim()) {
+    try {
+      const profile = await getProfile(caller.userId, body.profileId.trim());
+      input.background = profile.rawBackground;
+      input.baseResume = profile.data;
+      input.profileId = profile.id;
+    } catch (error) {
+      return errorResponse(error, requestId);
+    }
+  }
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
