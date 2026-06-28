@@ -177,3 +177,44 @@ describe('runGenerationPipeline billing gating', () => {
     expect(meter.hasCredits).not.toHaveBeenCalled();
   });
 });
+
+describe('runGenerationPipeline with a pre-parsed profile background', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  // A full, schema-valid ResumeData (as a saved profile would store), so the
+  // pipeline's input validation accepts it as the optional baseResume.
+  const baseResume = {
+    basics: { name: 'Jane', label: 'Engineer', profiles: [] },
+    education: [],
+    skills: [],
+    work: [],
+    projects: [],
+    achievements: [],
+    certifications: [],
+  };
+
+  it('skips parse_background but still parses the JD and charges once', async () => {
+    const { deps, meter, agent } = makeDeps();
+    const result = await runGenerationPipeline(
+      { ...input, baseResume, profileId: 'profile_1' },
+      caller,
+      deps,
+      opts
+    );
+
+    // The saved background is reused — no LLM parse_background call.
+    expect(agent.parseBackground).not.toHaveBeenCalled();
+    // The JD is still parsed (it's per-generation, not stored on the profile).
+    expect(agent.parseJobDescription).toHaveBeenCalledTimes(1);
+    // Money path unchanged: still exactly one charge on a compiled PDF.
+    expect(meter.chargeForResult).toHaveBeenCalledTimes(1);
+    expect(result.usage.charged).toBe(true);
+    expect(result.pdf.byteLength).toBeGreaterThan(0);
+  });
+
+  it('still emits progress for all 8 steps when reusing a profile', async () => {
+    const { deps, onProgress } = makeDeps();
+    await runGenerationPipeline({ ...input, baseResume }, caller, deps, opts);
+    expect(onProgress).toHaveBeenCalledTimes(8);
+  });
+});

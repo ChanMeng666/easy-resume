@@ -254,10 +254,20 @@ export const generationJobs = pgTable("generation_jobs", {
   userId: text("user_id").notNull(),
   status: varchar("status", { length: 20 }).notNull().default("queued"), // queued, running, succeeded, failed
   title: text("title"), // human-friendly label for the My Resumes list (derived at persist time)
-  input: jsonb("input").$type<{ jobDescription: string; background: string; templateId?: string }>().notNull(),
+  input: jsonb("input").$type<{
+    jobDescription: string;
+    background: string;
+    templateId?: string;
+    // Optional pre-parsed background (from a candidate_profile) — when present the
+    // pipeline reuses it and skips the parse_background LLM step.
+    baseResume?: ResumeData;
+    // The candidate_profile that seeded this generation, if any.
+    profileId?: string;
+  }>().notNull(),
   result: jsonb("result").$type<Record<string, unknown>>(), // wire-shaped GenerateResult (no PDF bytes)
   error: jsonb("error").$type<Record<string, unknown>>(), // error envelope on failure
   pdfUrl: text("pdf_url"), // route serving the compiled PDF bytes
+  profileId: uuid("profile_id"), // saved candidate_profile that seeded this generation (provenance)
   charged: boolean("charged").notNull().default(false),
   idempotencyKey: uuid("idempotency_key").notNull().unique(), // dedupes job + charge
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
@@ -289,6 +299,31 @@ export const stripeEvents = pgTable("stripe_events", {
   type: varchar("type", { length: 100 }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
+
+/**
+ * Persistent candidate background profiles ("enter once, reuse across JDs").
+ *
+ * The canonical source of truth for a user's reusable background — deliberately
+ * a NEW minimal table, not a revival of the dormant `resumes` model (see ADR
+ * 0001). `data` holds the parsed ResumeData (reused at generation time to skip
+ * the parse_background LLM step); `rawBackground` keeps the original free text
+ * so the profile can be re-parsed or edited later.
+ */
+export const candidateProfiles = pgTable("candidate_profiles", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull(),
+  label: varchar("label", { length: 255 }).notNull().default("My Background"),
+  data: jsonb("data").$type<ResumeData>().notNull(),
+  rawBackground: text("raw_background").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+}, (table) => ({
+  userIdIdx: index("idx_candidate_profiles_user_id").on(table.userId, table.updatedAt.desc()),
+}));
+
+// Candidate profile types
+export type CandidateProfile = typeof candidateProfiles.$inferSelect;
+export type NewCandidateProfile = typeof candidateProfiles.$inferInsert;
 
 // API key types
 export type ApiKey = typeof apiKeys.$inferSelect;

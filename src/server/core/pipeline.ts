@@ -15,6 +15,7 @@
 
 import 'server-only';
 import { z } from 'zod';
+import { resumeDataSchema } from '@/lib/validation/schema';
 import { checkFaithfulness } from '@/lib/agent/faithfulness-check';
 import { sanitizeForPrompt, sanitizeDeep } from './sanitize';
 import {
@@ -38,6 +39,11 @@ const inputSchema = z.object({
   jobDescription: z.string().trim().min(1, 'jobDescription is required').max(50_000),
   background: z.string().trim().min(1, 'background is required').max(50_000),
   templateId: z.string().trim().max(50).optional(),
+  // Pre-parsed background from a saved profile (lets the pipeline skip
+  // parse_background). Validated against the same ResumeData shape the parser
+  // produces. zod strips unknown keys, so this must be declared to survive.
+  baseResume: resumeDataSchema.optional(),
+  profileId: z.string().trim().max(64).optional(),
 });
 
 /** Run a single agent step, wrapping any failure as a typed PipelineStepError. */
@@ -89,11 +95,21 @@ export async function runGenerationPipeline(
   };
 
   // Steps 1 & 2 are independent (JD vs background) — run them concurrently.
+  // When a saved profile supplied a pre-parsed base resume, reuse it and skip
+  // the parse_background LLM call ("enter once, reuse many"). The progress event
+  // is still emitted so the 8-step client progress stays in lockstep.
+  const hasPreparsedBackground = !!input.baseResume;
   progress('parse_jd', 1, 'Analyzing job description...');
-  progress('parse_background', 2, 'Parsing your background...');
+  progress(
+    'parse_background',
+    2,
+    hasPreparsedBackground ? 'Using saved background...' : 'Parsing your background...'
+  );
   const [rawParsedJD, rawBaseResume] = await Promise.all([
     runStep('parse_jd', () => deps.agent.parseJobDescription(jobDescription)),
-    runStep('parse_background', () => deps.agent.parseBackground(background)),
+    input.baseResume
+      ? Promise.resolve(input.baseResume)
+      : runStep('parse_background', () => deps.agent.parseBackground(background)),
   ]);
   // Sanitize the LLM-reconstructed intermediates before they re-enter any prompt
   // (or get rendered): a payload that slipped through the raw-input scrub as a

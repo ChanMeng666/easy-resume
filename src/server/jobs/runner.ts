@@ -114,6 +114,7 @@ async function runJob(jobId: string, caller: Caller): Promise<void> {
         result: toWireResult(result),
         charged: result.usage.charged,
         pdfUrl: `/api/v1/resumes/${jobId}/pdf`,
+        profileId: job.input.profileId ?? null,
         updatedAt: new Date(),
       })
       .where(eq(generationJobs.id, jobId));

@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useUser } from '@stackframe/stack';
 import { motion } from 'framer-motion';
-import { Sparkles, Target, Bot, Download } from 'lucide-react';
+import { Sparkles, Target, Bot, Download, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -13,8 +14,16 @@ import { CropFrame } from '@/components/shared/CropFrame';
 
 declare global {
   interface Window {
-    __vitexInputs?: { jd: string; bg: string };
+    // profileId is set when the background came from a saved profile, so the
+    // editor can skip re-parsing it on the first generation ("enter once").
+    __vitexInputs?: { jd: string; bg: string; profileId?: string };
   }
+}
+
+/** Saved-background summary, as returned by GET /api/profiles. */
+interface ProfileSummary {
+  id: string;
+  label: string;
 }
 
 const MAX_INPUT_BYTES = 100_000;
@@ -96,8 +105,66 @@ function ComposedPreview() {
  */
 export default function HomePage() {
   const router = useRouter();
+  const user = useUser();
   const [jobDescription, setJobDescription] = useState('');
   const [background, setBackground] = useState('');
+  // Saved backgrounds ("enter once, reuse many"). Only loaded for signed-in
+  // users; selecting one fills the background and pins `selectedProfileId` so the
+  // first generation reuses the parsed data instead of re-parsing it.
+  const [profiles, setProfiles] = useState<ProfileSummary[]>([]);
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
+
+  // Load the user's saved profiles once they're signed in.
+  useEffect(() => {
+    if (!user) {
+      setProfiles([]);
+      return;
+    }
+    let cancelled = false;
+    fetch('/api/profiles')
+      .then((res) => (res.ok ? res.json() : { items: [] }))
+      .then((data) => {
+        if (!cancelled) setProfiles(Array.isArray(data.items) ? data.items : []);
+      })
+      .catch(() => {
+        /* non-critical — the manual background textarea still works. */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  /**
+   * Select a saved profile: fetch its raw background, fill the textarea (so the
+   * user sees exactly what will be used and can still tweak it), and pin the
+   * profile id for the fast no-reparse path.
+   */
+  async function handleSelectProfile(id: string) {
+    if (selectedProfileId === id) {
+      // Toggle off — back to a blank, manually-typed background.
+      setSelectedProfileId(null);
+      setBackground('');
+      return;
+    }
+    try {
+      const res = await fetch(`/api/profiles/${id}`);
+      if (!res.ok) return;
+      const profile = await res.json();
+      setBackground(profile.rawBackground ?? '');
+      setSelectedProfileId(id);
+    } catch {
+      /* ignore — selection is best-effort. */
+    }
+  }
+
+  /**
+   * Background edits diverge from the pinned profile, so drop the pin: an edited
+   * background must be re-parsed (we can't reuse the profile's stale parse).
+   */
+  function handleBackgroundChange(value: string) {
+    setBackground(value);
+    if (selectedProfileId) setSelectedProfileId(null);
+  }
 
   /**
    * Hand off JD and background to the editor page through two channels:
@@ -123,10 +190,13 @@ export default function HomePage() {
       return;
     }
 
-    window.__vitexInputs = { jd, bg };
+    const profileId = selectedProfileId ?? undefined;
+    window.__vitexInputs = { jd, bg, profileId };
     try {
       sessionStorage.setItem('vitex_jd', jd);
       sessionStorage.setItem('vitex_bg', bg);
+      if (profileId) sessionStorage.setItem('vitex_profile_id', profileId);
+      else sessionStorage.removeItem('vitex_profile_id');
     } catch {
       // Private mode / quota exceeded — window global is our fallback.
     }
@@ -198,14 +268,49 @@ export default function HomePage() {
                       <Label htmlFor="bg" className="proof-label !text-foreground">
                         BG.txt — Your Background
                       </Label>
+
+                      {/* Saved profiles — "enter once, reuse many". Selecting one
+                          fills the background below; you can still edit it. */}
+                      {profiles.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-2 pb-1">
+                          <span className="proof-label !text-muted-foreground inline-flex items-center gap-1">
+                            <User className="h-3.5 w-3.5" />
+                            Use a saved profile:
+                          </span>
+                          {profiles.map((p) => {
+                            const active = selectedProfileId === p.id;
+                            return (
+                              <button
+                                key={p.id}
+                                type="button"
+                                onClick={() => handleSelectProfile(p.id)}
+                                className={`rounded-lg border-2 border-black px-2.5 py-1 font-mono text-xs font-bold transition-all duration-200 ${
+                                  active
+                                    ? 'bg-primary text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]'
+                                    : 'bg-white hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-1px] hover:translate-y-[-1px]'
+                                }`}
+                                aria-pressed={active}
+                              >
+                                {p.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+
                       <Textarea
                         id="bg"
                         rows={5}
                         placeholder="Briefly describe your experience, skills, and education…"
                         value={background}
-                        onChange={(e) => setBackground(e.target.value)}
+                        onChange={(e) => handleBackgroundChange(e.target.value)}
                         className="min-h-[120px]"
                       />
+                      {selectedProfileId && (
+                        <p className="proof-label !text-primary">
+                          Using saved profile — generation skips re-parsing.
+                        </p>
+                      )}
                     </div>
                   </div>
 

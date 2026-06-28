@@ -6,6 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { LivePdfPreview } from '@/components/preview/LivePdfPreview';
 import { CropFrame } from '@/components/shared/CropFrame';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { compilePdf, downloadTypFile, copyToClipboard } from '@/lib/typst/compiler';
 import { ResumeData } from '@/lib/validation/schema';
 import {
@@ -25,6 +33,7 @@ import {
   Mail,
   RefreshCw,
   CreditCard,
+  BookmarkPlus,
 } from 'lucide-react';
 
 /** Progress steps displayed during generation. */
@@ -62,6 +71,12 @@ interface AIEditorContentProps {
   bg?: string;
   /** When set, load this persisted generation instead of running a new one. */
   jobId?: string;
+  /**
+   * When set, the background came from a saved profile: the first generation
+   * sends this id so the server reuses the parsed background and skips the
+   * parse_background LLM step. Refine/Retry intentionally omit it (re-parse).
+   */
+  profileId?: string;
 }
 
 type ErrorKind = 'timeout' | 'server' | 'network' | 'credits' | 'auth' | 'other';
@@ -88,7 +103,8 @@ async function runGenerationStream(
   bg: string,
   idempotencyKey: string,
   signal: AbortSignal,
-  { onProgress, onResult, onSaved }: StreamCallbacks
+  { onProgress, onResult, onSaved }: StreamCallbacks,
+  profileId?: string
 ): Promise<void> {
   let response: Response;
   try {
@@ -101,7 +117,13 @@ async function runGenerationStream(
         // a refine uses a new key (a deliberate new charge).
         'Idempotency-Key': idempotencyKey,
       },
-      body: JSON.stringify({ jobDescription: jd, background: bg }),
+      // profileId (when present) lets the server reuse the saved parsed
+      // background and skip the parse_background step.
+      body: JSON.stringify({
+        jobDescription: jd,
+        background: bg,
+        ...(profileId ? { profileId } : {}),
+      }),
       signal,
     });
   } catch (err) {
@@ -228,7 +250,7 @@ function classifyError(err: unknown): GenerationError {
  * Calls /api/generate with JD and background, streams progress,
  * then displays the compiled PDF with export actions and refinement.
  */
-export function AIEditorContent({ jd = '', bg = '', jobId }: AIEditorContentProps) {
+export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditorContentProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [isGenerating, setIsGenerating] = useState(true);
   const [error, setError] = useState<GenerationError | null>(null);
@@ -243,6 +265,12 @@ export function AIEditorContent({ jd = '', bg = '', jobId }: AIEditorContentProp
   const [coverLetterCopied, setCoverLetterCopied] = useState(false);
   const [coverLetterCodeCopied, setCoverLetterCodeCopied] = useState(false);
   const [showCoverLetter, setShowCoverLetter] = useState(false);
+  // "Save as profile" — persist the background as a reusable candidate_profile.
+  const [saveProfileOpen, setSaveProfileOpen] = useState(false);
+  const [saveProfileLabel, setSaveProfileLabel] = useState('');
+  const [saveProfileState, setSaveProfileState] = useState<'idle' | 'saving' | 'saved' | 'error'>(
+    'idle'
+  );
   const [wasHiddenDuringGeneration, setWasHiddenDuringGeneration] = useState(false);
   const generationStarted = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
@@ -279,7 +307,7 @@ export function AIEditorContent({ jd = '', bg = '', jobId }: AIEditorContentProp
    * again.
    */
   const startGeneration = useCallback(
-    (currentJd: string, currentBg: string, reuseKey = false) => {
+    (currentJd: string, currentBg: string, reuseKey = false, currentProfileId?: string) => {
       abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;
@@ -295,19 +323,26 @@ export function AIEditorContent({ jd = '', bg = '', jobId }: AIEditorContentProp
       setError(null);
       setWasHiddenDuringGeneration(false);
 
-      runGenerationStream(currentJd, currentBg, idempotencyKey, controller.signal, {
-        onProgress: setCurrentStep,
-        onResult: (data) => setResult(data),
-        onSaved: (savedJobId) => {
-          // Deep-link the URL to the persisted job so a refresh restores the
-          // result for free instead of failing with ERR·NO_INPUT.
-          try {
-            window.history.replaceState(null, '', `/editor?job=${savedJobId}`);
-          } catch {
-            // Ignore — non-critical URL sync.
-          }
+      runGenerationStream(
+        currentJd,
+        currentBg,
+        idempotencyKey,
+        controller.signal,
+        {
+          onProgress: setCurrentStep,
+          onResult: (data) => setResult(data),
+          onSaved: (savedJobId) => {
+            // Deep-link the URL to the persisted job so a refresh restores the
+            // result for free instead of failing with ERR·NO_INPUT.
+            try {
+              window.history.replaceState(null, '', `/editor?job=${savedJobId}`);
+            } catch {
+              // Ignore — non-critical URL sync.
+            }
+          },
         },
-      })
+        currentProfileId
+      )
         .catch((err) => {
           if ((err as Error)?.name === 'AbortError') return;
           setError(classifyError(err));
@@ -369,9 +404,11 @@ export function AIEditorContent({ jd = '', bg = '', jobId }: AIEditorContentProp
       setIsGenerating(false);
       return;
     }
-    startGeneration(jd, bg);
+    // Only the first generation reuses the saved profile (skips parse_background).
+    // Refine/Retry deliberately omit it so edits re-parse honestly.
+    startGeneration(jd, bg, false, profileId);
     return () => abortRef.current?.abort();
-  }, [jd, bg, jobId, loadJob, startGeneration]);
+  }, [jd, bg, jobId, profileId, loadJob, startGeneration]);
 
   const typstCode = result?.typstCode || '';
   const filename = result?.resumeData?.basics?.name?.replace(/\s+/g, '_') || 'resume';
@@ -451,6 +488,42 @@ export function AIEditorContent({ jd = '', bg = '', jobId }: AIEditorContentProp
     setRefinementText('');
     startGeneration(effJd, refinedBg);
   }, [refinementText, result, effBg, effJd, startGeneration]);
+
+  /**
+   * Save the current background as a reusable profile. We POST the RAW
+   * background (not the JD-tailored result) and let the server parse it once, so
+   * the profile stays a clean, JD-agnostic source of truth. This is free — no
+   * compiled PDF means no charge.
+   */
+  const handleSaveProfile = useCallback(async () => {
+    if (!effBg.trim()) return;
+    setSaveProfileState('saving');
+    try {
+      const res = await fetch('/api/profiles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          label: saveProfileLabel.trim() || undefined,
+          rawBackground: effBg,
+        }),
+      });
+      if (!res.ok) {
+        setSaveProfileState('error');
+        return;
+      }
+      setSaveProfileState('saved');
+      setTimeout(() => setSaveProfileOpen(false), 1200);
+    } catch {
+      setSaveProfileState('error');
+    }
+  }, [effBg, saveProfileLabel]);
+
+  /** Open the save-as-profile dialog, defaulting the label to the parsed title. */
+  const openSaveProfile = useCallback(() => {
+    setSaveProfileLabel(result?.resumeData?.basics?.label ?? '');
+    setSaveProfileState('idle');
+    setSaveProfileOpen(true);
+  }, [result]);
 
   /** Retry from the current error state with the original inputs. */
   const handleRetry = useCallback(() => {
@@ -755,9 +828,68 @@ export function AIEditorContent({ jd = '', bg = '', jobId }: AIEditorContentProp
               <Mail className="mr-2 h-4 w-4" />
               {showCoverLetter ? 'Hide' : 'Show'} Cover Letter
             </Button>
+
+            {/* Save the background for reuse across future job descriptions. */}
+            {effBg.trim() && (
+              <Button
+                variant="outline"
+                className="w-full border-2 border-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
+                onClick={openSaveProfile}
+              >
+                <BookmarkPlus className="mr-2 h-4 w-4" />
+                Save as profile
+              </Button>
+            )}
           </div>
         </motion.div>
       </div>
+
+      {/* Save-as-profile dialog — persists the raw background for reuse. */}
+      <Dialog open={saveProfileOpen} onOpenChange={setSaveProfileOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Save as profile</DialogTitle>
+            <DialogDescription>
+              Store this background so you can reuse it for future job
+              descriptions without pasting it again. This is free.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label htmlFor="profile-label" className="proof-label !text-foreground">
+              Profile name
+            </label>
+            <Input
+              id="profile-label"
+              placeholder="e.g., Senior Backend Engineer"
+              value={saveProfileLabel}
+              onChange={(e) => setSaveProfileLabel(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSaveProfile();
+              }}
+              className="border-2 border-black font-medium shadow-none focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] transition-all duration-200"
+            />
+            {saveProfileState === 'error' && (
+              <p className="proof-label !text-red-700">Could not save — please try again.</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              onClick={handleSaveProfile}
+              disabled={saveProfileState === 'saving' || saveProfileState === 'saved' || !effBg.trim()}
+              className="border-2 border-black bg-purple-600 font-bold text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:bg-purple-700 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
+            >
+              {saveProfileState === 'saving' ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : saveProfileState === 'saved' ? (
+                <Check className="mr-2 h-4 w-4" />
+              ) : (
+                <BookmarkPlus className="mr-2 h-4 w-4" />
+              )}
+              {saveProfileState === 'saved' ? 'Saved!' : 'Save profile'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Cover Letter (expandable) */}
       {showCoverLetter && result.coverLetter && (

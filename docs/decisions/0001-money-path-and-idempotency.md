@@ -88,11 +88,23 @@ Codex adversarial review: **SHIP**.
 - **P0-5 — DONE** (`4a15dbc`/`88f3351`): `sweepStaleRunningJobs()` reconciles
   crash-abandoned `queued`/`running` jobs (30m threshold), run opportunistically
   from the reserve paths. Codex: SHIP.
-- **P1** `candidate_profiles` (background once, reuse many); honest refine
-  (cost disclosure, version retention, free structured-edit re-render); agent
-  hardening (LLM retry/backoff, faithfulness beyond substring, eval/golden set,
-  telemetry PII policy); UX (onboarding/examples, parsed-data confirmation,
-  pricing copy). Also fix the pre-existing `getOrCreate` select-then-insert race.
+- **P1-1 — DONE** (`candidate_profiles`, "enter once, reuse across JDs"): new
+  minimal `candidate_profiles` table (the canonical reusable background, NOT a
+  revival of `resumes`); owner-scoped `/api/profiles` CRUD; `GenerateInput`
+  gained an optional pre-parsed `baseResume` so generating from a profile reuses
+  the stored parse and SKIPS `parse_background` (purely additive — the
+  compile-then-charge, jobId-keyed money path is untouched); v1 `profile_id`
+  parity; homepage profile selector + editor "Save as profile" + `/profiles`
+  page. Codex adversarial review hardened it before SHIP: the profile-create/
+  update LLM-parse endpoints are now rate-limited; client-supplied structured
+  `data` was removed (server always parses, so an unbounded "base resume" can't
+  be injected for one credit); `baseResume` is stripped from the
+  `GET /api/resumes/[id]` response. Codex: **SHIP**.
+- **P1 (remaining)** honest refine (cost disclosure, version retention, free
+  structured-edit re-render); agent hardening (LLM retry/backoff, faithfulness
+  beyond substring, eval/golden set, telemetry PII policy); UX (onboarding/
+  examples, parsed-data confirmation, pricing copy). Also fix the pre-existing
+  `getOrCreate` select-then-insert race.
 
 ## Working model
 Claude implements; after each unit, Codex runs an adversarial `codex exec
