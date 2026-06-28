@@ -25,29 +25,40 @@ export const creditService = {
    */
   async getOrCreate(userId: string) {
     const db = getDb();
+
+    // Atomic claim. The previous select-then-insert had a race: two concurrent
+    // first-requests for a new user both saw "no row" and both inserted, so the
+    // loser threw a 23505 and (worse) the signup bonus could be granted twice.
+    // onConflictDoNothing on the unique user_id makes the insert idempotent —
+    // only ONE request gets a row back, and the bonus is gated on that, so it is
+    // granted exactly once. A racing/duplicate request gets no row (no throw).
+    const [created] = await db
+      .insert(credits)
+      .values({ userId, balance: 3 })
+      .onConflictDoNothing({ target: credits.userId })
+      .returning();
+
+    if (created) {
+      // We won the insert → grant the one-time signup bonus.
+      await db.insert(creditTransactions).values({
+        userId,
+        type: "signup_bonus",
+        amount: 3,
+        description: "Welcome bonus - 3 free credits",
+      });
+      return created;
+    }
+
+    // The row already existed (prior signup) or a concurrent request just
+    // created it — read it back. It is guaranteed to exist now (our insert
+    // conflicted with a committed row), so no retry loop is needed.
     const [existing] = await db
       .select()
       .from(credits)
       .where(eq(credits.userId, userId))
       .limit(1);
 
-    if (existing) return existing;
-
-    // Create with 3 free credits
-    const [created] = await db
-      .insert(credits)
-      .values({ userId, balance: 3 })
-      .returning();
-
-    // Record signup bonus transaction
-    await db.insert(creditTransactions).values({
-      userId,
-      type: "signup_bonus",
-      amount: 3,
-      description: "Welcome bonus - 3 free credits",
-    });
-
-    return created;
+    return existing;
   },
 
   /** Get current credit balance. */

@@ -30,6 +30,17 @@ function selectChain(result: unknown) {
   return chain;
 }
 
+/**
+ * insert mock for the getOrCreate that useCreditsIdempotent calls internally:
+ * the credits insert hits onConflictDoNothing (row already exists in these
+ * tests) and returns no row, so getOrCreate falls through to its read-back.
+ */
+function existingRowInsert() {
+  return vi.fn(() => ({
+    values: () => ({ onConflictDoNothing: () => ({ returning: () => Promise.resolve([]) }) }),
+  }));
+}
+
 const FREE = { userId: 'u1', balance: 5, subscriptionTier: 'free' };
 
 describe('useCreditsIdempotent — idempotency', () => {
@@ -62,7 +73,7 @@ describe('useCreditsIdempotent — idempotency', () => {
     const execute = vi.fn(() =>
       Promise.reject(Object.assign(new Error('dup'), { code: '23505' }))
     );
-    fakeDb = { select, execute } as never;
+    fakeDb = { select, execute, insert: existingRowInsert() } as never;
 
     const result = await creditService.useCreditsIdempotent(
       'u1',
@@ -79,6 +90,70 @@ describe('useCreditsIdempotent — idempotency', () => {
   });
 });
 
+describe('getOrCreate — race-safe creation', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  /**
+   * Mock db.insert so it supports BOTH usages in getOrCreate:
+   *  - credits: .values().onConflictDoNothing().returning() -> `returningRows`
+   *  - bonus txn: `await .values()` (awaited directly) -> resolves undefined
+   */
+  function insertMock(returningRows: unknown[]) {
+    return vi.fn(() => ({
+      values: () => ({
+        onConflictDoNothing: () => ({ returning: () => Promise.resolve(returningRows) }),
+        then: (resolve: (v: unknown) => void) => resolve(undefined),
+      }),
+    }));
+  }
+
+  it('creates the row and grants the signup bonus exactly once when it wins the insert', async () => {
+    // Capture every values() payload so we can assert the bonus txn itself.
+    const payloads: unknown[] = [];
+    const insert = vi.fn(() => ({
+      values: (v: unknown) => {
+        payloads.push(v);
+        return {
+          onConflictDoNothing: () => ({
+            returning: () => Promise.resolve([{ userId: 'u1', balance: 3 }]),
+          }),
+          then: (resolve: (val: unknown) => void) => resolve(undefined),
+        };
+      },
+    }));
+    const select = vi.fn(() => selectChain([]));
+    fakeDb = { insert, select } as never;
+
+    const row = await creditService.getOrCreate('u1');
+
+    expect(row).toEqual({ userId: 'u1', balance: 3 });
+    // Two inserts: the credits row + exactly one signup_bonus txn (right payload).
+    expect(insert).toHaveBeenCalledTimes(2);
+    const bonusTxns = payloads.filter(
+      (p) => (p as { type?: string }).type === 'signup_bonus'
+    );
+    expect(bonusTxns).toHaveLength(1);
+    expect(bonusTxns[0]).toMatchObject({ userId: 'u1', type: 'signup_bonus', amount: 3 });
+    // We won the insert, so no read-back was needed.
+    expect(select).not.toHaveBeenCalled();
+  });
+
+  it('reads back the existing row and grants NO bonus when the insert conflicts', async () => {
+    // onConflictDoNothing returns no row → the row already existed or a
+    // concurrent request won. We must NOT insert a second signup bonus.
+    const insert = insertMock([]);
+    const existing = { userId: 'u1', balance: 7 };
+    const select = vi.fn(() => selectChain([existing]));
+    fakeDb = { insert, select } as never;
+
+    const row = await creditService.getOrCreate('u1');
+
+    expect(row).toEqual(existing);
+    expect(insert).toHaveBeenCalledTimes(1); // only the (no-op) credits insert
+    expect(select).toHaveBeenCalledTimes(1); // read-back
+  });
+});
+
 describe('useCreditsIdempotent — atomic conditional deduction', () => {
   beforeEach(() => vi.clearAllMocks());
 
@@ -87,7 +162,7 @@ describe('useCreditsIdempotent — atomic conditional deduction', () => {
     const select = vi.fn(() => selectChain(selectResults.shift()));
     // CTE matched a row → one usage txn inserted.
     const execute = vi.fn(() => Promise.resolve({ rows: [{ id: 'tx_new' }] }));
-    fakeDb = { select, execute } as never;
+    fakeDb = { select, execute, insert: existingRowInsert() } as never;
 
     const result = await creditService.useCreditsIdempotent(
       'u1',
@@ -107,7 +182,7 @@ describe('useCreditsIdempotent — atomic conditional deduction', () => {
     // `UPDATE ... WHERE balance >= amount` matched no row, so the INSERT ...
     // SELECT FROM deducted inserts nothing: over-delivery is prevented.
     const execute = vi.fn(() => Promise.resolve({ rows: [] }));
-    fakeDb = { select, execute } as never;
+    fakeDb = { select, execute, insert: existingRowInsert() } as never;
 
     const result = await creditService.useCreditsIdempotent(
       'u1',
@@ -125,7 +200,7 @@ describe('useCreditsIdempotent — atomic conditional deduction', () => {
     const selectResults = [[], [FREE]];
     const select = vi.fn(() => selectChain(selectResults.shift()));
     const execute = vi.fn(() => Promise.resolve([{ id: 'tx_arr' }]));
-    fakeDb = { select, execute } as never;
+    fakeDb = { select, execute, insert: existingRowInsert() } as never;
 
     const result = await creditService.useCreditsIdempotent(
       'u1',
