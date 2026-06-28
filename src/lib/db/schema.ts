@@ -270,6 +270,7 @@ export const generationJobs = pgTable("generation_jobs", {
   profileId: uuid("profile_id"), // saved candidate_profile that seeded this generation (provenance)
   parentJobId: uuid("parent_job_id"), // refine: immediate predecessor (NULL on first gen)
   rootJobId: uuid("root_job_id"), // refine: first generation in the chain (NULL on first gen → self is root)
+  versionLabel: text("version_label"), // optional user-supplied version name (falls back to title)
   charged: boolean("charged").notNull().default(false),
   idempotencyKey: uuid("idempotency_key").notNull().unique(), // dedupes job + charge
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),

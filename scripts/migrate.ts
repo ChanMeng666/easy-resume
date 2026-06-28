@@ -267,6 +267,10 @@ async function migrate() {
   await sql`ALTER TABLE generation_jobs ADD COLUMN IF NOT EXISTS parent_job_id UUID`;
   await sql`ALTER TABLE generation_jobs ADD COLUMN IF NOT EXISTS root_job_id UUID`;
   await sql`CREATE INDEX IF NOT EXISTS idx_generation_jobs_root ON generation_jobs(user_id, root_job_id)`;
+  // Optional, user-supplied name for a version in a refine chain (falls back to
+  // the derived `title` when null). Lets the editor version strip show "Bold
+  // rewrite" vs "Conservative draft" instead of identical auto-derived titles.
+  await sql`ALTER TABLE generation_jobs ADD COLUMN IF NOT EXISTS version_label TEXT`;
   console.log("Created generation_jobs table");
 
   // Create rate_limits table (Postgres-backed fixed-window rate limiting)
