@@ -91,11 +91,15 @@ export interface ReserveJobArgs {
 
 /**
  * A job stuck in `queued`/`running` past this age is presumed dead — the
- * in-process runner died (VPS restart / crash) mid-generation. Generations take
- * seconds, so this threshold is deliberately generous and can't catch a healthy
- * in-flight run.
+ * in-process runner died (VPS restart / crash) mid-generation. A real generation
+ * takes seconds (worst case a few minutes under API slowness + the one corrective
+ * re-tailor pass), so 30 minutes is a ~10x margin that cannot catch a healthy
+ * in-flight run. Even if a pathologically slow run WERE swept, billing is keyed
+ * on the jobId: a concurrent reclaim re-running the same jobId dedupes the charge
+ * (charged:false → the pipeline refuses to deliver), so there is still no
+ * over-delivery — only wasted compute.
  */
-const STALE_JOB_MS = 10 * 60 * 1000;
+const STALE_JOB_MS = 30 * 60 * 1000;
 
 /**
  * Sweep abandoned jobs: mark any `queued`/`running` row older than STALE_JOB_MS
