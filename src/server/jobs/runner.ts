@@ -19,7 +19,7 @@ import { defaultDeps } from '@/server/core/deps';
 import { ConflictError } from '@/server/errors/AppError';
 import { toErrorEnvelope } from '@/server/errors/envelope';
 import { createLogger } from '@/server/log/logger';
-import { toWireResult, deriveJobTitle, storeResumePdf } from '@/server/jobs/persist';
+import { toWireResult, deriveJobTitle, storeResumePdf, sweepStaleRunningJobs } from '@/server/jobs/persist';
 import type { Caller, GenerateInput } from '@/server/core/pipeline.types';
 
 /**
@@ -31,6 +31,10 @@ export async function createJob(
   input: GenerateInput,
   idempotencyKey: string
 ): Promise<GenerationJob> {
+  // Reconcile abandoned jobs (crash/restart left them in queued/running) so the
+  // history and same-key reclaim stay consistent.
+  await sweepStaleRunningJobs();
+
   // Owner-scoped replay: an agent re-POSTing the same key gets its own job back.
   const [existing] = await db
     .select()

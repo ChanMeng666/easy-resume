@@ -157,10 +157,15 @@ carrying `Retry-After` + `X-RateLimit-*` headers; success responses also carry
 - **Neon Postgres + Drizzle ORM**; schema in `src/lib/db/schema.ts`, client in
   `src/lib/db/client.ts` (exports `db`).
 - **Migrations are applied by `scripts/migrate.ts`** — hand-written idempotent
-  raw SQL (`CREATE TABLE IF NOT EXISTS`, etc.), run with `npx tsx scripts/migrate.ts`.
-  **Do NOT use `drizzle-kit generate`** here: it prompts interactively (snapshot
-  drift from the historical copilot→agent rename) and breaks automation. When you
-  add a table/column, add idempotent DDL to `scripts/migrate.ts`.
+  raw SQL (`CREATE TABLE IF NOT EXISTS`, etc.), run with `npm run db:migrate`
+  (alias for `tsx scripts/migrate.ts`). It is the **single, self-contained source
+  of truth**: it provisions a FRESH database on its own (it creates the base
+  `resumes`/`agent_*`/`resume_versions` tables, then the rest) and is safe to
+  re-run. The old `drizzle/` migration snapshots were removed (they created stale
+  `copilot_*` tables that contradicted the schema). `drizzle.config.ts` is kept
+  only for `drizzle-kit studio` / type introspection. **Do NOT use `drizzle-kit
+  generate`** to produce migrations — `scripts/migrate.ts` is authoritative; add
+  idempotent DDL there when you add a table/column.
 - **Active tables**: `generation_jobs` (the single persistence model for ALL
   generations — web + v1 API; columns include `title`, `input`, `result` JSONB,
   `pdf_url`, `charged`, `idempotency_key`), `credits`, `credit_transactions`,

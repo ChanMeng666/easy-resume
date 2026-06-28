@@ -82,10 +82,12 @@ Tests: `src/server/jobs/reserveJob.test.ts` pins each reservation outcome;
 Codex adversarial review: **SHIP**.
 
 ## Remaining roadmap (unchanged from the plan)
-- **P0-4** migration source-of-truth drift (`scripts/migrate.ts` is authoritative
-  and already contains the credit/index DDL; `drizzle/*.sql` is stale — reconcile
-  or document).
-- **P0-5** stale-`running` job sweeper (process restart leaves v1 jobs stuck).
+- **P0-4 — DONE** (commit `4a15dbc`): made `scripts/migrate.ts` self-contained (it
+  silently depended on the removed `drizzle/` snapshots and would fail on a fresh
+  DB); removed the stale `drizzle/*.sql`; added `npm run db:migrate`. Codex: SHIP.
+- **P0-5 — DONE** (`4a15dbc`/`88f3351`): `sweepStaleRunningJobs()` reconciles
+  crash-abandoned `queued`/`running` jobs (30m threshold), run opportunistically
+  from the reserve paths. Codex: SHIP.
 - **P1** `candidate_profiles` (background once, reuse many); honest refine
   (cost disclosure, version retention, free structured-edit re-render); agent
   hardening (LLM retry/backoff, faithfulness beyond substring, eval/golden set,

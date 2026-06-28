@@ -19,7 +19,7 @@ vi.mock('@/lib/db/client', () => ({
   },
 }));
 
-const { reserveJob } = await import('./persist');
+const { reserveJob, sweepStaleRunningJobs } = await import('./persist');
 
 const caller: Caller = { userId: 'u1', via: 'api_key', apiKeyId: 'k1' };
 const input = { jobDescription: 'jd', background: 'bg' };
@@ -106,5 +106,24 @@ describe('reserveJob', () => {
     };
     const r = await reserveJob({ caller, input, idempotencyKey: 'key-1' });
     expect(r).toEqual({ mode: 'in_progress' });
+  });
+});
+
+describe('sweepStaleRunningJobs', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('issues a single UPDATE to fail abandoned jobs and never throws', async () => {
+    const update = vi.fn(() => ({ set: () => ({ where: () => Promise.resolve(undefined) }) }));
+    fakeDb = { update } as never;
+    await expect(sweepStaleRunningJobs()).resolves.toBeUndefined();
+    expect(update).toHaveBeenCalledTimes(1);
+  });
+
+  it('swallows DB errors (best-effort)', async () => {
+    const update = vi.fn(() => ({
+      set: () => ({ where: () => Promise.reject(new Error('db down')) }),
+    }));
+    fakeDb = { update } as never;
+    await expect(sweepStaleRunningJobs()).resolves.toBeUndefined();
   });
 });
