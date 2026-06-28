@@ -1,6 +1,6 @@
 # ADR 0001 — Money-path correctness, Typst safety, and the idempotency contract
 
-- **Status**: Accepted (P0-1, P0-3, P0-2, **P0-2b shipped** — money-path idempotency fully closed; P0-4/P0-5/P1 pending)
+- **Status**: Accepted — **P0 + P1 all shipped** (money-path idempotency fully closed; candidate_profiles, honest refine, agent hardening, UX polish all merged). Next is optional P2 (see end).
 - **Date**: 2026-06-28
 - **Authors**: Claude (implementation lead) × Codex (adversarial reviewer)
 - **Scope**: Outcome-based billing, public/web idempotency, Typst rendering safety
@@ -141,8 +141,10 @@ Codex adversarial review: **SHIP**.
   throw, no double bonus). Codex: **SHIP**.
 
 **P1 is COMPLETE** — all sub-tasks shipped (each codex-reviewed to SHIP):
-candidate_profiles (PR #15), honest refine (#16), agent hardening (#17), UX
-polish (#18), and this getOrCreate race cleanup.
+candidate_profiles (PR #15), honest refine (#20), agent hardening (#17), UX
+polish (#18), and the getOrCreate race cleanup (#19). The candidate_profiles
+schema migration (new `candidate_profiles` table + `generation_jobs.profile_id`)
+was applied to the production DB via `npm run db:migrate`.
 
 ## Working model
 Claude implements; after each unit, Codex runs an adversarial `codex exec
