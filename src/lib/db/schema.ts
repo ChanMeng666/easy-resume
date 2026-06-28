@@ -268,6 +268,8 @@ export const generationJobs = pgTable("generation_jobs", {
   error: jsonb("error").$type<Record<string, unknown>>(), // error envelope on failure
   pdfUrl: text("pdf_url"), // route serving the compiled PDF bytes
   profileId: uuid("profile_id"), // saved candidate_profile that seeded this generation (provenance)
+  parentJobId: uuid("parent_job_id"), // refine: immediate predecessor (NULL on first gen)
+  rootJobId: uuid("root_job_id"), // refine: first generation in the chain (NULL on first gen → self is root)
   charged: boolean("charged").notNull().default(false),
   idempotencyKey: uuid("idempotency_key").notNull().unique(), // dedupes job + charge
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
@@ -275,6 +277,7 @@ export const generationJobs = pgTable("generation_jobs", {
 }, (table) => ({
   userIdIdx: index("idx_generation_jobs_user_id").on(table.userId),
   statusIdx: index("idx_generation_jobs_status").on(table.status),
+  rootIdx: index("idx_generation_jobs_root").on(table.userId, table.rootJobId),
 }));
 
 /**

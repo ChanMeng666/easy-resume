@@ -51,12 +51,28 @@ export async function POST(request: NextRequest) {
     return errorResponse(error, requestId);
   }
 
-  let body: { jobDescription?: string; background?: string; templateId?: string; profileId?: string };
+  let body: {
+    jobDescription?: string;
+    background?: string;
+    templateId?: string;
+    profileId?: string;
+    parentJobId?: string;
+  };
   try {
     body = await request.json();
   } catch {
     return errorResponse(new ValidationError('Invalid JSON body'), requestId);
   }
+
+  // A refine carries the job it refines, so the new generation records the
+  // version chain. Ownership is verified inside reserveJob; anything that isn't a
+  // strict UUID is dropped here (no chain link) so a malformed value never
+  // reaches the uuid-typed column comparison.
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const parentJobId =
+    typeof body.parentJobId === 'string' && UUID_RE.test(body.parentJobId)
+      ? body.parentJobId
+      : undefined;
 
   // A stable client idempotency key dedupes a generation intent across retries /
   // reconnects. It is the RESERVATION key (not the charge key): the charge is
@@ -95,7 +111,7 @@ export async function POST(request: NextRequest) {
       // error rather than running unguarded.
       let jobId: string;
       try {
-        const reservation = await reserveJob({ caller, input, idempotencyKey });
+        const reservation = await reserveJob({ caller, input, idempotencyKey, parentJobId });
         if (reservation.mode === 'replay') {
           sendEvent(controller, encoder, { type: 'result', data: reservation.result });
           sendEvent(controller, encoder, { type: 'saved', jobId: reservation.jobId });
