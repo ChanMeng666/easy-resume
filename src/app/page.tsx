@@ -29,6 +29,24 @@ interface ProfileSummary {
 const MAX_INPUT_BYTES = 100_000;
 
 /**
+ * One-click starter examples that prefill both fields, so a first-time visitor
+ * can see a real result without writing anything. Kept as static constants (no
+ * Math.random / Date.now) to stay hydration-safe.
+ */
+const EXAMPLE_PROMPTS: { label: string; jd: string; bg: string }[] = [
+  {
+    label: 'Frontend Engineer',
+    jd: 'Frontend Engineer at a fintech startup. Build accessible, high-performance UIs in React and TypeScript. Experience with Next.js, design systems, testing, and REST/GraphQL APIs required. Bonus: data-visualization and performance profiling.',
+    bg: "I'm a frontend developer with 4 years of experience. I build web apps with React, TypeScript, and Next.js, and I've led a design-system migration that cut UI bugs by 30%. I write unit and end-to-end tests (Jest, Playwright) and care about accessibility and performance. B.S. in Computer Science, 2019.",
+  },
+  {
+    label: 'Data Analyst',
+    jd: 'Data Analyst for a retail company. Turn raw data into dashboards and insights. Strong SQL and Python required; experience with Tableau or Power BI, A/B testing, and stakeholder communication. Statistics background preferred.',
+    bg: "Data analyst with 3 years of experience in retail and e-commerce. I write SQL and Python (pandas) daily, build Tableau dashboards, and ran A/B tests that lifted conversion by 12%. I present findings to non-technical stakeholders weekly. B.A. in Economics with a statistics minor.",
+  },
+];
+
+/**
  * A "bar" of typeset text used in the composed-resume preview. Reveals with the
  * compile animation at a staggered delay so the page looks like it is being set.
  */
@@ -166,6 +184,13 @@ export default function HomePage() {
     if (selectedProfileId) setSelectedProfileId(null);
   }
 
+  /** Prefill both fields from a starter example (and clear any pinned profile). */
+  function applyExample(example: { jd: string; bg: string }) {
+    setJobDescription(example.jd);
+    setBackground(example.bg);
+    setSelectedProfileId(null);
+  }
+
   /**
    * Hand off JD and background to the editor page through two channels:
    * a window global (survives client-side navigation) and sessionStorage
@@ -250,6 +275,21 @@ export default function HomePage() {
                   className="rounded-xl border-2 border-black bg-white p-4 sm:p-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)]"
                 >
                   <div className="space-y-4">
+                    {/* Onboarding: one-click examples to prefill both fields. */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="proof-label !text-muted-foreground">New here? Try:</span>
+                      {EXAMPLE_PROMPTS.map((ex) => (
+                        <button
+                          key={ex.label}
+                          type="button"
+                          onClick={() => applyExample(ex)}
+                          className="rounded-lg border-2 border-black bg-cyan-100 px-2.5 py-1 font-mono text-xs font-bold transition-all duration-200 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-1px] hover:translate-y-[-1px]"
+                        >
+                          {ex.label}
+                        </button>
+                      ))}
+                    </div>
+
                     <div className="space-y-2">
                       <Label htmlFor="jd" className="proof-label !text-foreground">
                         JD.txt — Job Description

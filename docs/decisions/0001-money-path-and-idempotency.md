@@ -126,8 +126,14 @@ Codex adversarial review: **SHIP**.
   on spans is now OFF by default, gated behind `AI_TELEMETRY_RECORD_IO`
   (documented). Codex: **SHIP** (after fixing a false-green skip, retry
   compounding, and an ambiguous synonym).
-- **P1 (remaining)** UX (onboarding/examples, parsed-data confirmation, pricing
-  copy). Also fix the pre-existing `getOrCreate` select-then-insert race.
+- **P1-4 — DONE** (UX polish): homepage one-click starter examples (prefill JD +
+  background); an editor "Parsed from your background" summary card (experience/
+  education/projects/skills counts) that nudges the free Edit-fields path; honest
+  pricing copy — unimplemented features (Application tracking, Priority AI
+  responses, Bulk application support, Priority support) kept listed but badged
+  "Coming soon" instead of over-promising. UI-only; no money path / DB change.
+  Codex: **SHIP** (no findings).
+- **P1 (remaining)** the pre-existing `getOrCreate` select-then-insert race.
 
 ## Working model
 Claude implements; after each unit, Codex runs an adversarial `codex exec

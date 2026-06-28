@@ -904,6 +904,43 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
             </div>
           </div>
 
+          {/* Parsed-data confirmation — a quick at-a-glance check that the AI
+              read the background correctly, nudging the free Edit fields path. */}
+          {(() => {
+            const r = result.resumeData;
+            const skillCount = (r.skills ?? []).reduce(
+              (n, s) => n + (s.keywords?.length ?? 0),
+              0
+            );
+            const stats = [
+              { label: 'Experience', value: (r.work ?? []).length },
+              { label: 'Education', value: (r.education ?? []).length },
+              { label: 'Projects', value: (r.projects ?? []).length },
+              { label: 'Skills', value: skillCount },
+            ];
+            return (
+              <div className="rounded-xl border-2 border-black bg-white p-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
+                <p className="proof-label mb-3">Parsed from your background</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {stats.map((s) => (
+                    <div
+                      key={s.label}
+                      className="rounded-lg border-2 border-black bg-gray-50 px-3 py-2"
+                    >
+                      <p className="font-mono text-2xl font-bold leading-none">{s.value}</p>
+                      <p className="proof-label !text-muted-foreground mt-1">{s.label}</p>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-3 text-xs text-muted-foreground font-medium">
+                  Something missing or off? Use{' '}
+                  <span className="font-semibold text-foreground">Edit fields</span> below to fix
+                  it — free, no credit.
+                </p>
+              </div>
+            );
+          })()}
+
           {/* Matched skills */}
           {result.matchAnalysis.matchedSkills.length > 0 && (
             <div className="rounded-xl border-2 border-black bg-white p-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
