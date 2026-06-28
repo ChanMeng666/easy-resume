@@ -10,7 +10,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getCaller } from '@/server/auth/caller';
-import { getThread, loadHistory } from '@/server/agent/store';
+import { getThread, loadHistory, latestResumeSnapshot, type ResumeSnapshot } from '@/server/agent/store';
 import { NotFoundError, UnauthenticatedError } from '@/server/errors/AppError';
 import { errorResponse } from '@/server/errors/envelope';
 
@@ -38,7 +38,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     assertUuid(id);
     const thread = await getThread(caller.userId, id);
     const messages = await loadHistory(caller.userId, id);
-    return NextResponse.json({ thread, messages }, { headers: { 'X-Request-Id': requestId } });
+    // The current working resume (reflects prior edits), so the chat page can show
+    // the live PDF immediately. Best-effort: if the anchored resume is gone the
+    // thread/messages still load (snapshot = null → page shows an unavailable note).
+    let snapshot: ResumeSnapshot | null = null;
+    try {
+      snapshot = await latestResumeSnapshot(caller.userId, id);
+    } catch {
+      snapshot = null;
+    }
+    return NextResponse.json({ thread, messages, snapshot }, { headers: { 'X-Request-Id': requestId } });
   } catch (error) {
     return errorResponse(error, requestId);
   }

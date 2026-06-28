@@ -1,0 +1,516 @@
+'use client';
+
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useUser } from '@stackframe/stack';
+import {
+  AlertCircle,
+  ArrowLeft,
+  Loader2,
+  Save,
+  Send,
+  Sparkles,
+  Wand2,
+  Wrench,
+  CheckCircle2,
+} from 'lucide-react';
+import { Navbar } from '@/components/shared/Navbar';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { LivePdfPreview } from '@/components/preview/LivePdfPreview';
+import type { ResumeData } from '@/lib/validation/schema';
+
+/** A rendered transcript entry. */
+type ChatEntry =
+  | { kind: 'user'; id: string; text: string }
+  | { kind: 'assistant'; id: string; text: string }
+  | { kind: 'tool'; id: string; toolName: string; error: boolean };
+
+/** A persisted message as returned by GET /api/threads/[id]. */
+interface StoredMessage {
+  role: string;
+  content: string;
+  toolName: string | null;
+  toolResult: unknown;
+}
+
+/** Human-friendly verb for a tool chip. */
+function toolLabel(name: string): string {
+  const map: Record<string, string> = {
+    editSummary: 'Editing summary',
+    editBasics: 'Editing basics',
+    editWorkHighlights: 'Editing work highlights',
+    editProjectHighlights: 'Editing project highlights',
+    addSkillCategory: 'Adding skill category',
+    editSkillCategory: 'Editing skill category',
+    removeSkillCategory: 'Removing skill category',
+    reorderSkills: 'Reordering skills',
+    previewResume: 'Reviewing the resume',
+  };
+  return map[name] ?? name;
+}
+
+/** Starter prompts shown on an empty conversation. */
+const STARTERS = [
+  'Tighten my summary to two sentences.',
+  'Make my most recent role emphasize leadership.',
+  'Add a "DevOps" skill category with Docker and Kubernetes.',
+];
+
+/**
+ * Conversational resume editor (P2-1). Opens (or resumes) the thread for a
+ * generated resume, streams edit turns over SSE, and shows the live PDF (which
+ * recompiles the streamed Typst via the free /api/compile). Editing is FREE — no
+ * credit is ever charged here; only an explicit "Save as version" persists a new
+ * (uncharged) version.
+ */
+export function AssistantContent({ jobId }: { jobId: string }) {
+  const router = useRouter();
+  const user = useUser();
+
+  const [threadId, setThreadId] = useState<string | null>(null);
+  const [entries, setEntries] = useState<ChatEntry[]>([]);
+  const [typstCode, setTypstCode] = useState(''); // live preview (may be a streaming draft)
+  const [committedTypst, setCommittedTypst] = useState(''); // last successfully-saved render (revert target)
+  const [resumeData, setResumeData] = useState<ResumeData | null>(null); // last SAVED resume (what "Save as version" sends)
+  const [templateId, setTemplateId] = useState('two-column');
+  const [input, setInput] = useState('');
+  const [phase, setPhase] = useState<'init' | 'ready' | 'error'>('init');
+  const [initError, setInitError] = useState<string | null>(null);
+  const [unavailable, setUnavailable] = useState(false);
+  const [streaming, setStreaming] = useState(false);
+  const [turnError, setTurnError] = useState<string | null>(null);
+  const [dirty, setDirty] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [savedId, setSavedId] = useState<string | null>(null);
+
+  const idRef = useRef(0);
+  const nextId = () => `e${(idRef.current += 1)}`;
+  const abortRef = useRef<AbortController | null>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (user === null) router.push(`/handler/sign-in?after_auth_return_to=/resumes/${jobId}/assistant`);
+  }, [user, router, jobId]);
+
+  // Map a persisted message to a transcript entry (tool rows become chips).
+  const toEntry = useCallback((m: StoredMessage): ChatEntry | null => {
+    if (m.role === 'user') return { kind: 'user', id: nextId(), text: m.content };
+    if (m.role === 'assistant' && m.content.trim()) return { kind: 'assistant', id: nextId(), text: m.content };
+    if (m.role === 'tool' && m.toolName) {
+      const error = Boolean(m.toolResult && typeof m.toolResult === 'object' && 'error' in (m.toolResult as object));
+      return { kind: 'tool', id: nextId(), toolName: m.toolName, error };
+    }
+    return null;
+  }, []);
+
+  // Open (or resume) the thread + load its messages and current working resume.
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const createRes = await fetch('/api/threads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ generationJobId: jobId }),
+        });
+        if (!createRes.ok) {
+          if (!cancelled) {
+            setInitError(createRes.status === 404 ? 'Resume not found.' : 'Could not open the assistant.');
+            setPhase('error');
+          }
+          return;
+        }
+        const { thread } = await createRes.json();
+        const detailRes = await fetch(`/api/threads/${thread.id}`);
+        if (!detailRes.ok) {
+          if (!cancelled) {
+            setInitError('Could not load the conversation.');
+            setPhase('error');
+          }
+          return;
+        }
+        const { messages, snapshot } = await detailRes.json();
+        if (cancelled) return;
+        setThreadId(thread.id);
+        setEntries((messages as StoredMessage[]).map(toEntry).filter((e): e is ChatEntry => e !== null));
+        if (snapshot) {
+          setTypstCode(snapshot.typstCode);
+          setCommittedTypst(snapshot.typstCode);
+          setResumeData(snapshot.resumeData);
+          setTemplateId(snapshot.templateId ?? 'two-column');
+        } else {
+          setUnavailable(true);
+        }
+        setPhase('ready');
+      } catch {
+        if (!cancelled) {
+          setInitError('Could not open the assistant.');
+          setPhase('error');
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, jobId, toEntry]);
+
+  // Auto-scroll the transcript on new entries.
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+  }, [entries, streaming]);
+
+  /** Immutably update one entry by id. */
+  const updateEntry = (id: string, fn: (e: ChatEntry) => ChatEntry) =>
+    setEntries((cur) => cur.map((e) => (e.id === id ? fn(e) : e)));
+
+  const send = useCallback(
+    async (rawMessage: string) => {
+      const message = rawMessage.trim();
+      if (!threadId || streaming || !message || unavailable) return;
+      setInput('');
+      setTurnError(null);
+      setSavedId(null);
+      setEntries((cur) => [...cur, { kind: 'user', id: nextId(), text: message }]);
+      setStreaming(true);
+
+      const controller = new AbortController();
+      abortRef.current = controller;
+      let assistantId: string | null = null;
+      // Streamed edits are a DRAFT shown live; they only become saveable once the
+      // turn persists ('saved'). A failed/aborted turn reverts the preview to the
+      // last committed render and never marks the resume saveable.
+      const revertTypst = committedTypst;
+      let draftResume: ResumeData | null = null;
+      let draftTypst: string | null = null;
+      let savedThisTurn = false;
+
+      try {
+        const res = await fetch(`/api/threads/${threadId}/messages`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message }),
+          signal: controller.signal,
+        });
+        if (!res.ok || !res.body) {
+          let msg = 'The assistant is unavailable right now.';
+          try {
+            const env = await res.json();
+            msg = env?.error?.message ?? msg;
+          } catch {
+            /* non-JSON */
+          }
+          setTurnError(msg);
+          return;
+        }
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const parts = buffer.split('\n\n');
+          buffer = parts.pop() || '';
+          for (const part of parts) {
+            const line = part.replace(/^data: /, '').trim();
+            if (!line) continue;
+            let ev: Record<string, unknown>;
+            try {
+              ev = JSON.parse(line);
+            } catch {
+              continue;
+            }
+            switch (ev.type) {
+              case 'tool-call':
+                setEntries((cur) => [...cur, { kind: 'tool', id: nextId(), toolName: String(ev.toolName), error: false }]);
+                break;
+              case 'tool-result': {
+                const isError = Boolean(ev.toolResult && typeof ev.toolResult === 'object' && 'error' in (ev.toolResult as object));
+                if (isError) {
+                  // Mark the most recent matching tool chip as errored.
+                  setEntries((cur) => {
+                    const copy = [...cur];
+                    for (let i = copy.length - 1; i >= 0; i--) {
+                      const e = copy[i];
+                      if (e.kind === 'tool' && e.toolName === ev.toolName && !e.error) {
+                        copy[i] = { ...e, error: true };
+                        break;
+                      }
+                    }
+                    return copy;
+                  });
+                }
+                break;
+              }
+              case 'resume':
+                // Live draft preview only; not saveable until 'saved' arrives.
+                draftTypst = String(ev.typstCode ?? '');
+                draftResume = (ev.resumeData as ResumeData) ?? draftResume;
+                if (typeof ev.templateId === 'string') setTemplateId(ev.templateId);
+                setTypstCode(draftTypst);
+                break;
+              case 'saved':
+                savedThisTurn = true;
+                break;
+              case 'text': {
+                const text = String(ev.text ?? '');
+                if (!text) break;
+                if (assistantId === null) {
+                  assistantId = nextId();
+                  const id = assistantId;
+                  setEntries((cur) => [...cur, { kind: 'assistant', id, text }]);
+                } else {
+                  const id = assistantId;
+                  updateEntry(id, (e) => (e.kind === 'assistant' ? { ...e, text: e.text + text } : e));
+                }
+                break;
+              }
+              case 'error':
+                setTurnError(String(ev.message ?? 'The assistant ran into a problem.'));
+                break;
+              default:
+                break;
+            }
+          }
+        }
+      } catch (err) {
+        if (!(err instanceof DOMException && err.name === 'AbortError')) {
+          setTurnError('The assistant ran into a problem. Please try again.');
+        }
+      } finally {
+        // Commit the streamed edits ONLY if the turn persisted ('saved'); otherwise
+        // revert the live preview to the last committed render and leave the
+        // saveable resume untouched (a failed/aborted turn is never saveable).
+        if (savedThisTurn && draftResume && draftTypst !== null) {
+          setResumeData(draftResume);
+          setCommittedTypst(draftTypst);
+          setDirty(true);
+        } else if (draftTypst !== null) {
+          setTypstCode(revertTypst);
+        }
+        setStreaming(false);
+        abortRef.current = null;
+      }
+    },
+    [threadId, streaming, unavailable, committedTypst]
+  );
+
+  const saveVersion = useCallback(async () => {
+    if (!resumeData || saving || !dirty) return;
+    setSaving(true);
+    setTurnError(null);
+    try {
+      const res = await fetch(`/api/resumes/${jobId}/versions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resumeData, templateId }),
+      });
+      if (!res.ok) throw new Error('save failed');
+      const { id } = await res.json();
+      setSavedId(id);
+      setDirty(false);
+    } catch {
+      setTurnError('Could not save this as a new version. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  }, [resumeData, saving, dirty, jobId, templateId]);
+
+  if (user === undefined || user === null) {
+    return (
+      <div className="min-h-screen baseline-grid bg-[#f0f0f0]">
+        <Navbar currentPath="/resumes" />
+        <div className="flex items-center justify-center h-[70vh]">
+          <p className="font-mono text-sm font-medium text-muted-foreground animate-pulse">loading…</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen baseline-grid bg-[#f0f0f0]">
+      <Navbar currentPath="/resumes" />
+      <main className="page-shell container mx-auto px-4 pb-8">
+        {/* Header */}
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="proof-label mb-2">§ Resume Assistant</p>
+            <h1 className="text-2xl sm:text-3xl font-brand flex items-center gap-2">
+              <Wand2 className="h-6 w-6" />
+              Edit with AI
+            </h1>
+            <p className="text-muted-foreground mt-1 font-medium text-sm">
+              Describe a change and watch your resume update — chatting and edits are free.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="rounded-lg border-2 border-black bg-green-100 px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.14em]">
+              Free · no credit
+            </span>
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => router.push('/resumes')}>
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </Button>
+          </div>
+        </div>
+
+        {phase === 'error' ? (
+          <div className="bg-white rounded-xl p-6 border-2 border-red-400 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] max-w-xl">
+            <div className="flex items-center gap-3 mb-2">
+              <AlertCircle className="h-5 w-5 text-red-600" />
+              <p className="font-black text-red-800">{initError}</p>
+            </div>
+            <Button variant="outline" onClick={() => router.push('/resumes')} className="mt-2">
+              Back to My Resumes
+            </Button>
+          </div>
+        ) : (
+          <div className="grid lg:grid-cols-2 gap-6">
+            {/* Chat column */}
+            <div className="flex flex-col rounded-xl border-2 border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] overflow-hidden h-[70vh]">
+              <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
+                {phase === 'init' ? (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="font-mono text-sm">opening conversation…</span>
+                  </div>
+                ) : entries.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Sparkles className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
+                    <p className="font-black mb-1">Ask for an edit</p>
+                    <p className="text-sm text-muted-foreground font-medium mb-4">
+                      Try one of these to get started:
+                    </p>
+                    <div className="flex flex-col gap-2 items-stretch max-w-sm mx-auto">
+                      {STARTERS.map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => send(s)}
+                          disabled={unavailable}
+                          className="text-left rounded-lg border-2 border-black bg-gray-50 px-3 py-2 text-sm font-medium hover:bg-gray-100 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all duration-150 disabled:opacity-50"
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  entries.map((e) =>
+                    e.kind === 'tool' ? (
+                      <div key={e.id} className="flex justify-center">
+                        <span
+                          className={`inline-flex items-center gap-1.5 rounded-lg border-2 px-2 py-1 font-mono text-[11px] font-bold ${
+                            e.error ? 'border-red-400 bg-red-50 text-red-700' : 'border-black bg-purple-50'
+                          }`}
+                        >
+                          <Wrench className="h-3 w-3" />
+                          {toolLabel(e.toolName)}
+                          {e.error ? ' — skipped' : ''}
+                        </span>
+                      </div>
+                    ) : (
+                      <div key={e.id} className={`flex ${e.kind === 'user' ? 'justify-end' : 'justify-start'}`}>
+                        <div
+                          className={`max-w-[85%] rounded-xl border-2 border-black px-3 py-2 text-sm font-medium whitespace-pre-wrap ${
+                            e.kind === 'user'
+                              ? 'bg-purple-600 text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,0.9)]'
+                              : 'bg-white shadow-[3px_3px_0px_0px_rgba(0,0,0,0.9)]'
+                          }`}
+                        >
+                          {e.text}
+                        </div>
+                      </div>
+                    )
+                  )
+                )}
+                {streaming && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="font-mono text-xs">working…</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Errors + composer */}
+              {turnError && (
+                <div className="px-4 py-2 border-t-2 border-red-200 bg-red-50 flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-red-600 flex-shrink-0" />
+                  <span className="text-xs text-red-700 font-medium">{turnError}</span>
+                </div>
+              )}
+              {savedId && (
+                <div className="px-4 py-2 border-t-2 border-green-200 bg-green-50 flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2 text-xs text-green-800 font-medium">
+                    <CheckCircle2 className="h-4 w-4" />
+                    Saved as a new version.
+                  </span>
+                  <button
+                    onClick={() => router.push(`/editor?job=${savedId}`)}
+                    className="font-mono text-[11px] font-bold underline"
+                  >
+                    Open it
+                  </button>
+                </div>
+              )}
+              <div className="border-t-2 border-black p-3">
+                {unavailable ? (
+                  <p className="text-xs text-muted-foreground font-medium text-center py-2">
+                    The resume this conversation edits is no longer available.
+                  </p>
+                ) : (
+                  <div className="flex items-end gap-2">
+                    <Textarea
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          send(input);
+                        }
+                      }}
+                      placeholder="e.g. Tighten my summary to two sentences"
+                      rows={2}
+                      disabled={streaming || phase !== 'ready'}
+                      className="resize-none"
+                    />
+                    <Button
+                      onClick={() => send(input)}
+                      disabled={streaming || phase !== 'ready' || !input.trim()}
+                      className="gap-2 flex-shrink-0"
+                      aria-label="Send"
+                    >
+                      {streaming ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Live PDF column */}
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <span className="proof-label">live preview</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={saveVersion}
+                  disabled={!dirty || saving || !resumeData}
+                >
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  Save as new version · Free
+                </Button>
+              </div>
+              <div className="rounded-xl border-2 border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] overflow-hidden">
+                <LivePdfPreview typstCode={typstCode} filename="resume" />
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
