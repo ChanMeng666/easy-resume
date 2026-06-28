@@ -15,7 +15,10 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { compilePdf, downloadTypFile, copyToClipboard } from '@/lib/typst/compiler';
+import { generateTypstCode } from '@/lib/typst/generator';
+import { getTemplateById } from '@/templates/registry';
 import { ResumeData } from '@/lib/validation/schema';
+import { StructuredEditor } from './StructuredEditor';
 import {
   Download,
   FileCode,
@@ -34,7 +37,28 @@ import {
   RefreshCw,
   CreditCard,
   BookmarkPlus,
+  Pencil,
+  History,
 } from 'lucide-react';
+
+/**
+ * Re-render the Typst source from edited resume data, using the same template
+ * the generation chose. Mirrors the pipeline's render step so a free
+ * structured edit produces the same layout — just without the LLM/billing.
+ */
+function renderTypstFromResume(data: ResumeData, templateId: string): string {
+  const template = getTemplateById(templateId);
+  return template ? template.generator(data) : generateTypstCode(data);
+}
+
+/** One version in a refine chain, from GET /api/resumes/[id]/versions. */
+interface VersionItem {
+  id: string;
+  title: string;
+  version: number;
+  atsScore?: number;
+  isCurrent: boolean;
+}
 
 /** Progress steps displayed during generation. */
 const PROGRESS_STEPS = [
@@ -104,7 +128,8 @@ async function runGenerationStream(
   idempotencyKey: string,
   signal: AbortSignal,
   { onProgress, onResult, onSaved }: StreamCallbacks,
-  profileId?: string
+  profileId?: string,
+  parentJobId?: string
 ): Promise<void> {
   let response: Response;
   try {
@@ -118,11 +143,13 @@ async function runGenerationStream(
         'Idempotency-Key': idempotencyKey,
       },
       // profileId (when present) lets the server reuse the saved parsed
-      // background and skip the parse_background step.
+      // background and skip the parse_background step. parentJobId links a refine
+      // to the job it refines so the editor can show a version chain.
       body: JSON.stringify({
         jobDescription: jd,
         background: bg,
         ...(profileId ? { profileId } : {}),
+        ...(parentJobId ? { parentJobId } : {}),
       }),
       signal,
     });
@@ -265,6 +292,17 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
   const [coverLetterCopied, setCoverLetterCopied] = useState(false);
   const [coverLetterCodeCopied, setCoverLetterCodeCopied] = useState(false);
   const [showCoverLetter, setShowCoverLetter] = useState(false);
+  // The persisted job id of the CURRENT result — set from the `jobId` prop (job
+  // mode) or the SSE `saved` event. Used as a refine's parent and to load the
+  // version strip.
+  const [currentJobId, setCurrentJobId] = useState<string | null>(jobId ?? null);
+  // Refine cost-disclosure dialog: a refine re-runs the LLM pipeline and costs 1
+  // credit, so we confirm before charging.
+  const [refineCostOpen, setRefineCostOpen] = useState(false);
+  // Free, client-side structured field editing (no LLM, no charge).
+  const [editMode, setEditMode] = useState(false);
+  // Versions in the current refine chain (for the version strip).
+  const [versions, setVersions] = useState<VersionItem[]>([]);
   // "Save as profile" — persist the background as a reusable candidate_profile.
   const [saveProfileOpen, setSaveProfileOpen] = useState(false);
   const [saveProfileLabel, setSaveProfileLabel] = useState('');
@@ -300,6 +338,18 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
     return () => document.removeEventListener('visibilitychange', onVisibility);
   }, []);
 
+  /** Load the version chain for a job (best-effort; powers the version strip). */
+  const fetchVersions = useCallback(async (id: string) => {
+    try {
+      const res = await fetch(`/api/resumes/${id}/versions`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setVersions(Array.isArray(data.items) ? data.items : []);
+    } catch {
+      // Non-critical — the strip just stays hidden.
+    }
+  }, []);
+
   /**
    * Kick off a generation. By default mints a fresh idempotency key (a new
    * intent / a deliberate refine charge); pass `reuseKey` on Retry so a run that
@@ -307,7 +357,13 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
    * again.
    */
   const startGeneration = useCallback(
-    (currentJd: string, currentBg: string, reuseKey = false, currentProfileId?: string) => {
+    (
+      currentJd: string,
+      currentBg: string,
+      reuseKey = false,
+      currentProfileId?: string,
+      parentJobId?: string
+    ) => {
       abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;
@@ -339,9 +395,14 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
             } catch {
               // Ignore — non-critical URL sync.
             }
+            // Track the new job id (the parent for a subsequent refine) and
+            // refresh the version strip.
+            setCurrentJobId(savedJobId);
+            fetchVersions(savedJobId);
           },
         },
-        currentProfileId
+        currentProfileId,
+        parentJobId
       )
         .catch((err) => {
           if ((err as Error)?.name === 'AbortError') return;
@@ -353,7 +414,7 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
           }
         });
     },
-    []
+    [fetchVersions]
   );
 
   /** Load a persisted generation (job mode) — free, no pipeline re-run. */
@@ -380,12 +441,15 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
       if (job.input?.jobDescription || job.input?.background) {
         setJobInput({ jd: job.input.jobDescription ?? '', bg: job.input.background ?? '' });
       }
+      // This IS the current job — track it as a refine parent and load its chain.
+      setCurrentJobId(id);
+      fetchVersions(id);
     } catch (err) {
       setError(classifyError(err));
     } finally {
       setIsGenerating(false);
     }
-  }, []);
+  }, [fetchVersions]);
 
   /** On mount: load a past job (job mode) or run a fresh generation. */
   useEffect(() => {
@@ -481,13 +545,43 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
     setTimeout(() => setCoverLetterCodeCopied(false), 2000);
   }, [result?.coverLetterTypst]);
 
-  /** Re-run generation with refinement text appended to the background. */
+  /** Open the cost-disclosure dialog before a (billable) refine. */
   const handleRefine = useCallback(() => {
     if (!refinementText.trim() || !result || !effJd.trim() || !effBg.trim()) return;
+    setRefineCostOpen(true);
+  }, [refinementText, result, effBg, effJd]);
+
+  /**
+   * Confirmed refine: re-run the LLM pipeline (a deliberate new charge). The
+   * refinement is appended to the background and the new generation links to the
+   * current job as its parent (version chain). A fresh idempotency key is minted
+   * inside startGeneration, so this is a new, separately-billed result that does
+   * NOT overwrite the previous version.
+   */
+  const confirmRefine = useCallback(() => {
+    if (!refinementText.trim() || !effJd.trim() || !effBg.trim()) return;
     const refinedBg = `${effBg}\n\nAdditional instructions: ${refinementText}`;
     setRefinementText('');
-    startGeneration(effJd, refinedBg);
-  }, [refinementText, result, effBg, effJd, startGeneration]);
+    setRefineCostOpen(false);
+    startGeneration(effJd, refinedBg, false, undefined, currentJobId ?? undefined);
+  }, [refinementText, effBg, effJd, currentJobId, startGeneration]);
+
+  /**
+   * Apply free, client-side structured edits: re-render the Typst from the
+   * edited resume data using the same template and refresh the result in place.
+   * This NEVER calls the pipeline and NEVER charges — only the live PDF preview
+   * and downloads update. ATS score / matched skills stay as last generated
+   * (recomputing those needs the LLM, which is the billable Refine path).
+   */
+  const handleApplyEdit = useCallback(
+    (next: ResumeData) => {
+      if (!result) return;
+      const newTypst = renderTypstFromResume(next, result.templateId);
+      setResult({ ...result, resumeData: next, typstCode: newTypst });
+      setEditMode(false);
+    },
+    [result]
+  );
 
   /**
    * Save the current background as a reusable profile. We POST the RAW
@@ -732,6 +826,49 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
         <h1 className="font-brand text-2xl sm:text-3xl">Your resume is ready.</h1>
       </motion.div>
 
+      {/* Version strip — switch between versions of a refine chain (free). */}
+      {versions.length > 1 && (
+        <div className="mb-6 flex flex-wrap items-center gap-2 rounded-xl border-2 border-black bg-white p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
+          <span className="proof-label !text-muted-foreground inline-flex items-center gap-1">
+            <History className="h-3.5 w-3.5" />
+            Versions:
+          </span>
+          {versions.map((v) =>
+            v.isCurrent ? (
+              <span
+                key={v.id}
+                className="rounded-lg border-2 border-black bg-primary px-2.5 py-1 font-mono text-xs font-bold text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]"
+                title={v.title}
+              >
+                v{v.version}
+                {typeof v.atsScore === 'number' ? ` · ATS ${v.atsScore}` : ''} · current
+              </span>
+            ) : (
+              <a
+                key={v.id}
+                href={`/editor?job=${v.id}`}
+                className="rounded-lg border-2 border-black bg-white px-2.5 py-1 font-mono text-xs font-bold transition-all duration-200 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-1px] hover:translate-y-[-1px]"
+                title={v.title}
+              >
+                v{v.version}
+                {typeof v.atsScore === 'number' ? ` · ATS ${v.atsScore}` : ''}
+              </a>
+            )
+          )}
+        </div>
+      )}
+
+      {/* Free structured-edit panel (no LLM, no charge). */}
+      {editMode && (
+        <div className="mb-6">
+          <StructuredEditor
+            resume={result.resumeData}
+            onApply={handleApplyEdit}
+            onCancel={() => setEditMode(false)}
+          />
+        </div>
+      )}
+
       <div className="vitex-grid">
         {/* Left (60%): PDF proof */}
         <motion.div
@@ -829,6 +966,19 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
               {showCoverLetter ? 'Hide' : 'Show'} Cover Letter
             </Button>
 
+            {/* Free, client-side structured editing — no LLM, no credit. */}
+            <Button
+              variant="outline"
+              className="w-full border-2 border-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
+              onClick={() => setEditMode((v) => !v)}
+            >
+              <Pencil className="mr-2 h-4 w-4" />
+              {editMode ? 'Hide field editor' : 'Edit fields'}
+              <span className="ml-2 rounded border border-black bg-green-100 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase">
+                Free
+              </span>
+            </Button>
+
             {/* Save the background for reuse across future job descriptions. */}
             {effBg.trim() && (
               <Button
@@ -843,6 +993,37 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
           </div>
         </motion.div>
       </div>
+
+      {/* Refine cost-disclosure dialog — a refine re-runs the LLM (1 credit). */}
+      <Dialog open={refineCostOpen} onOpenChange={setRefineCostOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Refine with AI — uses 1 credit</DialogTitle>
+            <DialogDescription>
+              This re-runs the AI pipeline to tailor a fresh version and costs
+              1 credit. Your current version is kept — you can switch back to it
+              from the version strip. (Small text fixes are free under
+              &ldquo;Edit fields&rdquo;.)
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setRefineCostOpen(false)}
+              className="border-2 border-black font-bold"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={confirmRefine}
+              className="border-2 border-black bg-purple-600 font-bold text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:bg-purple-700 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
+            >
+              <Send className="mr-2 h-4 w-4" />
+              Use 1 credit &amp; refine
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Save-as-profile dialog — persists the raw background for reuse. */}
       <Dialog open={saveProfileOpen} onOpenChange={setSaveProfileOpen}>
@@ -973,7 +1154,10 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
         <p className="proof-label mb-1">§ recompile</p>
         <h3 className="mb-2 sm:mb-3 text-base sm:text-lg font-black">Refine Your Resume</h3>
         <p className="text-xs sm:text-sm text-gray-500 mb-3">
-          Describe what to change and we&apos;ll regenerate your resume.
+          Describe what to change and the AI will regenerate your resume.{' '}
+          <span className="font-semibold text-foreground">Uses 1 credit</span> and keeps
+          the previous version. For small text fixes, use{' '}
+          <span className="font-semibold text-foreground">Edit fields</span> instead — that&apos;s free.
         </p>
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
           <Input

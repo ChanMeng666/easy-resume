@@ -109,6 +109,56 @@ describe('reserveJob', () => {
   });
 });
 
+describe('reserveJob refine chain', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  /** Capturing insert: records the values() payload, then returns `rows`. */
+  function captureInsert(rows: unknown[], sink: { values?: Record<string, unknown> }) {
+    return () => ({
+      values: (v: Record<string, unknown>) => {
+        sink.values = v;
+        return { onConflictDoNothing: () => ({ returning: () => Promise.resolve(rows) }) };
+      },
+    });
+  }
+
+  it('records parent_job_id + root_job_id from an owned first-gen parent', async () => {
+    const sink: { values?: Record<string, unknown> } = {};
+    fakeDb = {
+      insert: captureInsert([{ id: 'job_child' }], sink),
+      // Parent is a first generation (rootJobId null) → it becomes the root.
+      select: selectReturning([{ id: 'parent1', userId: 'u1', rootJobId: null }]),
+      update: updateReturning([]),
+    };
+    const r = await reserveJob({ caller, input, idempotencyKey: 'k', parentJobId: 'parent1' });
+    expect(r).toEqual({ mode: 'created', jobId: 'job_child' });
+    expect(sink.values).toMatchObject({ parentJobId: 'parent1', rootJobId: 'parent1' });
+  });
+
+  it('inherits the parent’s existing root for a deeper chain', async () => {
+    const sink: { values?: Record<string, unknown> } = {};
+    fakeDb = {
+      insert: captureInsert([{ id: 'job_v3' }], sink),
+      select: selectReturning([{ id: 'parent2', userId: 'u1', rootJobId: 'root0' }]),
+      update: updateReturning([]),
+    };
+    await reserveJob({ caller, input, idempotencyKey: 'k', parentJobId: 'parent2' });
+    expect(sink.values).toMatchObject({ parentJobId: 'parent2', rootJobId: 'root0' });
+  });
+
+  it('ignores a cross-user parent (no chain link, run still proceeds)', async () => {
+    const sink: { values?: Record<string, unknown> } = {};
+    fakeDb = {
+      insert: captureInsert([{ id: 'job_child' }], sink),
+      select: selectReturning([{ id: 'parentX', userId: 'someone_else', rootJobId: null }]),
+      update: updateReturning([]),
+    };
+    const r = await reserveJob({ caller, input, idempotencyKey: 'k', parentJobId: 'parentX' });
+    expect(r).toEqual({ mode: 'created', jobId: 'job_child' });
+    expect(sink.values).toMatchObject({ parentJobId: null, rootJobId: null });
+  });
+});
+
 describe('sweepStaleRunningJobs', () => {
   beforeEach(() => vi.clearAllMocks());
 

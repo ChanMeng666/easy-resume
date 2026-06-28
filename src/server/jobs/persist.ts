@@ -87,6 +87,13 @@ export interface ReserveJobArgs {
   caller: Caller;
   input: GenerateInput;
   idempotencyKey: string;
+  /**
+   * Refine lineage: the job this generation refines. When present and owned by
+   * the caller, the new row records parent_job_id + root_job_id so the editor can
+   * show a version chain. A missing/cross-user parent is silently ignored (the
+   * generation still runs, just without a chain link).
+   */
+  parentJobId?: string;
 }
 
 /**
@@ -153,10 +160,31 @@ export async function reserveJob(args: ReserveJobArgs): Promise<ReserveResult> {
   // is already `failed` here and gets reclaimed (rather than stuck `in_progress`).
   await sweepStaleRunningJobs();
 
+  // Resolve the refine chain (owner-scoped). The new row's root is the parent's
+  // root (or the parent itself if the parent is a first generation). A
+  // missing/cross-user parent is ignored — no chain link, but the run proceeds.
+  let parentJobId: string | null = null;
+  let rootJobId: string | null = null;
+  if (args.parentJobId) {
+    const [parent] = await db
+      .select({
+        id: generationJobs.id,
+        userId: generationJobs.userId,
+        rootJobId: generationJobs.rootJobId,
+      })
+      .from(generationJobs)
+      .where(eq(generationJobs.id, args.parentJobId))
+      .limit(1);
+    if (parent && parent.userId === caller.userId) {
+      parentJobId = parent.id;
+      rootJobId = parent.rootJobId ?? parent.id;
+    }
+  }
+
   // Claim the key with a fresh running row. Only one concurrent caller wins.
   const [created] = await db
     .insert(generationJobs)
-    .values({ userId: caller.userId, status: 'running', input, idempotencyKey })
+    .values({ userId: caller.userId, status: 'running', input, idempotencyKey, parentJobId, rootJobId })
     .onConflictDoNothing({ target: generationJobs.idempotencyKey })
     .returning({ id: generationJobs.id });
   if (created) return { mode: 'created', jobId: created.id };

@@ -100,10 +100,20 @@ Codex adversarial review: **SHIP**.
   `data` was removed (server always parses, so an unbounded "base resume" can't
   be injected for one credit); `baseResume` is stripped from the
   `GET /api/resumes/[id]` response. Codex: **SHIP**.
-- **P1 (remaining)** honest refine (cost disclosure, version retention, free
-  structured-edit re-render); agent hardening (LLM retry/backoff, faithfulness
-  beyond substring, eval/golden set, telemetry PII policy); UX (onboarding/
-  examples, parsed-data confirmation, pricing copy). Also fix the pre-existing
+- **P1-2 — DONE** (honest refine / continuous-improvement loop): a refine now
+  shows a cost-disclosure dialog ("uses 1 credit, keeps the previous version")
+  before running. Versions are an explicit chain — `generation_jobs.parent_job_id`
+  + `root_job_id` (owner-scoped resolution in `reserveJob`; root = parent's root
+  or the parent itself), surfaced by `GET /api/resumes/[id]/versions` and an
+  editor version strip (switch to any prior version free). New free path:
+  structured field editing (`StructuredEditor`) edits the parsed ResumeData and
+  re-renders Typst/PDF entirely client-side — NO LLM, NO charge; only an LLM
+  re-tailor (Refine) bills. Money path untouched: a refine is a NEW jobId / NEW
+  key (deliberate new charge), never overwriting or re-charging the parent.
+  Codex: **SHIP** (tightened parentJobId to a strict-UUID check per its note).
+- **P1 (remaining)** agent hardening (LLM retry/backoff, faithfulness beyond
+  substring, eval/golden set, telemetry PII policy); UX (onboarding/examples,
+  parsed-data confirmation, pricing copy). Also fix the pre-existing
   `getOrCreate` select-then-insert race.
 
 ## Working model

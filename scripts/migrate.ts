@@ -259,6 +259,14 @@ async function migrate() {
   // "save as profile" provenance and future analytics. Nullable; not an FK
   // (consistent with the rest of generation_jobs, which uses bare user_id text).
   await sql`ALTER TABLE generation_jobs ADD COLUMN IF NOT EXISTS profile_id UUID`;
+  // Refine version chain: parent_job_id is the immediate predecessor a refine was
+  // launched from; root_job_id is the first generation in the chain. Both nullable
+  // (NULL on a first generation, which is its own root). root_job_id lets the
+  // version strip list every version of a chain with one indexed query — no
+  // recursion — and is what idx_generation_jobs_root backs.
+  await sql`ALTER TABLE generation_jobs ADD COLUMN IF NOT EXISTS parent_job_id UUID`;
+  await sql`ALTER TABLE generation_jobs ADD COLUMN IF NOT EXISTS root_job_id UUID`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_generation_jobs_root ON generation_jobs(user_id, root_job_id)`;
   console.log("Created generation_jobs table");
 
   // Create rate_limits table (Postgres-backed fixed-window rate limiting)
