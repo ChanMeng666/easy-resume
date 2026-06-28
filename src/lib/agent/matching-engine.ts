@@ -5,6 +5,7 @@ import { ParsedJD } from "./jd-parser";
 import { reasonModel, EXTRACT_TEMPERATURE } from "./models";
 import { computeSkillOverlap } from "./keyword-coverage";
 import { aiTelemetry } from "./telemetry";
+import { PROMPT_VERSIONS } from "./prompt-registry";
 
 /**
  * Schema for match analysis result.
@@ -53,7 +54,7 @@ export async function analyzeMatch(
     maxRetries: 0,
     schema: matchAnalysisSchema,
     temperature: EXTRACT_TEMPERATURE,
-    experimental_telemetry: aiTelemetry("analyze-match"),
+    experimental_telemetry: aiTelemetry("analyze-match", { promptVersion: PROMPT_VERSIONS["analyze-match"] }),
     prompt: `Analyze how well this resume matches the job description.
 
 RESUME:

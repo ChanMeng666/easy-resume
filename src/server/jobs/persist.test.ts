@@ -21,6 +21,7 @@ function makeResult(over: Partial<GenerateResult> = {}): GenerateResult {
     templateId: 'two-column',
     pdf: new Uint8Array([37, 80, 68, 70]),
     usage: { charged: true, credits: 1, transactionId: 'tx_1' },
+    promptVersions: { 'parse-jd': 'v1' },
     ...over,
   };
 }
@@ -48,6 +49,7 @@ describe('toWireResult', () => {
       matchAnalysis: r.matchAnalysis,
       templateId: r.templateId,
       usage: r.usage,
+      promptVersions: r.promptVersions,
     });
   });
 });

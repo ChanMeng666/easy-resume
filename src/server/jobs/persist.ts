@@ -36,6 +36,7 @@ export function toWireResult(r: PipelineResult) {
     matchAnalysis: r.matchAnalysis,
     templateId: r.templateId,
     usage: r.usage,
+    promptVersions: r.promptVersions,
   };
 }
 

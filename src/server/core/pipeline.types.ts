@@ -68,6 +68,13 @@ export interface GenerateResult {
   templateId: string;
   pdf: Uint8Array;
   usage: UsageResult;
+  /**
+   * Snapshot of the prompt version used by each agent step that produced this
+   * result (from the prompt registry). Persisted on the job so a stored resume
+   * records which prompt versions generated it — enabling A/B and regression
+   * analysis against the offline eval set.
+   */
+  promptVersions: Record<string, string>;
 }
 
 /**

@@ -4,6 +4,7 @@ import { ResumeData } from "@/lib/validation/schema";
 import { ParsedJD } from "./jd-parser";
 import { reasonModel, WRITING_TEMPERATURE } from "./models";
 import { aiTelemetry } from "./telemetry";
+import { PROMPT_VERSIONS } from "./prompt-registry";
 
 /**
  * Structured cover-letter output. Generating discrete parts (instead of one free
@@ -47,7 +48,7 @@ export async function generateCoverLetter(
     schema: coverLetterSchema,
     temperature: WRITING_TEMPERATURE,
     providerOptions: { openai: { strictJsonSchema: false } },
-    experimental_telemetry: aiTelemetry("cover-letter"),
+    experimental_telemetry: aiTelemetry("cover-letter", { promptVersion: PROMPT_VERSIONS["cover-letter"] }),
     prompt: `Write a professional cover letter for this candidate applying to the specified job.
 
 CANDIDATE:

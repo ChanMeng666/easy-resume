@@ -4,6 +4,7 @@ import { ParsedJD } from "./jd-parser";
 import { MatchAnalysis } from "./matching-engine";
 import { reasonModel, WRITING_TEMPERATURE } from "./models";
 import { aiTelemetry } from "./telemetry";
+import { PROMPT_VERSIONS } from "./prompt-registry";
 
 /**
  * Tailors a resume to a specific job description.
@@ -32,7 +33,7 @@ export async function tailorResume(
     schema: resumeDataSchema,
     temperature: WRITING_TEMPERATURE,
     providerOptions: { openai: { strictJsonSchema: false } },
-    experimental_telemetry: aiTelemetry("tailor-resume"),
+    experimental_telemetry: aiTelemetry("tailor-resume", { promptVersion: PROMPT_VERSIONS["tailor-resume"] }),
     prompt: `You are an expert resume writer. Tailor this resume for the target job.
 
 RULES:
