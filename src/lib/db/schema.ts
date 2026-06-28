@@ -32,7 +32,14 @@ export const resumes = pgTable("resumes", {
 export const agentThreads = pgTable("agent_threads", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id").notNull(),
+  // Legacy FK to the dormant `resumes` table — kept nullable/unwritten (the dead
+  // `resumes` lineage is never revived, per ADR 0001). New threads anchor to the
+  // live model via `generationJobId` instead.
   resumeId: uuid("resume_id").references(() => resumes.id, { onDelete: "cascade" }),
+  // Anchors a conversation to the generated resume it edits (the live model).
+  // Nullable + ON DELETE SET NULL: deleting a resume keeps the chat history, just
+  // unlinks it (mirrors applications.generation_job_id, P2-2).
+  generationJobId: uuid("generation_job_id").references(() => generationJobs.id, { onDelete: "set null" }),
   title: varchar("title", { length: 255 }).default("New Conversation"),
   status: varchar("status", { length: 20 }).default("active"),
   messageCount: integer("message_count").default(0),
@@ -42,6 +49,13 @@ export const agentThreads = pgTable("agent_threads", {
 }, (table) => ({
   userIdIdx: index("idx_agent_threads_user_id").on(table.userId),
   resumeIdIdx: index("idx_agent_threads_resume_id").on(table.resumeId),
+  generationJobIdIdx: index("idx_agent_threads_generation_job").on(table.generationJobId),
+  // At most one ACTIVE conversation per (user, anchored resume): makes
+  // getOrCreateThreadForJob idempotent under concurrent opens (the loser's insert
+  // is a no-op). Partial so archived/anchorless threads are unconstrained.
+  activeJobUk: uniqueIndex("uk_agent_threads_active_job")
+    .on(table.userId, table.generationJobId)
+    .where(sql`status = 'active' AND generation_job_id IS NOT NULL`),
 }));
 
 /**
@@ -60,7 +74,10 @@ export const agentMessages = pgTable("agent_messages", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 }, (table) => ({
   threadIdIdx: index("idx_agent_messages_thread_id").on(table.threadId),
-  sequenceIdx: index("idx_agent_messages_sequence").on(table.threadId, table.sequenceNum),
+  // Unique per thread: makes sequence_num a hard ordering key. Concurrent turns
+  // on the same thread that race to the same number collide here (one is retried
+  // by the store) rather than silently producing duplicate, unorderable rows.
+  sequenceIdx: uniqueIndex("uk_agent_messages_thread_seq").on(table.threadId, table.sequenceNum),
 }));
 
 /**

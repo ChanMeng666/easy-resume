@@ -192,6 +192,16 @@ export const applicationUpdateSchema = z.object({
 });
 export type ApplicationUpdate = z.infer<typeof applicationUpdateSchema>;
 
+// Open (or resume) a conversational edit thread anchored to a generated resume
+// (POST /api/threads). `generationJobId` must be a job the caller owns and that
+// has succeeded — the conversation edits that resume's parsed ResumeData. No
+// client-supplied resume data: the baseline always comes from the anchor job
+// server-side (same rationale as candidate profiles).
+export const threadCreateSchema = z.object({
+  generationJobId: z.string().uuid('A valid resume id is required'),
+});
+export type ThreadCreate = z.infer<typeof threadCreateSchema>;
+
 // Type inference from Zod schema
 export type ResumeData = z.infer<typeof resumeDataSchema>;
 export type Basics = z.infer<typeof basicsSchema>;
