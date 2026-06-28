@@ -11,11 +11,12 @@
  */
 
 import 'server-only';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { db } from '@/lib/db/client';
 import { generationJobs, type GenerationJob } from '@/lib/db/schema';
 import { runGenerationPipeline } from '@/server/core/pipeline';
 import { defaultDeps } from '@/server/core/deps';
+import { ConflictError } from '@/server/errors/AppError';
 import { toErrorEnvelope } from '@/server/errors/envelope';
 import { createLogger } from '@/server/log/logger';
 import { toWireResult, deriveJobTitle, storeResumePdf } from '@/server/jobs/persist';
@@ -30,10 +31,16 @@ export async function createJob(
   input: GenerateInput,
   idempotencyKey: string
 ): Promise<GenerationJob> {
+  // Owner-scoped replay: an agent re-POSTing the same key gets its own job back.
   const [existing] = await db
     .select()
     .from(generationJobs)
-    .where(eq(generationJobs.idempotencyKey, idempotencyKey))
+    .where(
+      and(
+        eq(generationJobs.idempotencyKey, idempotencyKey),
+        eq(generationJobs.userId, caller.userId)
+      )
+    )
     .limit(1);
   if (existing) return existing;
 
@@ -47,18 +54,26 @@ export async function createJob(
     .onConflictDoNothing({ target: generationJobs.idempotencyKey })
     .returning();
 
-  if (!job) {
-    const [winner] = await db
-      .select()
-      .from(generationJobs)
-      .where(eq(generationJobs.idempotencyKey, idempotencyKey))
-      .limit(1);
-    return winner;
+  if (job) {
+    // Detached: the long-lived VPS process keeps running this after the POST returns.
+    void runJob(job.id, caller);
+    return job;
   }
 
-  // Detached: the long-lived VPS process keeps running this after the POST returns.
-  void runJob(job.id, caller);
-  return job;
+  // Conflict: the key already exists. Return it only if it's the caller's;
+  // otherwise it belongs to another caller — refuse rather than resume/leak it.
+  const [winner] = await db
+    .select()
+    .from(generationJobs)
+    .where(
+      and(
+        eq(generationJobs.idempotencyKey, idempotencyKey),
+        eq(generationJobs.userId, caller.userId)
+      )
+    )
+    .limit(1);
+  if (winner) return winner;
+  throw new ConflictError('This idempotency key is already in use.');
 }
 
 /** Execute a job to completion, persisting status/result/error transitions. */
@@ -81,7 +96,10 @@ async function runJob(jobId: string, caller: Caller): Promise<void> {
       job.input,
       caller,
       defaultDeps({ requestId: jobId }),
-      { idempotencyKey: job.idempotencyKey }
+      // Charge keyed on the jobId (per-user, per-job) — not the client key — so a
+      // deleted job's key can never replay an old charge, and a cross-user key
+      // can never see another caller's usage txn.
+      { idempotencyKey: jobId }
     );
 
     await db

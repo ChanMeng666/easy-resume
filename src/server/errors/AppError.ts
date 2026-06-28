@@ -30,6 +30,7 @@ export type ErrorCode =
   | 'PIPELINE_COMPILATION_FAILED'
   | 'PIPELINE_TIMEOUT'
   | 'NOT_FOUND'
+  | 'CONFLICT'
   | 'INTERNAL';
 
 /**
@@ -147,6 +148,18 @@ export class CompilationTimeoutError extends AppError {
 export class NotFoundError extends AppError {
   constructor(message = 'Resource not found') {
     super('NOT_FOUND', message, { httpStatus: 404 });
+  }
+}
+
+/**
+ * Idempotency / concurrency conflict: an in-flight generation already owns this
+ * idempotency key, or the key belongs to another caller. `retriable` is true for
+ * the "already in progress" case (the in-flight run will finish) and false for a
+ * cross-caller key collision.
+ */
+export class ConflictError extends AppError {
+  constructor(message = 'Conflict', retriable = false) {
+    super('CONFLICT', message, { httpStatus: 409, retriable });
   }
 }
 

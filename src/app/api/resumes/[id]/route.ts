@@ -12,13 +12,13 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { db } from '@/lib/db/client';
 import { generationJobs } from '@/lib/db/schema';
 import { getCaller } from '@/server/auth/caller';
 import { deleteJobPdfs } from '@/server/jobs/persist';
 import { createLogger } from '@/server/log/logger';
-import { UnauthenticatedError, NotFoundError } from '@/server/errors/AppError';
+import { UnauthenticatedError, NotFoundError, ConflictError } from '@/server/errors/AppError';
 import { errorResponse } from '@/server/errors/envelope';
 
 export const runtime = 'nodejs';
@@ -69,15 +69,36 @@ export async function DELETE(
     if (!caller) throw new UnauthenticatedError();
 
     const { id } = await params;
-    const [job] = await db
-      .select({ userId: generationJobs.userId })
-      .from(generationJobs)
-      .where(eq(generationJobs.id, id))
-      .limit(1);
 
-    if (!job || job.userId !== caller.userId) throw new NotFoundError('Resume not found');
+    // Atomic, conditional delete: owner-scoped AND only terminal (succeeded /
+    // failed) rows. Doing the terminal-status check in the same statement avoids
+    // a TOCTOU where a `failed` row is reclaimed to `running` between a separate
+    // check and the delete — which would otherwise drop an in-flight reservation
+    // the pipeline is about to charge on.
+    const deleted = await db
+      .delete(generationJobs)
+      .where(
+        and(
+          eq(generationJobs.id, id),
+          eq(generationJobs.userId, caller.userId),
+          inArray(generationJobs.status, ['succeeded', 'failed'])
+        )
+      )
+      .returning({ id: generationJobs.id });
 
-    await db.delete(generationJobs).where(eq(generationJobs.id, id));
+    if (deleted.length === 0) {
+      // Nothing deleted: distinguish "not yours / missing" from "in flight" for a
+      // useful error. This read is only for messaging — the delete above already
+      // committed (to nothing), so there's no race to lose.
+      const [job] = await db
+        .select({ userId: generationJobs.userId, status: generationJobs.status })
+        .from(generationJobs)
+        .where(eq(generationJobs.id, id))
+        .limit(1);
+      if (!job || job.userId !== caller.userId) throw new NotFoundError('Resume not found');
+      throw new ConflictError('This generation is still in progress.', true);
+    }
+
     // Best-effort: drop the stored PDFs so object storage doesn't keep orphans.
     await deleteJobPdfs(id, createLogger({ requestId, route: 'resumes.delete' }));
 
