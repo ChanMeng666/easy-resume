@@ -133,7 +133,16 @@ Codex adversarial review: **SHIP**.
   responses, Bulk application support, Priority support) kept listed but badged
   "Coming soon" instead of over-promising. UI-only; no money path / DB change.
   Codex: **SHIP** (no findings).
-- **P1 (remaining)** the pre-existing `getOrCreate` select-then-insert race.
+- **P1 cleanup — DONE**: fixed the pre-existing `creditService.getOrCreate`
+  select-then-insert race (two concurrent first-requests for a new user could
+  both insert → loser threw 23505 AND the signup bonus could be granted twice).
+  Now an atomic `INSERT ... ON CONFLICT (user_id) DO NOTHING RETURNING`: only the
+  winner grants the one-time bonus, the loser/duplicate reads the row back (no
+  throw, no double bonus). Codex: **SHIP**.
+
+**P1 is COMPLETE** — all sub-tasks shipped (each codex-reviewed to SHIP):
+candidate_profiles (PR #15), honest refine (#16), agent hardening (#17), UX
+polish (#18), and this getOrCreate race cleanup.
 
 ## Working model
 Claude implements; after each unit, Codex runs an adversarial `codex exec
