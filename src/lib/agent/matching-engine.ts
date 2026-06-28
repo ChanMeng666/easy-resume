@@ -48,6 +48,9 @@ export async function analyzeMatch(
   // LLM-enhanced analysis
   const { object } = await generateObject({
     model: reasonModel,
+    // The pipeline owns retry/backoff (runStep); disable the SDK's own retries so
+    // they don't compound (outer × SDK) on a persistently failing step.
+    maxRetries: 0,
     schema: matchAnalysisSchema,
     temperature: EXTRACT_TEMPERATURE,
     experimental_telemetry: aiTelemetry("analyze-match"),

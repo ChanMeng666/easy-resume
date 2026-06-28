@@ -500,7 +500,10 @@ Models are **tiered** (`src/lib/agent/models.ts`): `extractModel` (default
 `gpt-4o-mini`) for read/score steps, `reasonModel` (default `gpt-4o`) for
 generation/quality-critical steps. Override via `AI_MODEL_EXTRACT` / `AI_MODEL_REASON`.
 All calls carry `experimental_telemetry` (`src/lib/agent/telemetry.ts`, gated by
-`AI_TELEMETRY_ENABLED`) for OpenTelemetry/Langfuse traces.
+`AI_TELEMETRY_ENABLED`) for OpenTelemetry/Langfuse traces. **PII**: recording the
+raw prompt inputs/outputs (the resume + JD) on spans is OFF by default and only
+turns on with `AI_TELEMETRY_RECORD_IO=true`; with it off, spans still carry
+timing/token/cost but not the candidate's text.
 
 - **jd-parser.ts**: `generateObject` → ParsedJD — **extract tier**
 - **background-parser.ts**: `generateObject` → ResumeData from free text — **reason tier**
@@ -534,6 +537,7 @@ OPENAI_API_KEY=            # required for the generation pipeline
 AI_MODEL_EXTRACT=gpt-4o-mini   # optional: cheap read/score tier
 AI_MODEL_REASON=gpt-4o         # optional: generation/quality tier
 AI_TELEMETRY_ENABLED=false     # optional: emit OpenTelemetry spans (Langfuse)
+AI_TELEMETRY_RECORD_IO=false   # optional: record raw prompt I/O (resume+JD = PII) on spans; OFF by default
 LOG_LEVEL=info                 # optional: debug|info|warn|error
 
 # Stripe (billing)
