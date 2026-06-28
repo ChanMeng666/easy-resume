@@ -56,6 +56,9 @@ function makeDeps(overrides: Partial<PipelineDeps['agent']> & { compile?: Pipeli
   const compile =
     overrides.compile ?? vi.fn().mockResolvedValue(new Uint8Array([37, 80, 68, 70])); // %PDF
 
+  // No-op sleep so step retries don't add real backoff delay to tests.
+  const sleep = vi.fn().mockResolvedValue(undefined);
+
   const deps = {
     agent,
     render: {
@@ -67,9 +70,10 @@ function makeDeps(overrides: Partial<PipelineDeps['agent']> & { compile?: Pipeli
     meter,
     logger: noopLogger,
     onProgress: vi.fn(),
+    sleep,
   } as unknown as PipelineDeps;
 
-  return { deps, meter, agent, compile, onProgress: deps.onProgress };
+  return { deps, meter, agent, compile, onProgress: deps.onProgress, sleep };
 }
 
 const opts = { idempotencyKey: '11111111-1111-1111-1111-111111111111' };
@@ -119,6 +123,51 @@ describe('runGenerationPipeline billing gating', () => {
     const { deps, agent } = makeDeps();
     await runGenerationPipeline(input, caller, deps, opts);
     expect(agent.tailorResume).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries a transient (retriable) LLM step, then succeeds and charges once', async () => {
+    // First call fails with a 503 (retriable infra), second succeeds.
+    const parseJobDescription = vi
+      .fn()
+      .mockRejectedValueOnce(Object.assign(new Error('upstream 503'), { status: 503 }))
+      .mockResolvedValueOnce({ title: 'Engineer', requiredSkills: [] });
+    const { deps, meter, sleep } = makeDeps({ parseJobDescription });
+
+    const result = await runGenerationPipeline(input, caller, deps, opts);
+
+    expect(parseJobDescription).toHaveBeenCalledTimes(2);
+    expect(sleep).toHaveBeenCalledTimes(1); // one backoff between the two attempts
+    expect(meter.chargeForResult).toHaveBeenCalledTimes(1);
+    expect(result.usage.charged).toBe(true);
+  });
+
+  it('does NOT retry a non-retriable (4xx) step and charges nothing', async () => {
+    const parseJobDescription = vi
+      .fn()
+      .mockRejectedValue(Object.assign(new Error('bad request'), { status: 400 }));
+    const { deps, meter, sleep } = makeDeps({ parseJobDescription });
+
+    await expect(runGenerationPipeline(input, caller, deps, opts)).rejects.toBeInstanceOf(
+      PipelineStepError
+    );
+    expect(parseJobDescription).toHaveBeenCalledTimes(1); // no retry
+    expect(sleep).not.toHaveBeenCalled();
+    expect(meter.chargeForResult).not.toHaveBeenCalled();
+  });
+
+  it('gives up after the retry budget on a persistently retriable step (still free)', async () => {
+    const tailorResume = vi
+      .fn()
+      .mockRejectedValue(Object.assign(new Error('gateway'), { status: 502 }));
+    const { deps, meter, sleep } = makeDeps({ tailorResume });
+
+    await expect(runGenerationPipeline(input, caller, deps, opts)).rejects.toBeInstanceOf(
+      PipelineStepError
+    );
+    expect(tailorResume).toHaveBeenCalledTimes(3); // MAX_STEP_ATTEMPTS
+    expect(sleep).toHaveBeenCalledTimes(2); // backoff between the 3 attempts
+    expect(meter.chargeForResult).not.toHaveBeenCalled();
+    expect(deps.compile).not.toHaveBeenCalled();
   });
 
   it('does NOT charge when an LLM step fails', async () => {

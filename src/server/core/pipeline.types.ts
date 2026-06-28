@@ -95,6 +95,8 @@ export interface PipelineDeps {
   logger: Logger;
   /** Optional transport hook; SSE streams it, REST ignores it. */
   onProgress?: (e: ProgressEvent) => void;
+  /** Backoff sleep for step retries; defaults to a real timer (tests inject a no-op). */
+  sleep?: (ms: number) => Promise<void>;
 }
 
 export interface RunOptions {

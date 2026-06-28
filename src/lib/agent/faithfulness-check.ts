@@ -37,6 +37,57 @@ function norm(s: string): string {
   return (s ?? "").toLowerCase().replace(/\s+/g, " ").trim();
 }
 
+/**
+ * Common skill abbreviation ⇄ full-form equivalences, keyed by normalized form.
+ * Tailoring legitimately rewrites "Machine Learning" as "ML" (and vice-versa);
+ * without this map the substring check would flag that as a fabricated skill and
+ * trigger a needless re-tailor. Mapping every variant to ONE canonical form lets
+ * the grounding check treat them as the same skill.
+ *
+ * Only UNAMBIGUOUS technical abbreviations belong here. An ambiguous alias (e.g.
+ * "CV" = computer vision OR curriculum vitae) is deliberately excluded: mapping
+ * it would let a base "CV" ground a fabricated "Computer Vision" — a real
+ * false-negative. When in doubt, leave it out (a needless re-tailor is cheaper
+ * than passing a fabrication). Extend conservatively.
+ */
+const SKILL_SYNONYMS: Record<string, string> = {
+  ml: "machine learning",
+  "machine learning": "machine learning",
+  nlp: "natural language processing",
+  "natural language processing": "natural language processing",
+  js: "javascript",
+  javascript: "javascript",
+  ecmascript: "javascript",
+  ts: "typescript",
+  typescript: "typescript",
+  py: "python",
+  python: "python",
+  k8s: "kubernetes",
+  kubernetes: "kubernetes",
+  postgres: "postgresql",
+  postgre: "postgresql",
+  postgresql: "postgresql",
+  "node.js": "node",
+  nodejs: "node",
+  node: "node",
+  "react.js": "react",
+  reactjs: "react",
+  react: "react",
+  gcp: "google cloud platform",
+  "google cloud": "google cloud platform",
+  "google cloud platform": "google cloud platform",
+  aws: "amazon web services",
+  "amazon web services": "amazon web services",
+  "ci/cd": "continuous integration and delivery",
+  cicd: "continuous integration and delivery",
+};
+
+/** Map a skill to its canonical form (norm + abbreviation expansion). */
+function canonicalSkill(s: string): string {
+  const n = norm(s);
+  return SKILL_SYNONYMS[n] ?? n;
+}
+
 /** Build a normalized set, skipping empties. */
 function normSet(values: Array<string | undefined>): Set<string> {
   const set = new Set<string>();
@@ -67,14 +118,19 @@ export function checkFaithfulness(
   const violations: FaithfulnessViolation[] = [];
 
   // --- Skills: no new skill keywords may appear in the tailored resume ---
-  const baseSkills = normSet((base.skills ?? []).flatMap((s) => s.keywords ?? []));
+  // Compare on CANONICAL forms so "ML" ⇄ "Machine Learning" (and similar
+  // abbreviations) aren't mistaken for fabricated skills.
+  const baseSkillCanon = new Set(
+    (base.skills ?? []).flatMap((s) => s.keywords ?? []).map(canonicalSkill).filter(Boolean)
+  );
   const tailoredSkills = (tailored.skills ?? []).flatMap((s) => s.keywords ?? []);
   for (const kw of tailoredSkills) {
-    const n = norm(kw);
-    if (!n) continue;
+    const c = canonicalSkill(kw);
+    if (!c) continue;
     // A tailored skill is fabricated only if no base skill contains it or is
-    // contained by it (covers "React" vs "React.js" style rephrasings).
-    const grounded = [...baseSkills].some((b) => b.includes(n) || n.includes(b));
+    // contained by it (covers "React" vs "React.js" style rephrasings), after
+    // canonicalization.
+    const grounded = [...baseSkillCanon].some((b) => b.includes(c) || c.includes(b));
     if (!grounded) {
       violations.push({ field: "skill", tailoredValue: kw, severity: "high" });
     }

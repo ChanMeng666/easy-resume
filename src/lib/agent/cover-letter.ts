@@ -41,6 +41,9 @@ export async function generateCoverLetter(
 ): Promise<string> {
   const { object } = await generateObject({
     model: reasonModel,
+    // The pipeline owns retry/backoff (runStep); disable the SDK's own retries so
+    // they don't compound (outer × SDK) on a persistently failing step.
+    maxRetries: 0,
     schema: coverLetterSchema,
     temperature: WRITING_TEMPERATURE,
     providerOptions: { openai: { strictJsonSchema: false } },

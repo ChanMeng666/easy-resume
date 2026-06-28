@@ -13,7 +13,15 @@
 
 const ENABLED = process.env.AI_TELEMETRY_ENABLED === 'true';
 
+// Recording prompt inputs/outputs captures the candidate's RESUME and the job
+// description — i.e. PII — in every span, which is then shipped to whatever OTel
+// collector is configured (potentially third-party / cloud). That is OFF by
+// default; an operator must explicitly opt in with AI_TELEMETRY_RECORD_IO=true
+// after confirming their collector is private and compliant. With it off, spans
+// still carry timing, token, and cost data — just not the raw text.
+const RECORD_IO = process.env.AI_TELEMETRY_RECORD_IO === 'true';
+
 /** Build the `experimental_telemetry` option for an AI SDK call. */
 export function aiTelemetry(functionId: string) {
-  return { isEnabled: ENABLED, functionId, recordInputs: true, recordOutputs: true };
+  return { isEnabled: ENABLED, functionId, recordInputs: RECORD_IO, recordOutputs: RECORD_IO };
 }

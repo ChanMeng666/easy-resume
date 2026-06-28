@@ -79,6 +79,9 @@ Coverage: ${coverage!.score}/100`
 
   const { object } = await generateObject({
     model: extractModel,
+    // The pipeline owns retry/backoff (runStep); disable the SDK's own retries so
+    // they don't compound (outer × SDK) on a persistently failing step.
+    maxRetries: 0,
     schema: atsReportSchema,
     temperature: EXTRACT_TEMPERATURE,
     experimental_telemetry: aiTelemetry("score-ats"),

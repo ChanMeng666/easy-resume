@@ -111,10 +111,23 @@ Codex adversarial review: **SHIP**.
   re-tailor (Refine) bills. Money path untouched: a refine is a NEW jobId / NEW
   key (deliberate new charge), never overwriting or re-charging the parent.
   Codex: **SHIP** (tightened parentJobId to a strict-UUID check per its note).
-- **P1 (remaining)** agent hardening (LLM retry/backoff, faithfulness beyond
-  substring, eval/golden set, telemetry PII policy); UX (onboarding/examples,
-  parsed-data confirmation, pricing copy). Also fix the pre-existing
-  `getOrCreate` select-then-insert race.
+- **P1-3 — DONE** (AI agent workflow hardening): bounded retry + exponential
+  backoff on the LLM steps (`runStep` in pipeline.ts), retrying ONLY classified
+  retriable infra errors (timeout/429/5xx/dropped-conn) and never user/4xx
+  errors — all pre-compile, so billing is untouched. The AI SDK's own retries
+  are disabled (`maxRetries: 0` on all six agent calls) so the pipeline owns
+  retry policy and the budget can't compound. Faithfulness now canonicalizes
+  UNAMBIGUOUS skill abbreviations (ML↔Machine Learning, K8s↔Kubernetes, …) to
+  cut false-positive re-tailors; deliberately ambiguous aliases (CV, AI) are
+  excluded to avoid grounding a fabrication. New offline eval/golden set
+  (`src/lib/agent/eval/golden-set.test.ts`) pins faithfulness, deterministic ATS
+  coverage, and real-typst compile of adversarial chars (genuinely skipped when
+  the binary is absent). Telemetry PII: recording raw prompt I/O (resume + JD)
+  on spans is now OFF by default, gated behind `AI_TELEMETRY_RECORD_IO`
+  (documented). Codex: **SHIP** (after fixing a false-green skip, retry
+  compounding, and an ambiguous synonym).
+- **P1 (remaining)** UX (onboarding/examples, parsed-data confirmation, pricing
+  copy). Also fix the pre-existing `getOrCreate` select-then-insert race.
 
 ## Working model
 Claude implements; after each unit, Codex runs an adversarial `codex exec

@@ -32,6 +32,9 @@ export type ParsedJD = z.infer<typeof parsedJDSchema>;
 export async function parseJobDescription(rawText: string): Promise<ParsedJD> {
   const { object } = await generateObject({
     model: extractModel,
+    // The pipeline owns retry/backoff (runStep); disable the SDK's own retries so
+    // they don't compound (outer × SDK) on a persistently failing step.
+    maxRetries: 0,
     schema: parsedJDSchema,
     temperature: EXTRACT_TEMPERATURE,
     providerOptions: { openai: { strictJsonSchema: false } },
