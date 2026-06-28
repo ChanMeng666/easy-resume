@@ -1,6 +1,6 @@
 # ADR 0001 — Money-path correctness, Typst safety, and the idempotency contract
 
-- **Status**: Accepted — **P0 + P1 all shipped** (money-path idempotency fully closed; candidate_profiles, honest refine, agent hardening, UX polish all merged). Next is optional P2 (see end).
+- **Status**: Accepted — **P0 + P1 shipped & merged**; **P2 implemented** (application tracker, version-chain enhancement, prompt registry) as three codex-SHIP'd PRs awaiting merge (see "P2" below). P2-1 (conversational tool-using agent) deferred to a future round.
 - **Date**: 2026-06-28
 - **Authors**: Claude (implementation lead) × Codex (adversarial reviewer)
 - **Scope**: Outcome-based billing, public/web idempotency, Typst rendering safety
@@ -145,6 +145,51 @@ candidate_profiles (PR #15), honest refine (#20), agent hardening (#17), UX
 polish (#18), and the getOrCreate race cleanup (#19). The candidate_profiles
 schema migration (new `candidate_profiles` table + `generation_jobs.profile_id`)
 was applied to the production DB via `npm run db:migrate`.
+
+## P2 — Activating dormant capabilities
+
+P2 is the "activate the dormant tables / latent capability" phase. The opening
+thesis of this ADR (don't revive the half-finished second data model wholesale)
+still holds: P2 adds CRUD/API/UI on tables that already exist, or extends the
+live `generation_jobs` model — it does **not** resurrect the dead `resumes`
+lineage. Scope this round was three units (the flagship P2-1 conversational
+tool-using agent is deliberately deferred to its own round). Each is its own
+branch + PR, gate-green, codex-reviewed to SHIP; the two schema units were
+migrated to prod and verified against `information_schema`.
+
+### Decisions
+- **`resume_versions` stays dormant (P2-3).** It FKs the dead `resumes` table, so
+  activating it would be a redundant version model + migration debt. The version
+  story is instead built on the existing `generation_jobs` refine chain
+  (`parent_job_id`/`root_job_id`), which already powers the editor version strip.
+- **`applications` links to the LIVE model (P2-2).** The table's
+  `tailored_resume_id`/`job_description_id` FKs point at dormant tables; rather
+  than revive those, a new nullable `generation_job_id` FK ties an application to
+  a real generated resume. The dead FKs stay (nullable, unwritten).
+- **Manual versions never bill (P2-3).** Persisting a free structured edit writes
+  a `generation_jobs` row with `charged=false`, a fresh random idempotency key,
+  and re-renders Typst server-side — with NO `meter`/pipeline call. It is pure
+  user-owned storage (like "save as profile"); the money invariant is untouched
+  (the only charge remains the post-compile, jobId-keyed call in the pipeline).
+- **Prompt versioning is lightweight (P2-4).** A typed registry + telemetry span
+  metadata + an attribution snapshot recorded on the result (executed steps
+  only) — no A/B routing framework, no DB migration.
+
+### What shipped (each codex-reviewed to SHIP; gate green)
+
+| Unit | PR | Summary | Schema / prod migration |
+|------|----|---------|--------------------------|
+| **P2-2** Application tracker | #22 | Owner-scoped `/api/applications` CRUD + status state machine (`draft→applied→interview→offer/rejected`) + Neobrutalism `/applications` page + Navbar + "Track" on My Resumes; pricing "Application tracking" un-flagged from Coming soon. No billing. | `applications.generation_job_id` (nullable FK → `generation_jobs`, `ON DELETE SET NULL`) + index. Applied to prod, `information_schema`-verified. |
+| **P2-3** Version-chain enhancement | #23 | (1) Version naming/rename (`version_label` + PATCH + inline editor rename); (2) read-only side-by-side compare (`/versions/compare`, owner-checks both); (3) persist a free structured edit as a NEW uncharged version (`createManualVersion`, server-side re-render, requires a succeeded parent, bounded payload). | `generation_jobs.version_label` (nullable TEXT). Applied to prod, `information_schema`-verified. |
+| **P2-4** Prompt version registry | #24 | Central `prompt-registry.ts` (typed `PROMPT_VERSIONS`); `aiTelemetry(functionId, { promptVersion })` (functionId typed to the registry → compile-time no-drift; metadata non-PII); all 6 agent steps tagged; `GenerationResult.promptVersions` records the EXECUTED steps (saved-profile path excludes `parse_background`), persisted via `toWireResult`; eval asserts registry coverage. | None (additive `result` JSONB field). |
+
+Codex adversarial review hardened each before SHIP: P2-2 (DELETE rate-limit,
+list cap, UUID-guard → NotFound not 500, invalid-status, zero-row update race);
+P2-3 (require a *succeeded* parent so a manual version can't corrupt the chain;
+bound the manual payload incl. nested arrays to close a render-cost vector);
+P2-4 (record only executed prompt versions so the skipped-`parse_background`
+path isn't mis-attributed; narrow the telemetry metadata type so PII can't be
+routed through it).
 
 ## Working model
 Claude implements; after each unit, Codex runs an adversarial `codex exec
