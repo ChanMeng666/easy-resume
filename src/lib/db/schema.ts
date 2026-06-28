@@ -130,6 +130,10 @@ export const applications = pgTable("applications", {
   userId: text("user_id").notNull(),
   jobDescriptionId: uuid("job_description_id").references(() => jobDescriptions.id, { onDelete: "set null" }),
   tailoredResumeId: uuid("tailored_resume_id").references(() => tailoredResumes.id, { onDelete: "set null" }),
+  // Link to the live generation that produced the resume sent for this application.
+  // The dormant tailored_resume_id/job_description_id FKs above target unused tables;
+  // generation_jobs is the real model. Nullable — an application can stand alone.
+  generationJobId: uuid("generation_job_id").references(() => generationJobs.id, { onDelete: "set null" }),
   company: varchar("company", { length: 255 }).notNull(),
   position: varchar("position", { length: 255 }).notNull(),
   status: varchar("status", { length: 20 }).notNull().default("draft"), // draft, applied, interview, offer, rejected
@@ -140,6 +144,7 @@ export const applications = pgTable("applications", {
 }, (table) => ({
   userIdIdx: index("idx_applications_user_id").on(table.userId),
   statusIdx: index("idx_applications_status").on(table.userId, table.status),
+  generationJobIdx: index("idx_applications_generation_job").on(table.generationJobId),
 }));
 
 /**
