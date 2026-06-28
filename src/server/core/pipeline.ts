@@ -17,6 +17,7 @@ import 'server-only';
 import { z } from 'zod';
 import { resumeDataSchema } from '@/lib/validation/schema';
 import { checkFaithfulness } from '@/lib/agent/faithfulness-check';
+import { PROMPT_VERSIONS } from '@/lib/agent/prompt-registry';
 import { sanitizeForPrompt, sanitizeDeep } from './sanitize';
 import {
   AppError,
@@ -263,5 +264,23 @@ export async function runGenerationPipeline(
     templateId,
     pdf,
     usage,
+    // Record which prompt versions ACTUALLY produced this result. When a saved
+    // profile supplied a pre-parsed background, parse_background didn't run, so
+    // it's excluded — otherwise the attribution would falsely credit a prompt
+    // that never executed and contaminate A/B / regression analysis.
+    promptVersions: executedPromptVersions(hasPreparsedBackground),
   };
+}
+
+/**
+ * The prompt versions for the steps that actually ran. Every step runs except
+ * parse_background, which is skipped when a pre-parsed background (saved profile)
+ * is supplied.
+ */
+function executedPromptVersions(skippedBackgroundParse: boolean): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(PROMPT_VERSIONS).filter(
+      ([id]) => !(skippedBackgroundParse && id === 'parse-background')
+    )
+  );
 }

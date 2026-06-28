@@ -4,6 +4,7 @@ import { checkFaithfulness } from '@/lib/agent/faithfulness-check';
 import { computeKeywordCoverage, computeSkillOverlap } from '@/lib/agent/keyword-coverage';
 import { generateTypstCode } from '@/lib/typst/generator';
 import { compileTypstToPdf } from '@/server/core/compile';
+import { PROMPT_FUNCTION_IDS, PROMPT_VERSIONS } from '@/lib/agent/prompt-registry';
 import type { ResumeData } from '@/lib/validation/schema';
 
 /**
@@ -139,6 +140,18 @@ describe('golden set — deterministic ATS keyword coverage', () => {
     const { matched, missing } = computeSkillOverlap(['React.js', 'Node'], ['React', 'Vue']);
     expect(matched).toEqual(['React']); // "react.js" contains "react"
     expect(missing).toEqual(['Vue']);
+  });
+});
+
+describe('golden set — prompt version registry', () => {
+  it('registers a well-formed version for every agent step', () => {
+    for (const id of PROMPT_FUNCTION_IDS) {
+      expect(PROMPT_VERSIONS[id]).toMatch(/^v\d+$/);
+    }
+  });
+
+  it('has no version entries outside the known function ids (no drift)', () => {
+    expect(Object.keys(PROMPT_VERSIONS).sort()).toEqual([...PROMPT_FUNCTION_IDS].sort());
   });
 });
 

@@ -5,6 +5,7 @@ import { ParsedJD } from "./jd-parser";
 import { extractModel, EXTRACT_TEMPERATURE } from "./models";
 import { computeKeywordCoverage, resumeKeywordHaystack } from "./keyword-coverage";
 import { aiTelemetry } from "./telemetry";
+import { PROMPT_VERSIONS } from "./prompt-registry";
 
 /**
  * Schema for ATS optimization report.
@@ -84,7 +85,7 @@ Coverage: ${coverage!.score}/100`
     maxRetries: 0,
     schema: atsReportSchema,
     temperature: EXTRACT_TEMPERATURE,
-    experimental_telemetry: aiTelemetry("score-ats"),
+    experimental_telemetry: aiTelemetry("score-ats", { promptVersion: PROMPT_VERSIONS["score-ats"] }),
     prompt: `You are an ATS (Applicant Tracking System) optimization expert.
 Analyze this resume for ATS compatibility and provide a detailed report.
 
