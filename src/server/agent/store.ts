@@ -537,20 +537,3 @@ async function insertMessagesAtNextSequence(
     createdAt: agentMessages.createdAt,
   });
 }
-
-/**
- * Re-anchor a thread to a newer generation job (after "Save as version" creates a
- * new resume version) so the conversation's baseline tracks the latest saved
- * version and the chain stays linear. Owner-scoped on both the thread and the new
- * job; a non-owner job is silently ignored (no cross-user link, no leak).
- */
-export async function setThreadAnchor(userId: string, threadId: string, generationJobId: string): Promise<void> {
-  await getThread(userId, threadId);
-  // Owner + succeeded + has-result check: never anchor to a cross-user, queued,
-  // failed, or malformed job (which would break latestResumeSnapshot later).
-  await resolveAnchorJob(userId, generationJobId);
-  await db
-    .update(agentThreads)
-    .set({ generationJobId, updatedAt: new Date() })
-    .where(and(eq(agentThreads.id, threadId), eq(agentThreads.userId, userId)));
-}
