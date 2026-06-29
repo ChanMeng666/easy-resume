@@ -281,6 +281,33 @@ async function migrate() {
   await sql`CREATE INDEX IF NOT EXISTS idx_applications_generation_job ON applications(generation_job_id)`;
   console.log("Linked applications.generation_job_id -> generation_jobs");
 
+  // Conversational edit agent (P2-1): anchor an agent_threads conversation to the
+  // live generation it edits. The dormant agent_threads.resume_id FK targets the
+  // dead `resumes` table and stays unwritten; this nullable FK ties a thread to a
+  // real generated resume instead. Added AFTER generation_jobs exists so the FK
+  // target is present. ON DELETE SET NULL: deleting a resume keeps the chat
+  // history, just unlinks it (mirrors applications.generation_job_id).
+  await sql`ALTER TABLE agent_threads ADD COLUMN IF NOT EXISTS generation_job_id UUID REFERENCES generation_jobs(id) ON DELETE SET NULL`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_agent_threads_generation_job ON agent_threads(generation_job_id)`;
+  // Make sequence_num a hard per-thread ordering key. Drop the old non-unique
+  // index (created above) and replace it with a UNIQUE one so concurrent turns on
+  // the same thread cannot persist duplicate, unorderable sequence numbers (the
+  // store retries on the resulting conflict). Safe on prod: agent_messages has
+  // zero rows (the tables were forward scaffolding with no CRUD until now).
+  await sql`DROP INDEX IF EXISTS idx_agent_messages_sequence`;
+  // Also drop the legacy copilot-era non-unique sequence index left behind by the
+  // copilot_*→agent_* table rename (the rename keeps the old index names). It is
+  // redundant once the UNIQUE index below exists; dropping it avoids bloat/drift.
+  await sql`DROP INDEX IF EXISTS idx_messages_sequence`;
+  await sql`DROP INDEX IF EXISTS idx_copilot_messages_sequence`;
+  await sql`CREATE UNIQUE INDEX IF NOT EXISTS uk_agent_messages_thread_seq ON agent_messages(thread_id, sequence_num)`;
+  // At most one ACTIVE conversation per (user, anchored resume) — makes opening a
+  // thread idempotent under concurrent requests (the store relies on this index).
+  // Partial: archived/anchorless threads are unconstrained. Safe on prod
+  // (agent_threads has no rows yet).
+  await sql`CREATE UNIQUE INDEX IF NOT EXISTS uk_agent_threads_active_job ON agent_threads(user_id, generation_job_id) WHERE status = 'active' AND generation_job_id IS NOT NULL`;
+  console.log("Linked agent_threads.generation_job_id -> generation_jobs; enforced agent_messages sequence + active-thread uniqueness");
+
   // Create rate_limits table (Postgres-backed fixed-window rate limiting)
   await sql`
     CREATE TABLE IF NOT EXISTS rate_limits (
