@@ -26,6 +26,10 @@ export const runtime = 'nodejs';
 const THREAD_WRITE_LIMIT = 60;
 const THREAD_WRITE_WINDOW_SECONDS = 60;
 
+// Lists the caller's conversations. Deliberately an owner-scoped API surface with
+// no dedicated UI consumer yet (the chat entry get-or-creates per resume): it keeps
+// "the API is the UI" — an agent can enumerate a user's edit threads over HTTP, and
+// a future "My Conversations" page can read it — without adding a route later.
 export async function GET(request: NextRequest) {
   const requestId = crypto.randomUUID();
   try {
