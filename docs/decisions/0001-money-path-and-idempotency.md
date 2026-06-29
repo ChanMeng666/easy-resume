@@ -1,6 +1,8 @@
 # ADR 0001 — Money-path correctness, Typst safety, and the idempotency contract
 
-- **Status**: Accepted — **P0 + P1 shipped & merged**; **P2 implemented** (application tracker, version-chain enhancement, prompt registry) as three codex-SHIP'd PRs awaiting merge (see "P2" below). P2-1 (conversational tool-using agent) deferred to a future round.
+- **Status**: Accepted — **P0 + P1 + P2 shipped & merged**; **P2-1** (conversational
+  tool-using edit agent) implemented as three stacked codex-SHIP'd PRs (#26 → #27 →
+  #28; see "P2-1" below).
 - **Date**: 2026-06-28
 - **Authors**: Claude (implementation lead) × Codex (adversarial reviewer)
 - **Scope**: Outcome-based billing, public/web idempotency, Typst rendering safety
@@ -152,8 +154,8 @@ P2 is the "activate the dormant tables / latent capability" phase. The opening
 thesis of this ADR (don't revive the half-finished second data model wholesale)
 still holds: P2 adds CRUD/API/UI on tables that already exist, or extends the
 live `generation_jobs` model — it does **not** resurrect the dead `resumes`
-lineage. Scope this round was three units (the flagship P2-1 conversational
-tool-using agent is deliberately deferred to its own round). Each is its own
+lineage. Scope this round was three units; the flagship P2-1 conversational
+tool-using agent followed in its own round (see "P2-1" below). Each is its own
 branch + PR, gate-green, codex-reviewed to SHIP; the two schema units were
 migrated to prod and verified against `information_schema`.
 
@@ -190,6 +192,67 @@ bound the manual payload incl. nested arrays to close a render-cost vector);
 P2-4 (record only executed prompt versions so the skipped-`parse_background`
 path isn't mis-attributed; narrow the telemetry metadata type so PII can't be
 routed through it).
+
+## P2-1 — Conversational tool-using edit agent
+
+The flagship P2 item, deferred to its own round and now built. It upgrades the
+fixed 8-step pipeline into a **multi-turn conversational editor**: the user opens a
+generated resume and edits it in natural language ("emphasize leadership in my
+second job", "add a DevOps skill category"), an LLM calls a set of **controlled,
+structured tools** that mutate the parsed `ResumeData`, and the resume is
+**deterministically re-rendered** (Typst → PDF) after each edit so the change is
+visible live. It activates the dormant `agent_threads` / `agent_messages` tables.
+
+### Decisions (user-approved)
+- **Conversational editing is FREE.** No charge for chat turns or re-renders — the
+  LLM here is a *tool*, and "sell results, not tools" means tools are free. The sole
+  charge site stays the post-compile call in `runGenerationPipeline`; the chat path
+  imports no meter/credit/pipeline. Abuse is bounded by auth + per-user rate limit
+  (`chat:` 30/min) + a bounded tool loop (`stopWhen: stepCountIs`, clamped) +
+  `maxRetries: 0`. "Save as version" reuses the existing free `createManualVersion`
+  (`charged: false`). This is consistent with the P1/P2-3 free structured-edit path.
+- **Thread anchors to the LIVE model.** `agent_threads.generation_job_id` (nullable
+  FK → `generation_jobs`, `ON DELETE SET NULL`) ties a conversation to the resume it
+  edits; the dead `resume_id` FK stays unwritten (same pattern as P2-2's
+  `applications.generation_job_id`). The working `ResumeData` lives on each assistant
+  message's `tool_result` (a reopen restores the latest snapshot, falling back to the
+  anchor job's baseline).
+- **Conservative, structured-only tool set.** Tools edit specific `ResumeData`
+  fields only (summary, work/project highlights, skill categories, basics
+  label/name/location — never email/phone). No tool accepts free-text
+  Typst/HTML/URL/path, so there is no Typst-injection / SSRF surface. Inputs are
+  zod-validated + `sanitizeDeep`'d; every committed edit is bounded by the
+  `manualVersionCreateSchema` render-DoS caps; the system prompt embeds the
+  *sanitized* resume and treats resume + user text as data, not instructions.
+- **Transport-agnostic, DI core.** `runEditTurn` (AI SDK v6 `generateText` loop)
+  lives in `src/server/agent/`, fake-model-injectable so the money-path guard (meter
+  never called), edit application, bounds rejection, and step cap are unit-tested
+  with no network/DB. The SSE route is a thin caller mirroring `/api/generate`.
+
+### Money / correctness invariants preserved
+No new charge point; no `succeeded generation_jobs` write from the chat path. All
+thread/message reads/writes are owner-scoped → NotFound for non-owners; route ids
+UUID-guarded. Turn persistence is atomic (single multi-row insert) with a unique
+`(thread_id, sequence_num)` index and **optimistic concurrency** (`expectedBaseSeq`,
+read before the snapshot) so a racing turn gets a retriable `ConflictError` instead
+of silently overwriting a concurrent edit. Streamed edits are a client-side **draft**
+committed to the saveable resume only after the turn persists (`saved`); a
+failed/aborted turn reverts and is never saveable.
+
+### What shipped (each codex-reviewed to SHIP; gate green)
+
+| Unit | PR | Summary | Schema / prod migration |
+|------|----|---------|--------------------------|
+| **P2-1.1** Persistence + anchoring | #26 | Owner-scoped `agent_threads`/`agent_messages` store; `GET`/`POST /api/threads` + `GET /api/threads/[id]`. | `agent_threads.generation_job_id` FK + index; `agent_messages (thread_id, sequence_num)` made UNIQUE; partial UNIQUE on active `(user_id, generation_job_id)`. Applied to prod + `information_schema`-verified. |
+| **P2-1.2** Tool-loop core | #27 | `buildEditTools` (conservative set, zod + sanitize + bounds) + `runEditTurn` (DI, bounded loop, telemetry); prompt-registry `'edit-agent'`. Fake-injected tests. | None. |
+| **P2-1.3** SSE route + chat UI | #28 | `POST /api/threads/[id]/messages` (SSE turn, optimistic concurrency) + `/resumes/[id]/assistant` chat page (live PDF) + "Edit with AI" entry + "Save as version". | None (additive `snapshot` field on the GET response). |
+
+Codex adversarial review hardened each before SHIP (5 rounds on #26: append
+atomicity, thread idempotency, turn write-bounds, byte-accurate caps, snapshot read
+rigor; 2 on #27: commit-before-render, preview re-injection, dropped tool-errors,
+unclamped maxSteps; 4 on #28: concurrent-turn lost-update + read ordering,
+persist-failure signalling, failed-turn saveability, body-size guard, baseSeq
+under-report, ConflictError retriable).
 
 ## Working model
 Claude implements; after each unit, Codex runs an adversarial `codex exec
