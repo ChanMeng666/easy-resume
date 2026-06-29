@@ -17,7 +17,7 @@ import 'server-only';
 import { and, asc, desc, eq, isNotNull, sql } from 'drizzle-orm';
 import { db } from '@/lib/db/client';
 import { agentThreads, agentMessages, generationJobs } from '@/lib/db/schema';
-import { NotFoundError, ValidationError } from '@/server/errors/AppError';
+import { ConflictError, NotFoundError, ValidationError } from '@/server/errors/AppError';
 import { manualVersionCreateSchema, resumeDataSchema, type ResumeData } from '@/lib/validation/schema';
 
 /** A working snapshot of the resume being edited in a thread. */
@@ -375,6 +375,21 @@ export async function loadHistory(userId: string, threadId: string): Promise<Sto
 }
 
 /**
+ * The thread's current max sequence number (0 if empty), owner-scoped. Used as the
+ * optimistic-concurrency baseline for appendTurn — read directly (NOT derived from
+ * the capped loadHistory, which would under-report past MESSAGE_LIST_MAX and
+ * falsely reject every later turn).
+ */
+export async function threadMaxSequence(userId: string, threadId: string): Promise<number> {
+  await getThread(userId, threadId);
+  const [{ max }] = await db
+    .select({ max: sql<number>`COALESCE(MAX(${agentMessages.sequenceNum}), 0)` })
+    .from(agentMessages)
+    .where(eq(agentMessages.threadId, threadId));
+  return Number(max);
+}
+
+/**
  * Resolve the current working resume for a thread: the latest snapshot stored on
  * an assistant message, or the anchor job's baseline. Owner-scoped (throws
  * NotFound for a non-owner). Throws ValidationError if the thread's anchor job is
@@ -432,11 +447,18 @@ export async function latestResumeSnapshot(userId: string, threadId: string): Pr
  * multi-row insert is a single statement, so a turn is all-or-nothing; a
  * concurrent same-thread turn that collides on the unique (thread, seq) index is
  * retried at the next sequence. No billing — this is pure storage.
+ *
+ * `opts.expectedBaseSeq` enables OPTIMISTIC CONCURRENCY for edit turns: pass the
+ * thread's max sequence as observed when the turn's baseline was loaded. If the
+ * thread has advanced since (a concurrent turn persisted first), this throws
+ * ConflictError instead of silently overwriting/dropping the earlier turn's edits
+ * — the caller surfaces "another edit happened; please retry".
  */
 export async function appendTurn(
   userId: string,
   threadId: string,
-  messages: TurnMessageInput[]
+  messages: TurnMessageInput[],
+  opts: { expectedBaseSeq?: number } = {}
 ): Promise<StoredMessage[]> {
   if (messages.length === 0) return [];
   await getThread(userId, threadId);
@@ -445,12 +467,13 @@ export async function appendTurn(
   // The multi-row insert is a SINGLE statement, so a turn is atomic: it persists
   // entirely or not at all (no partial turn). On a sequence-number collision with
   // a concurrent same-thread turn the whole insert is retried at the next free
-  // sequence — never a half-written turn.
+  // sequence — never a half-written turn. With expectedBaseSeq set, a base that
+  // advanced means a concurrent turn won → ConflictError (not retried).
   let inserted: StoredMessage[] | null = null;
   let lastErr: unknown;
   for (let attempt = 0; attempt < MAX_SEQ_RETRIES; attempt++) {
     try {
-      inserted = await insertMessagesAtNextSequence(threadId, messages);
+      inserted = await insertMessagesAtNextSequence(threadId, messages, opts.expectedBaseSeq);
       break;
     } catch (err) {
       if (!isUniqueViolation(err)) throw err;
@@ -481,12 +504,18 @@ export async function appendTurn(
 /** Read the current MAX(sequence_num) and insert the batch at MAX+1.. (one statement). */
 async function insertMessagesAtNextSequence(
   threadId: string,
-  messages: TurnMessageInput[]
+  messages: TurnMessageInput[],
+  expectedBaseSeq?: number
 ): Promise<StoredMessage[]> {
   const [{ max }] = await db
     .select({ max: sql<number>`COALESCE(MAX(${agentMessages.sequenceNum}), 0)` })
     .from(agentMessages)
     .where(eq(agentMessages.threadId, threadId));
+  if (expectedBaseSeq !== undefined && Number(max) !== expectedBaseSeq) {
+    // The thread advanced since the caller loaded its baseline → a concurrent turn
+    // persisted first. Refuse rather than overwrite/drop its edits.
+    throw new ConflictError('This conversation was edited elsewhere. Please retry.', true);
+  }
   const base = Number(max);
   const rows = messages.map((m, i) => ({
     threadId,

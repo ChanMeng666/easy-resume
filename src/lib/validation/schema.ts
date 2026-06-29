@@ -202,6 +202,14 @@ export const threadCreateSchema = z.object({
 });
 export type ThreadCreate = z.infer<typeof threadCreateSchema>;
 
+// A single user message in a conversational edit turn (POST /api/threads/[id]/
+// messages). Capped well below the store's per-message content bound; a normal
+// edit instruction is a sentence or two.
+export const threadMessageSchema = z.object({
+  message: z.string().trim().min(1, 'Message is required').max(8_000),
+});
+export type ThreadMessage = z.infer<typeof threadMessageSchema>;
+
 // Type inference from Zod schema
 export type ResumeData = z.infer<typeof resumeDataSchema>;
 export type Basics = z.infer<typeof basicsSchema>;

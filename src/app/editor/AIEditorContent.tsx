@@ -41,6 +41,7 @@ import {
   History,
   X,
   Columns2,
+  Wand2,
 } from 'lucide-react';
 
 /**
@@ -310,6 +311,11 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
   // mode) or the SSE `saved` event. Used as a refine's parent and to load the
   // version strip.
   const [currentJobId, setCurrentJobId] = useState<string | null>(jobId ?? null);
+  // True when the visible result has unsaved local field edits (Edit fields →
+  // Apply) that diverge from the persisted `currentJobId` row. Used to gate the
+  // "Edit with AI" entry: the assistant edits the PERSISTED resume, so it must not
+  // be opened on a stale baseline while local edits are unsaved.
+  const [unsavedEdits, setUnsavedEdits] = useState(false);
   // Refine cost-disclosure dialog: a refine re-runs the LLM pipeline and costs 1
   // credit, so we confirm before charging.
   const [refineCostOpen, setRefineCostOpen] = useState(false);
@@ -402,6 +408,11 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
       setResult(null);
       setError(null);
       setWasHiddenDuringGeneration(false);
+      // The incoming result is not a persisted-and-current job until `saved` fires
+      // (the SSE route emits `result` before `saved`, and may finish without `saved`
+      // if finalization fails). Mark unpersisted now so the "Edit with AI" entry —
+      // which opens the SAVED resume — stays hidden unless persistence is confirmed.
+      setUnsavedEdits(true);
 
       runGenerationStream(
         currentJd,
@@ -422,6 +433,7 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
             // Track the new job id (the parent for a subsequent refine) and
             // refresh the version strip.
             setCurrentJobId(savedJobId);
+            setUnsavedEdits(false); // the persisted job now matches the visible result
             fetchVersions(savedJobId);
           },
         },
@@ -467,6 +479,7 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
       }
       // This IS the current job — track it as a refine parent and load its chain.
       setCurrentJobId(id);
+      setUnsavedEdits(false); // a freshly loaded persisted job has no local edits
       fetchVersions(id);
     } catch (err) {
       setError(classifyError(err));
@@ -603,6 +616,8 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
       const newTypst = renderTypstFromResume(next, result.templateId);
       setResult({ ...result, resumeData: next, typstCode: newTypst });
       setEditMode(false);
+      // Local edit not yet persisted — the visible result now diverges from currentJobId.
+      setUnsavedEdits(true);
     },
     [result]
   );
@@ -1244,6 +1259,25 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
                 Free
               </span>
             </Button>
+
+            {/* Conversational AI editing of THIS saved resume — free (no credit).
+                Shown only when the visible result is the persisted job (currentJobId
+                set AND no unsaved local field edits): the assistant edits the SAVED
+                resume, so it must not open on a stale baseline. Save the field edit
+                as a version first to re-enable. */}
+            {currentJobId && !unsavedEdits && (
+              <Button
+                variant="outline"
+                className="w-full border-2 border-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
+                onClick={() => (window.location.href = `/resumes/${currentJobId}/assistant`)}
+              >
+                <Wand2 className="mr-2 h-4 w-4" />
+                Edit with AI
+                <span className="ml-2 rounded border border-black bg-green-100 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase">
+                  Free
+                </span>
+              </Button>
+            )}
 
             {/* Save the background for reuse across future job descriptions. */}
             {effBg.trim() && (

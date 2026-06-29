@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useUser } from "@stackframe/stack";
 import { useDebounce } from "use-debounce";
 import { motion } from "framer-motion";
-import { AlertCircle, FileText, Download, Trash2, Sparkles, Mail, Search, Loader2, Briefcase } from "lucide-react";
+import { AlertCircle, FileText, Download, Trash2, Sparkles, Mail, Search, Loader2, Briefcase, Wand2 } from "lucide-react";
 import { Navbar } from "@/components/shared/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -263,6 +263,17 @@ function ResumesContent() {
                       >
                         Open
                       </Button>
+                      {isSucceeded && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-2"
+                          onClick={() => router.push(`/resumes/${item.id}/assistant`)}
+                        >
+                          <Wand2 className="w-4 h-4" />
+                          Edit with AI
+                        </Button>
+                      )}
                       {isSucceeded && item.pdfUrl && (
                         <a href={item.pdfUrl} target="_blank" rel="noopener noreferrer">
                           <Button size="sm" variant="outline" className="gap-2">
