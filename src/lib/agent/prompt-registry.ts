@@ -40,7 +40,8 @@ export type PromptFunctionId = (typeof PROMPT_FUNCTION_IDS)[number];
  */
 export const PROMPT_VERSIONS: Record<PromptFunctionId, string> = {
   'parse-jd': 'v1',
-  'parse-background': 'v1',
+  // v2: unknown dates/locations/types/descriptions must be "" — never guessed.
+  'parse-background': 'v2',
   'analyze-match': 'v1',
   'tailor-resume': 'v1',
   'cover-letter': 'v1',
