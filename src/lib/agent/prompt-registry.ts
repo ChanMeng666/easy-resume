@@ -22,6 +22,10 @@ export const PROMPT_FUNCTION_IDS = [
   'analyze-match',
   'tailor-resume',
   'cover-letter',
+  // Targeted refinement (P1): minimal-diff wording revisions driven by first-class
+  // user feedback, distinct from the initial tailor/cover-letter generation.
+  'revise-resume',
+  'revise-cover-letter',
   // Conversational edit agent (P2-1): the system prompt that drives the
   // tool-calling resume editor.
   'edit-agent',
@@ -40,6 +44,8 @@ export const PROMPT_VERSIONS: Record<PromptFunctionId, string> = {
   'analyze-match': 'v1',
   'tailor-resume': 'v1',
   'cover-letter': 'v1',
+  'revise-resume': 'v1',
+  'revise-cover-letter': 'v1',
   'edit-agent': 'v1',
 };
 

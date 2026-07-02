@@ -18,7 +18,13 @@ export type PipelineStep =
   | 'cover_letter'
   | 'render'
   | 'compile'
-  | 'billing';
+  | 'billing'
+  // Targeted refinement pipeline (runRefinementPipeline). `revise` is the single
+  // client-facing progress step; the two LLM calls it fans out to carry their own
+  // finer-grained step names for PipelineStepError attribution.
+  | 'revise'
+  | 'revise_resume'
+  | 'revise_cover_letter';
 
 /** Stable, machine-readable error codes. Never reuse or repurpose a code. */
 export type ErrorCode =

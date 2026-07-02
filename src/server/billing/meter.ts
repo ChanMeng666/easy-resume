@@ -18,7 +18,7 @@ import { creditService } from '@/lib/services/creditService';
 export const RESUME_GENERATION_COST = 1;
 
 export interface ChargeRef {
-  kind: 'resume_generation';
+  kind: 'resume_generation' | 'resume_refinement';
   jobId?: string;
 }
 
