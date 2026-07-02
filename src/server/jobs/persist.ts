@@ -13,6 +13,7 @@ import 'server-only';
 import { and, eq, inArray, lt } from 'drizzle-orm';
 import { generationJobs } from '@/lib/db/schema';
 import { generateTypstCode } from '@/lib/typst/generator';
+import { generateCoverLetterTypst } from '@/lib/typst/cover-letter';
 import { getTemplateById } from '@/templates/registry';
 import { NotFoundError, ValidationError } from '@/server/errors/AppError';
 import type { ResumeData } from '@/lib/validation/schema';
@@ -296,9 +297,13 @@ function renderTypst(data: ResumeData, templateId: string | undefined): string {
  * here; the row is written `charged: false` with a fresh random idempotency key
  * that is never used to charge (the charge is keyed on a reserved jobId inside
  * the pipeline, which this never invokes). The Typst is re-rendered server-side
- * from the validated `resumeData`, and the ATS score / match analysis / cover
- * letter are carried over from the parent (the parent's last AI run remains the
+ * from the validated `resumeData`, and the ATS score / match analysis are
+ * carried over from the parent (the parent's last AI run remains the
  * authoritative analysis — a manual edit doesn't re-score).
+ *
+ * The cover letter is carried over from the parent UNLESS the caller supplies an
+ * edited `coverLetter` body, in which case its Typst is regenerated server-side
+ * (client Typst is never trusted — the same principle applied to the resume).
  *
  * Owner-scoped: a missing/cross-user parent throws NotFound (existence hidden).
  */
@@ -308,8 +313,9 @@ export async function createManualVersion(args: {
   resumeData: ResumeData;
   templateId?: string;
   versionLabel?: string;
+  coverLetter?: string;
 }): Promise<{ id: string }> {
-  const { caller, parentJobId, resumeData } = args;
+  const { caller, parentJobId, resumeData, coverLetter } = args;
   const { db } = await import('@/lib/db/client');
 
   // Resolve the parent owner-scoped (hide existence on miss/cross-user) and
@@ -338,15 +344,23 @@ export async function createManualVersion(args: {
   const rootJobId = parent.rootJobId ?? parent.id;
   const prev = (parent.result ?? {}) as Partial<WireResult> & { templateId?: string };
   const templateId = args.templateId ?? prev.templateId ?? 'two-column';
+  // Re-render server-side in one step so a render failure (resume OR cover
+  // letter) surfaces here and aborts the version write, never trusting client
+  // Typst. An edited cover letter regenerates its Typst; otherwise the parent's
+  // letter + Typst are carried forward exactly as before.
   const typstCode = renderTypst(resumeData, templateId);
+  const nextCoverLetter = coverLetter ?? prev.coverLetter ?? '';
+  const nextCoverLetterTypst = coverLetter
+    ? generateCoverLetterTypst(coverLetter, resumeData)
+    : prev.coverLetterTypst ?? '';
 
   // Carry the parent's AI-derived analysis forward unchanged — a manual edit
   // doesn't re-run scoring. usage.charged is false: this never bills.
   const result = {
     resumeData,
     typstCode,
-    coverLetter: prev.coverLetter ?? '',
-    coverLetterTypst: prev.coverLetterTypst ?? '',
+    coverLetter: nextCoverLetter,
+    coverLetterTypst: nextCoverLetterTypst,
     atsScore: prev.atsScore,
     matchAnalysis: prev.matchAnalysis,
     templateId,

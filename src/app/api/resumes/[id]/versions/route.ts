@@ -132,6 +132,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       resumeData: parsed.data.resumeData,
       templateId: parsed.data.templateId,
       versionLabel: parsed.data.versionLabel,
+      coverLetter: parsed.data.coverLetter,
     });
 
     return NextResponse.json(

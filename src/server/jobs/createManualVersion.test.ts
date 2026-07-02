@@ -97,6 +97,40 @@ describe('createManualVersion', () => {
     expect(result.typstCode.length).toBeGreaterThan(0);
     // Parent's AI analysis is carried over (a manual edit doesn't re-score).
     expect(result.atsScore).toBe(88);
+    // Without an edited cover letter, the parent's letter + Typst carry forward
+    // unchanged (zero behavior change).
+    const withCover = captured!.result as { coverLetter: string; coverLetterTypst: string };
+    expect(withCover.coverLetter).toBe('Dear team');
+    expect(withCover.coverLetterTypst).toBe('= Cover');
+  });
+
+  it('regenerates the cover-letter Typst when an edited coverLetter is supplied', async () => {
+    const parent = {
+      id: 'parent-1',
+      userId: 'u1',
+      status: 'succeeded',
+      rootJobId: null,
+      input: { jobDescription: 'jd', background: 'bg' },
+      result: {
+        templateId: 'two-column',
+        coverLetter: 'Dear team',
+        coverLetterTypst: '= Parent cover letter Typst',
+      },
+      title: 'Senior Engineer',
+    };
+    fakeDb.select = selectReturning([parent]);
+    fakeDb.insert = insertCapturing([{ id: 'new-1' }]);
+
+    const edited = 'Dear Hiring Manager, my UNIQUE-EDITED-BODY makes me a great fit.';
+    await createManualVersion({ caller, parentJobId: 'parent-1', resumeData, coverLetter: edited });
+
+    const result = captured!.result as { coverLetter: string; coverLetterTypst: string };
+    // The stored body is the edited text.
+    expect(result.coverLetter).toBe(edited);
+    // The Typst is regenerated server-side (not the parent's, and it embeds the
+    // new body text).
+    expect(result.coverLetterTypst).not.toBe('= Parent cover letter Typst');
+    expect(result.coverLetterTypst).toContain('UNIQUE-EDITED-BODY');
   });
 
   it('inherits the parent root for a deeper chain and stores the version label', async () => {
