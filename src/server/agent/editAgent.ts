@@ -14,7 +14,7 @@
  */
 
 import 'server-only';
-import { generateText, stepCountIs, type ModelMessage } from 'ai';
+import { streamText, stepCountIs, type ModelMessage } from 'ai';
 import { reasonModel, WRITING_TEMPERATURE } from '@/lib/agent/models';
 import { aiTelemetry } from '@/lib/agent/telemetry';
 import { PROMPT_VERSIONS } from '@/lib/agent/prompt-registry';
@@ -95,7 +95,12 @@ export async function runEditTurn(args: RunEditTurnArgs, deps: EditAgentDeps): P
   }
   messages.push({ role: 'user', content: sanitizeForPrompt(userMessage) });
 
-  const result = await generateText({
+  // streamText surfaces stream-level failures via onError (they are not thrown
+  // into the tool loop); capture the first one so runEditTurn still REJECTS on a
+  // mid-stream LLM failure exactly like the old generateText call did.
+  let streamError: unknown;
+
+  const result = streamText({
     model: deps.model,
     system: buildEditSystemPrompt(baseResume, baseCoverLetter),
     messages,
@@ -106,6 +111,20 @@ export async function runEditTurn(args: RunEditTurnArgs, deps: EditAgentDeps): P
     temperature: WRITING_TEMPERATURE,
     abortSignal: signal,
     experimental_telemetry: aiTelemetry('edit-agent', { promptVersion: PROMPT_VERSIONS['edit-agent'] }),
+    onError: ({ error }) => {
+      streamError = streamError ?? error;
+    },
+    // Token-level streaming: forward each text delta as it arrives. The client
+    // APPENDS `text` events into the current assistant bubble, so finer-grained
+    // events need zero client changes — the user sees the reply typed out live
+    // instead of one block per step. (Within a step this means text now renders
+    // in true generation order — before that step's tool chips — which matches
+    // how the model actually produced it.)
+    onChunk: ({ chunk }) => {
+      if (chunk.type === 'text-delta' && chunk.text) {
+        onEvent?.({ type: 'text', text: chunk.text });
+      }
+    },
     onStepFinish: (step) => {
       // Iterate the step's content parts so BOTH successful tool results AND tool
       // errors (invalid inputs / thrown tools surface as 'tool-error' in v6, NOT
@@ -135,14 +154,18 @@ export async function runEditTurn(args: RunEditTurnArgs, deps: EditAgentDeps): P
         lastEmittedCoverLetterVersion = ctx.coverLetterVersion;
         onEvent?.({ type: 'cover-letter', coverLetter: ctx.coverLetter, coverLetterTypst: ctx.coverLetterTypst });
       }
-      if (step.text && step.text.trim()) {
-        onEvent?.({ type: 'text', text: step.text });
-      }
+      // NOTE: step text is NOT emitted here — deltas already streamed via onChunk.
     },
   });
 
+  // Awaiting the final text drains the stream (running the tool loop to
+  // completion). It rejects on abort; a swallowed-into-the-stream LLM error is
+  // re-thrown via the onError capture so failures behave exactly as before.
+  const assistantText = await result.text;
+  if (streamError) throw streamError;
+
   return {
-    assistantText: result.text,
+    assistantText,
     toolCalls,
     resumeData: ctx.resume,
     typstCode: ctx.typstCode,
