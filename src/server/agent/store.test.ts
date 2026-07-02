@@ -10,6 +10,7 @@ import {
   assertTurnBounds,
   deriveThreadTitle,
   pickLatestSnapshot,
+  selectSnapshotIdsToGc,
   type ResumeSnapshot,
   type StoredMessage,
   type TurnMessageInput,
@@ -243,5 +244,32 @@ describe('assertTurnBounds', () => {
     const snap = { ...snapshot('BadLetter'), coverLetter: { evil: 1 } as unknown as string };
     const turn: TurnMessageInput[] = [{ role: 'assistant', content: 'ok', toolResult: snap }];
     expect(() => assertTurnBounds(turn)).toThrow(/cover letter snapshot is invalid or too large/i);
+  });
+});
+
+describe('selectSnapshotIdsToGc', () => {
+  const row = (id: string, sequenceNum: number) => ({ id, sequenceNum });
+
+  it('keeps the newest 3 snapshots (by sequence) and selects the rest for GC', () => {
+    const rows = [row('a', 1), row('b', 5), row('c', 3), row('d', 9), row('e', 7)];
+    // Newest three by sequence: d(9), e(7), b(5). GC: c(3), a(1) — newest-first order.
+    expect(selectSnapshotIdsToGc(rows)).toEqual(['c', 'a']);
+  });
+
+  it('selects nothing when at or under the keep count', () => {
+    expect(selectSnapshotIdsToGc([row('a', 1), row('b', 2), row('c', 3)])).toEqual([]);
+    expect(selectSnapshotIdsToGc([])).toEqual([]);
+  });
+
+  it('does not mutate the input row order', () => {
+    const rows = [row('a', 1), row('b', 5), row('c', 3), row('d', 9)];
+    selectSnapshotIdsToGc(rows);
+    expect(rows.map((r) => r.id)).toEqual(['a', 'b', 'c', 'd']);
+  });
+
+  it('honors a custom keep count', () => {
+    const rows = [row('a', 1), row('b', 2), row('c', 3)];
+    expect(selectSnapshotIdsToGc(rows, 1)).toEqual(['b', 'a']);
+    expect(selectSnapshotIdsToGc(rows, 0)).toEqual(['c', 'b', 'a']);
   });
 });

@@ -307,3 +307,60 @@ describe('runEditTurn', () => {
     ).rejects.toThrow(/provider exploded/i);
   });
 });
+
+describe('single-highlight tools', () => {
+  it('editWorkHighlight replaces exactly one bullet and leaves the rest intact', async () => {
+    const model = scriptedModel([
+      toolCallStep('c1', 'editWorkHighlight', { entryIndex: 0, highlightIndex: 0, text: 'Led the platform rewrite' }),
+      textStep('Updated that bullet.'),
+    ]);
+    const events: EditEvent[] = [];
+
+    const res = await runEditTurn(baseArgs('rewrite the first bullet'), {
+      model,
+      render: (d) => `T:${d.work[0]?.highlights.join('|')}`,
+      onEvent: (e) => events.push(e),
+    });
+
+    expect(res.changed).toBe(true);
+    expect(res.resumeData.work[0].highlights).toEqual(['Led the platform rewrite']);
+    expect(events.some((e) => e.type === 'resume')).toBe(true);
+  });
+
+  it('editWorkHighlight rejects an out-of-range bullet index without mutating', async () => {
+    const model = scriptedModel([
+      toolCallStep('c1', 'editWorkHighlight', { entryIndex: 0, highlightIndex: 7, text: 'x' }),
+      textStep('That bullet does not exist.'),
+    ]);
+    const events: EditEvent[] = [];
+
+    const res = await runEditTurn(baseArgs('edit bullet 8'), {
+      model,
+      render: (d) => `T:${d.basics.summary}`,
+      onEvent: (e) => events.push(e),
+    });
+
+    expect(res.changed).toBe(false);
+    expect(res.resumeData.work[0].highlights).toEqual(['Did a thing']);
+    const toolResult = events.find((e) => e.type === 'tool-result');
+    expect(String((toolResult as { toolResult: unknown }).toolResult)).toMatch(/out of range/i);
+  });
+
+  it('editProjectHighlight rejects when there are no projects', async () => {
+    const model = scriptedModel([
+      toolCallStep('c1', 'editProjectHighlight', { entryIndex: 0, highlightIndex: 0, text: 'x' }),
+      textStep('No projects to edit.'),
+    ]);
+    const events: EditEvent[] = [];
+
+    const res = await runEditTurn(baseArgs('edit project bullet'), {
+      model,
+      render: (d) => `T:${d.basics.summary}`,
+      onEvent: (e) => events.push(e),
+    });
+
+    expect(res.changed).toBe(false);
+    const toolResult = events.find((e) => e.type === 'tool-result');
+    expect(String((toolResult as { toolResult: unknown }).toolResult)).toMatch(/out of range/i);
+  });
+});

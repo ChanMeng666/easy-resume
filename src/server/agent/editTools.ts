@@ -195,7 +195,7 @@ export function buildEditTools(ctx: EditContext, deps: EditAgentDeps) {
 
     editWorkHighlights: tool({
       description:
-        'Replace the bullet points of one work experience entry (0-based index). Rewrite/reorder existing achievements — do not fabricate.',
+        'Replace ALL bullet points of one work experience entry (0-based index). Use for adding/removing/reordering bullets; to change a SINGLE bullet prefer editWorkHighlight. Rewrite/reorder existing achievements — do not fabricate.',
       inputSchema: z.object({
         index: z.number().int().min(0).describe('0-based index into the work array.'),
         highlights: bulletList.describe('The full new list of bullet points for this entry.'),
@@ -214,9 +214,32 @@ export function buildEditTools(ctx: EditContext, deps: EditAgentDeps) {
       },
     }),
 
+    editWorkHighlight: tool({
+      description:
+        'Replace ONE bullet point of a work experience entry (both 0-based). PREFER this over editWorkHighlights when changing a single bullet — it avoids resending (and risking corruption of) the whole list. Rewrite the existing achievement — do not fabricate.',
+      inputSchema: z.object({
+        entryIndex: z.number().int().min(0).describe('0-based index into the work array.'),
+        highlightIndex: z.number().int().min(0).describe('0-based index of the bullet to replace.'),
+        text: z.string().min(1).max(MAX_FIELD_LEN).describe('The new text for that single bullet.'),
+      }),
+      execute: async (input) => {
+        const { entryIndex, highlightIndex, text } = sanitizeDeep(input);
+        return applyEdit(
+          ctx,
+          deps,
+          (r) => {
+            assertIndex(entryIndex, r.work.length, 'work');
+            assertIndex(highlightIndex, r.work[entryIndex].highlights.length, 'highlight');
+            r.work[entryIndex].highlights[highlightIndex] = text;
+          },
+          `Updated bullet ${highlightIndex} of work entry ${entryIndex}.`
+        );
+      },
+    }),
+
     editProjectHighlights: tool({
       description:
-        'Replace the bullet points of one project entry (0-based index). Rewrite/reorder existing achievements — do not fabricate.',
+        'Replace ALL bullet points of one project entry (0-based index). Use for adding/removing/reordering bullets; to change a SINGLE bullet prefer editProjectHighlight. Rewrite/reorder existing achievements — do not fabricate.',
       inputSchema: z.object({
         index: z.number().int().min(0).describe('0-based index into the projects array.'),
         highlights: bulletList.describe('The full new list of bullet points for this project.'),
@@ -231,6 +254,29 @@ export function buildEditTools(ctx: EditContext, deps: EditAgentDeps) {
             r.projects[index].highlights = highlights;
           },
           `Updated highlights for project ${index}.`
+        );
+      },
+    }),
+
+    editProjectHighlight: tool({
+      description:
+        'Replace ONE bullet point of a project entry (both 0-based). PREFER this over editProjectHighlights when changing a single bullet — it avoids resending the whole list. Rewrite the existing achievement — do not fabricate.',
+      inputSchema: z.object({
+        entryIndex: z.number().int().min(0).describe('0-based index into the projects array.'),
+        highlightIndex: z.number().int().min(0).describe('0-based index of the bullet to replace.'),
+        text: z.string().min(1).max(MAX_FIELD_LEN).describe('The new text for that single bullet.'),
+      }),
+      execute: async (input) => {
+        const { entryIndex, highlightIndex, text } = sanitizeDeep(input);
+        return applyEdit(
+          ctx,
+          deps,
+          (r) => {
+            assertIndex(entryIndex, r.projects.length, 'project');
+            assertIndex(highlightIndex, r.projects[entryIndex].highlights.length, 'highlight');
+            r.projects[entryIndex].highlights[highlightIndex] = text;
+          },
+          `Updated bullet ${highlightIndex} of project ${entryIndex}.`
         );
       },
     }),
