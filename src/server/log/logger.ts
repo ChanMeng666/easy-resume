@@ -21,8 +21,15 @@ export interface LogFields {
 const LEVEL_RANK: Record<LogLevel, number> = { debug: 10, info: 20, warn: 30, error: 40 };
 const MIN_LEVEL: LogLevel = (process.env.LOG_LEVEL as LogLevel) || 'info';
 
-/** Serialize an Error into a plain, JSON-safe object. */
-function serializeError(err: unknown): Record<string, unknown> | undefined {
+// How deep to follow err.cause when serializing. Wrapped pipeline errors are
+// typically 2 levels (PipelineStepError -> SDK error); 4 is generous headroom.
+const MAX_CAUSE_DEPTH = 4;
+
+/** Serialize an Error into a plain, JSON-safe object, following the cause chain.
+ * Without the chain, a wrapped error (e.g. PipelineStepError over an OpenAI SDK
+ * failure) logs only its wrapper message — the actual root cause (401/429/schema
+ * mismatch) is unrecoverable from production logs. */
+function serializeError(err: unknown, depth = 0): Record<string, unknown> | undefined {
   if (err == null) return undefined;
   if (err instanceof Error) {
     return {
@@ -31,6 +38,9 @@ function serializeError(err: unknown): Record<string, unknown> | undefined {
       // Stacks stay machine-parseable; included for AI debugging, not human prose.
       stack: err.stack,
       ...(('code' in err) ? { code: (err as { code: unknown }).code } : {}),
+      ...(err.cause !== undefined && depth < MAX_CAUSE_DEPTH
+        ? { cause: serializeError(err.cause, depth + 1) }
+        : {}),
     };
   }
   return { value: String(err) };
