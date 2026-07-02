@@ -18,6 +18,13 @@ jobs:
       NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY: ci-placeholder
       STACK_SECRET_SERVER_KEY: ci-placeholder
       NEXT_PUBLIC_APP_URL: http://localhost:3000
+      # `next build` collects page data by importing route modules; the Neon and
+      # Stripe clients are constructed at module scope and only need a value to
+      # exist — nothing connects during the build.
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+      STRIPE_SECRET_KEY: sk_test_ci_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_ci_placeholder
+      OPENAI_API_KEY: sk-ci-placeholder
 
     steps:
       - name: Checkout
