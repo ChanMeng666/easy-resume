@@ -12,7 +12,7 @@ import { PROMPT_VERSIONS } from "./prompt-registry";
  * failure modes — unfilled "[Hiring Manager]" / "[Company]" placeholders and
  * runaway length — before the text ever reaches the Typst layer.
  */
-const coverLetterSchema = z.object({
+export const coverLetterSchema = z.object({
   greeting: z.string().describe('Salutation, e.g. "Dear Hiring Manager,"'),
   paragraphs: z
     .array(z.string())
@@ -24,7 +24,7 @@ const coverLetterSchema = z.object({
 });
 
 /** Strip any unfilled bracket placeholders like [Company] or [Hiring Manager]. */
-function stripPlaceholders(s: string): string {
+export function stripPlaceholders(s: string): string {
   return s.replace(/\[[^\]]*\]/g, "").replace(/[ \t]{2,}/g, " ").trim();
 }
 
