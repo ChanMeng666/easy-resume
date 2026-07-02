@@ -201,12 +201,14 @@ limits on the applications/profiles/threads/versions CRUD routes).
   for the refine/version chain), `credits`, `credit_transactions`, `api_keys`,
   `stripe_events`, `rate_limits`. P1/P2 activated more: `candidate_profiles`
   (profiles store), `applications` (tracker), `agent_threads`/`agent_messages`
-  (edit-agent conversations + version snapshots), `resume_versions`. JSONB
-  columns are typed via Drizzle `.$type<...>()`.
+  (edit-agent conversations + version snapshots). JSONB columns are typed via
+  Drizzle `.$type<...>()`.
 - **Unused scaffolding** (defined in schema + migrate.ts but still NO CRUD —
   do not assume they hold data): `resumes` (+ its dead `pdf_blob_url`/`pdf_updated_at`
-  columns), `tailored_resumes`, `job_descriptions`. Kept as forward scaffolding;
-  the live "My Resumes" history uses `generation_jobs`, not these.
+  columns), `tailored_resumes`, `job_descriptions`, `resume_versions` (the live
+  version chain is `generation_jobs.parent_job_id`/`root_job_id`, NOT this
+  table). Kept as forward scaffolding; the live "My Resumes" history uses
+  `generation_jobs`, not these.
 
 ## Testing
 

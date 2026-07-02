@@ -3,7 +3,7 @@
 - **Status**: Accepted — **shipped & merged** (PRs #32–#48), deployed to the
   DigitalOcean VPS and regression-passed 2026-07-03.
 - **Date**: 2026-07-03
-- **Authors**: Claude (implementation lead) × Codex (adversarial reviewer)
+- **Authors**: Claude — Opus 4.8 (implementation) × Fable 5 (review/verification)
 - **Scope**: Targeted copy-refinement core, scope model, free-by-default billing,
   deterministic ATS, JD-parse cache, job concurrency, edit-agent cover letters,
   never-invent schema relaxation, ops/CI.
