@@ -551,6 +551,18 @@ export async function appendTurn(
   return inserted;
 }
 
+/**
+ * Window a replayed history to its most recent `max` entries. The edit agent
+ * injects the LIVE resume/letter into every system prompt, so old text turns add
+ * token cost without adding state; replaying only the tail keeps long threads
+ * cheap. Returns whether anything was dropped so the caller can note the gap.
+ */
+export function tailHistoryWindow<T>(items: T[], max: number): { items: T[]; truncated: boolean } {
+  if (max <= 0) return { items: [], truncated: items.length > 0 };
+  if (items.length <= max) return { items, truncated: false };
+  return { items: items.slice(items.length - max), truncated: true };
+}
+
 // How many snapshot-bearing assistant messages to KEEP per thread when garbage-
 // collecting older snapshots. Only the newest valid snapshot is ever read
 // (latestResumeSnapshot), so older blobs (~up to 500KB each) are pure storage
