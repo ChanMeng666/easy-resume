@@ -22,6 +22,21 @@ function makeResult(over: Partial<GenerateResult> = {}): GenerateResult {
     pdf: new Uint8Array([37, 80, 68, 70]),
     usage: { charged: true, credits: 1, transactionId: 'tx_1' },
     promptVersions: { 'parse-jd': 'v1' },
+    parsedJD: {
+      title: 'Staff Engineer, Payments',
+      company: 'Acme',
+      location: 'Remote',
+      type: 'full-time',
+      experienceLevel: 'senior',
+      summary: 'Build payment systems.',
+      requiredSkills: ['Rust'],
+      preferredSkills: [],
+      keywords: ['payments'],
+      responsibilities: [],
+      requirements: [],
+      benefits: [],
+      industry: 'Fintech',
+    } as GenerateResult['parsedJD'],
     ...over,
   };
 }
@@ -50,6 +65,7 @@ describe('toWireResult', () => {
       templateId: r.templateId,
       usage: r.usage,
       promptVersions: r.promptVersions,
+      parsedJD: r.parsedJD,
     });
   });
 });

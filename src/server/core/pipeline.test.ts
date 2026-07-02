@@ -97,6 +97,8 @@ describe('runGenerationPipeline billing gating', () => {
     expect(result.usage.charged).toBe(true);
     expect(result.pdf.byteLength).toBeGreaterThan(0);
     expect(result.atsScore).toBe(90);
+    // The parsed JD is carried through on the result (for targeted refinement).
+    expect(result.parsedJD).toEqual({ title: 'Engineer', requiredSkills: [] });
     // The result records which prompt versions produced it (registry snapshot).
     expect(result.promptVersions['parse-jd']).toMatch(/^v\d+$/);
   });

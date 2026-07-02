@@ -267,6 +267,7 @@ export async function runGenerationPipeline(
     templateId,
     pdf,
     usage,
+    parsedJD,
     // Record which prompt versions ACTUALLY produced this result. When a saved
     // profile supplied a pre-parsed background, parse_background didn't run, so
     // it's excluded — otherwise the attribution would falsely credit a prompt

@@ -7,6 +7,7 @@
  */
 
 import type { ResumeData } from '@/lib/validation/schema';
+import type { ParsedJD } from '@/lib/agent/jd-parser';
 import type { PipelineStep } from '@/server/errors/AppError';
 import type { Logger } from '@/server/log/logger';
 import type { BillingMeter } from '@/server/billing/meter';
@@ -68,6 +69,11 @@ export interface GenerateResult {
   templateId: string;
   pdf: Uint8Array;
   usage: UsageResult;
+  /**
+   * The parsed job description that drove this generation. Persisted on the
+   * result so a targeted-refinement pass can reuse it without re-parsing the JD.
+   */
+  parsedJD: ParsedJD;
   /**
    * Snapshot of the prompt version used by each agent step that produced this
    * result (from the prompt registry). Persisted on the job so a stored resume
