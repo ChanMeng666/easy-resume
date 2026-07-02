@@ -550,6 +550,7 @@ DATABASE_URL=
 
 # AI
 OPENAI_API_KEY=            # required for the generation pipeline
+JOB_CONCURRENCY=2          # optional: max concurrently executing v1 background jobs
 AI_MODEL_EXTRACT=gpt-4o-mini   # optional: cheap read/score tier
 AI_MODEL_REASON=gpt-4o         # optional: generation/quality tier
 AI_TELEMETRY_ENABLED=false     # optional: emit OpenTelemetry spans (Langfuse)
