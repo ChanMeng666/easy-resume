@@ -12,25 +12,36 @@ import type { Caller } from '@/server/core/pipeline.types';
  * The background run is injected as a fake so we assert scheduling, not the LLM.
  */
 
-// reserveJob is mocked per-test to drive each reservation mode; the other persist
-// exports are unused here (runJob, which calls them, is never executed).
+// reserveJob is mocked per-test to drive each reservation mode; finalizeSucceededJob
+// / failJob are hoisted so the runJob dispatch tests can assert the terminal write.
 const reserveJob = vi.fn();
+const finalizeSucceededJob = vi.fn();
+const failJob = vi.fn();
 vi.mock('@/server/jobs/persist', () => ({
   reserveJob: (...a: unknown[]) => reserveJob(...a),
-  finalizeSucceededJob: vi.fn(),
-  failJob: vi.fn(),
+  finalizeSucceededJob: (...a: unknown[]) => finalizeSucceededJob(...a),
+  failJob: (...a: unknown[]) => failJob(...a),
 }));
 
-// Keep the runner's pipeline/deps imports inert so the test loads no LLM wiring.
+// Keep the runner's pipeline/refine/deps imports inert so the test loads no LLM
+// wiring — runJob dispatch is asserted via injected RunJobDeps, not real runs.
 vi.mock('@/server/core/pipeline', () => ({ runGenerationPipeline: vi.fn() }));
-vi.mock('@/server/core/deps', () => ({ defaultDeps: vi.fn() }));
+vi.mock('@/server/core/refine', () => ({ runRefinementPipeline: vi.fn() }));
+vi.mock('@/server/jobs/refineArtifacts', () => ({ buildRefineArtifacts: vi.fn() }));
+vi.mock('@/server/core/deps', () => ({ defaultDeps: vi.fn(), defaultRefineDeps: vi.fn() }));
 
-let fakeDb: { select: (...args: unknown[]) => unknown };
+let fakeDb: {
+  select: (...args: unknown[]) => unknown;
+  update?: (...args: unknown[]) => unknown;
+};
 vi.mock('@/lib/db/client', () => ({
-  db: { select: (...a: unknown[]) => fakeDb.select(...a) },
+  db: {
+    select: (...a: unknown[]) => fakeDb.select(...a),
+    update: (...a: unknown[]) => fakeDb.update!(...a),
+  },
 }));
 
-const { createJob } = await import('./runner');
+const { createJob, runJob, isRefineInput } = await import('./runner');
 const { ConflictError } = await import('@/server/errors/AppError');
 
 const caller: Caller = { userId: 'u1', via: 'api_key', apiKeyId: 'k1' };
@@ -44,6 +55,23 @@ function selectReturning(rows: unknown[]) {
   chain.limit = () => Promise.resolve(rows);
   return () => chain;
 }
+
+/** db.update().set().where() -> resolves (the awaited status flip) */
+function updateResolving() {
+  const chain: Record<string, unknown> = {};
+  chain.set = () => chain;
+  chain.where = () => Promise.resolve(undefined);
+  return () => chain;
+}
+
+const refineInput = {
+  jobDescription: 'jd',
+  background: 'bg',
+  templateId: 'two-column',
+  refineOfJobId: '11111111-1111-4111-8111-111111111111',
+  feedback: 'tighten the summary',
+  scope: 'resume' as const,
+};
 
 describe('createJob (reserveJob adapter)', () => {
   beforeEach(() => vi.clearAllMocks());
@@ -104,5 +132,82 @@ describe('createJob (reserveJob adapter)', () => {
 
     await expect(createJob(caller, input, 'key-1', run)).rejects.toBeInstanceOf(ConflictError);
     expect(run).not.toHaveBeenCalled();
+  });
+
+  it('refine input: forwards the parent id so the row joins the version chain', async () => {
+    reserveJob.mockResolvedValue({ mode: 'created', jobId: 'job_refine' });
+    fakeDb = { select: selectReturning([{ id: 'job_refine', status: 'queued' }]) };
+
+    await createJob(caller, refineInput, 'key-1', vi.fn());
+
+    expect(reserveJob).toHaveBeenCalledWith(
+      expect.objectContaining({ parentJobId: refineInput.refineOfJobId, initialStatus: 'queued' })
+    );
+  });
+});
+
+describe('isRefineInput', () => {
+  it('true when refineOfJobId is a non-empty string', () => {
+    expect(isRefineInput(refineInput)).toBe(true);
+  });
+
+  it('false for a plain generation input', () => {
+    expect(isRefineInput({ jobDescription: 'jd', background: 'bg' })).toBe(false);
+  });
+
+  it('false for an empty / blank refineOfJobId', () => {
+    expect(isRefineInput({ ...refineInput, refineOfJobId: '' } as never)).toBe(false);
+    expect(isRefineInput({ ...refineInput, refineOfJobId: '   ' } as never)).toBe(false);
+  });
+
+  it('false for garbage', () => {
+    expect(isRefineInput({} as never)).toBe(false);
+    expect(isRefineInput({ refineOfJobId: 123 } as never)).toBe(false);
+    expect(isRefineInput(null as never)).toBe(false);
+  });
+});
+
+describe('runJob dispatch', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('refine-shaped input → refine path (not generation)', async () => {
+    const job = { id: 'job_refine', input: refineInput };
+    fakeDb = { select: selectReturning([job]), update: updateResolving() };
+    const runGeneration = vi.fn();
+    const runRefine = vi.fn().mockResolvedValue({ usage: { charged: false } });
+
+    await runJob('job_refine', caller, { runGeneration, runRefine });
+
+    expect(runRefine).toHaveBeenCalledWith(job, caller);
+    expect(runGeneration).not.toHaveBeenCalled();
+    expect(finalizeSucceededJob).toHaveBeenCalledWith(
+      expect.objectContaining({ jobId: 'job_refine', input: refineInput })
+    );
+    expect(failJob).not.toHaveBeenCalled();
+  });
+
+  it('generation-shaped input → generation path (not refine)', async () => {
+    const job = { id: 'job_gen', input: { jobDescription: 'jd', background: 'bg' } };
+    fakeDb = { select: selectReturning([job]), update: updateResolving() };
+    const runGeneration = vi.fn().mockResolvedValue({ usage: { charged: true } });
+    const runRefine = vi.fn();
+
+    await runJob('job_gen', caller, { runGeneration, runRefine });
+
+    expect(runGeneration).toHaveBeenCalledWith(job, caller);
+    expect(runRefine).not.toHaveBeenCalled();
+    expect(finalizeSucceededJob).toHaveBeenCalled();
+  });
+
+  it('a failing run marks the job failed (free) and never finalizes', async () => {
+    const job = { id: 'job_refine', input: refineInput };
+    fakeDb = { select: selectReturning([job]), update: updateResolving() };
+    const runGeneration = vi.fn();
+    const runRefine = vi.fn().mockRejectedValue(new Error('parent gone'));
+
+    await runJob('job_refine', caller, { runGeneration, runRefine });
+
+    expect(finalizeSucceededJob).not.toHaveBeenCalled();
+    expect(failJob).toHaveBeenCalled();
   });
 });
