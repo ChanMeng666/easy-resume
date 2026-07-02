@@ -28,13 +28,19 @@ export const basicsSchema = z.object({
 });
 
 // Education schema
+// Dates, locations, employment type, and project descriptions follow the same
+// principle as contact fields: the AI must NEVER invent them. When the user's
+// background doesn't state one, the parser outputs an empty string and the Typst
+// generators degrade gracefully (formatDateRange skips empty sides; empty cells
+// render blank). Requiring min(1) here contradicted that rule — a truthful ""
+// from the model failed validation and killed the whole generation.
 export const educationSchema = z.object({
   institution: z.string().min(1, 'Institution is required'),
   area: z.string().min(1, 'Field of study is required'),
   studyType: z.string().min(1, 'Degree type is required'),
-  startDate: z.string().min(1, 'Start date is required'),
-  endDate: z.string().min(1, 'End date is required'),
-  location: z.string().min(1, 'Location is required'),
+  startDate: z.string(),
+  endDate: z.string(),
+  location: z.string(),
   gpa: z.string().optional(),
   note: z.string().optional(),
 });
@@ -43,17 +49,17 @@ export const educationSchema = z.object({
 export const workSchema = z.object({
   company: z.string().min(1, 'Company name is required'),
   position: z.string().min(1, 'Position is required'),
-  startDate: z.string().min(1, 'Start date is required'),
-  endDate: z.string().min(1, 'End date is required'),
-  location: z.string().min(1, 'Location is required'),
-  type: z.string().min(1, 'Employment type is required'),
+  startDate: z.string(),
+  endDate: z.string(),
+  location: z.string(),
+  type: z.string(),
   highlights: z.array(z.string()),
 });
 
 // Project schema
 export const projectSchema = z.object({
   name: z.string().min(1, 'Project name is required'),
-  description: z.string().min(1, 'Description is required'),
+  description: z.string(),
   highlights: z.array(z.string()),
   url: z.string().url('Must be a valid URL').optional().or(z.literal('')),
 });

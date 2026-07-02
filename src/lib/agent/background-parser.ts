@@ -30,6 +30,7 @@ export async function parseBackground(
 ABSOLUTE RULE — NEVER FABRICATE:
 - Use ONLY information the candidate actually provided. Do NOT invent employers, job titles, dates, degrees, institutions, certifications, metrics, or contact details.
 - If a contact field (email, phone, location) is not given, leave it as an empty string "". NEVER use placeholders like "+1 (555) 000-0000" or guessed emails.
+- The same applies to dates, locations, employment types, and project descriptions: when the candidate did not state one (e.g. no start date for a degree, no city for a job), output an empty string "" for that field. NEVER guess or infer a plausible value.
 - Do NOT invent numbers or quantified results. Only include metrics the candidate stated.
 - If the text is brief, keep the resume brief. Do NOT pad it with plausible-sounding but unstated experience, skills, or projects.
 
