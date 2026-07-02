@@ -30,7 +30,11 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        # --legacy-peer-deps matches the Dockerfile's npm ci: @stackframe/stack
+        # pins a react-18-era lucide-react, and the lockfile is resolved under
+        # this flag. A plain npm ci re-resolves peers strictly and demands a
+        # different esbuild tree than the lockfile records.
+        run: npm ci --legacy-peer-deps
 
       - name: Unit tests
         run: npm test
