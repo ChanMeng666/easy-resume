@@ -15,12 +15,37 @@ import { eq } from 'drizzle-orm';
 import { db } from '@/lib/db/client';
 import { generationJobs, type GenerationJob } from '@/lib/db/schema';
 import { runGenerationPipeline } from '@/server/core/pipeline';
-import { defaultDeps } from '@/server/core/deps';
-import { ConflictError } from '@/server/errors/AppError';
+import { runRefinementPipeline, type RefineScope } from '@/server/core/refine';
+import { defaultDeps, defaultRefineDeps } from '@/server/core/deps';
+import { buildRefineArtifacts } from '@/server/jobs/refineArtifacts';
+import { ConflictError, NotFoundError } from '@/server/errors/AppError';
 import { toErrorEnvelope } from '@/server/errors/envelope';
 import { createLogger } from '@/server/log/logger';
 import { reserveJob, finalizeSucceededJob, failJob } from '@/server/jobs/persist';
-import type { Caller, GenerateInput } from '@/server/core/pipeline.types';
+import type { Caller, GenerateInput, GenerateResult } from '@/server/core/pipeline.types';
+
+/**
+ * Stored-input shape for a refine job (mirrors the row `/api/refine` reserves): a
+ * generation input plus refine provenance. Self-describing so a refine-of-refine
+ * carries full context and `deriveJobTitle` still works off the inherited JD.
+ */
+export type RefineJobInput = GenerateInput & {
+  refineOfJobId: string;
+  feedback: string;
+  scope: RefineScope;
+};
+
+/**
+ * True when a stored job input carries refine provenance (a non-empty
+ * `refineOfJobId`), meaning `runJob` must take the refine path instead of the
+ * generation pipeline. Pure — safe to unit test and to call on any stored input.
+ */
+export function isRefineInput(input: GenerateInput): input is RefineJobInput {
+  const candidate = input as Partial<RefineJobInput> | null | undefined;
+  return (
+    typeof candidate?.refineOfJobId === 'string' && candidate.refineOfJobId.trim().length > 0
+  );
+}
 
 /** Signature of the background runner, injectable so createJob is unit-testable. */
 type RunFn = (jobId: string, caller: Caller) => void;
@@ -44,7 +69,17 @@ export async function createJob(
   idempotencyKey: string,
   run: RunFn = runJob
 ): Promise<GenerationJob> {
-  const reservation = await reserveJob({ caller, input, idempotencyKey, initialStatus: 'queued' });
+  // A refine job records its parent so the reserved row joins the version chain
+  // (reserveJob owner-scopes the parent and silently ignores a missing/cross-user
+  // one). A plain generation has no parent link.
+  const parentJobId = isRefineInput(input) ? input.refineOfJobId : undefined;
+  const reservation = await reserveJob({
+    caller,
+    input,
+    idempotencyKey,
+    initialStatus: 'queued',
+    parentJobId,
+  });
 
   // Cross-user key reuse: refuse rather than resume/leak another caller's job.
   if (reservation.mode === 'conflict') {
@@ -71,8 +106,81 @@ async function getJob(jobId: string): Promise<GenerationJob> {
   return job;
 }
 
+/**
+ * How `runJob` executes a claimed job, split by input shape. Injectable so a test
+ * can assert the dispatch (generation vs refine) without running a real pipeline
+ * or loading the parent from the DB — the same seam pattern `createJob` uses for
+ * its background `run`.
+ */
+export interface RunJobDeps {
+  runGeneration: (job: GenerationJob, caller: Caller) => Promise<GenerateResult>;
+  runRefine: (job: GenerationJob, caller: Caller) => Promise<GenerateResult>;
+}
+
+const defaultRunJobDeps: RunJobDeps = {
+  runGeneration: (job, caller) =>
+    runGenerationPipeline(
+      job.input,
+      caller,
+      defaultDeps({ requestId: job.id }),
+      // Charge keyed on the jobId (per-user, per-job) — not the client key — so a
+      // deleted job's key can never replay an old charge, and a cross-user key
+      // can never see another caller's usage txn.
+      { idempotencyKey: job.id }
+    ),
+  runRefine: runRefineJob,
+};
+
+/**
+ * Load and validate the parent generation a refine job builds on (owner-scoped,
+ * succeeded, has a result — the same gate the web refine route applies), then map
+ * it to the artifacts the refinement core consumes. A parent that was deleted or
+ * invalidated between job creation and run throws `NotFoundError`, so the job
+ * fails with a clean envelope (the failure is free and its key reclaimable).
+ */
+async function loadRefineContext(input: RefineJobInput, caller: Caller) {
+  const [parent] = await db
+    .select({
+      userId: generationJobs.userId,
+      status: generationJobs.status,
+      input: generationJobs.input,
+      result: generationJobs.result,
+    })
+    .from(generationJobs)
+    .where(eq(generationJobs.id, input.refineOfJobId))
+    .limit(1);
+
+  // Hide existence on miss / cross-user / not-ready — all map to NotFound.
+  if (!parent || parent.userId !== caller.userId || parent.status !== 'succeeded' || !parent.result) {
+    throw new NotFoundError('Resume not found');
+  }
+
+  const parentInputObj = (parent.input ?? {}) as { jobDescription?: string; background?: string };
+  const parentResult = parent.result as Parameters<typeof buildRefineArtifacts>[1];
+  // Throws ValidationError when the parent has no resume data.
+  return buildRefineArtifacts(parentInputObj, parentResult);
+}
+
+/** Execute the refine path for a refine-shaped job. */
+async function runRefineJob(job: GenerationJob, caller: Caller): Promise<GenerateResult> {
+  const input = job.input as RefineJobInput;
+  const artifacts = await loadRefineContext(input, caller);
+  return runRefinementPipeline(
+    artifacts,
+    { feedback: input.feedback, scope: input.scope },
+    caller,
+    defaultRefineDeps({ requestId: job.id }),
+    // Charge (when enabled) keyed on the jobId, same rationale as generation.
+    { idempotencyKey: job.id }
+  );
+}
+
 /** Execute a job to completion, persisting status/result/error transitions. */
-async function runJob(jobId: string, caller: Caller): Promise<void> {
+export async function runJob(
+  jobId: string,
+  caller: Caller,
+  deps: RunJobDeps = defaultRunJobDeps
+): Promise<void> {
   const log = createLogger({ jobId, route: 'v1.jobs', userId: caller.userId });
   try {
     await db
@@ -87,15 +195,11 @@ async function runJob(jobId: string, caller: Caller): Promise<void> {
       .limit(1);
     if (!job) return;
 
-    const result = await runGenerationPipeline(
-      job.input,
-      caller,
-      defaultDeps({ requestId: jobId }),
-      // Charge keyed on the jobId (per-user, per-job) — not the client key — so a
-      // deleted job's key can never replay an old charge, and a cross-user key
-      // can never see another caller's usage txn.
-      { idempotencyKey: jobId }
-    );
+    // A refine-shaped input runs the targeted refinement core; everything else is
+    // a full generation. Both return the same GenerateResult shape, so the
+    // terminal write below is identical.
+    const refine = isRefineInput(job.input);
+    const result = refine ? await deps.runRefine(job, caller) : await deps.runGeneration(job, caller);
 
     // Shared terminal write (identical row shape to the web SSE path): sets the
     // succeeded status/result/title/charged/pdfUrl/profileId AND uploads the PDF
@@ -103,7 +207,7 @@ async function runJob(jobId: string, caller: Caller): Promise<void> {
     // failed; the stale-job sweeper / a later poll reconciles a stuck row.
     await finalizeSucceededJob({ jobId, input: job.input, result, logger: log });
 
-    log.info('job.succeeded', { charged: result.usage.charged });
+    log.info('job.succeeded', { charged: result.usage.charged, mode: refine ? 'refine' : 'generate' });
   } catch (err) {
     const envelope = toErrorEnvelope(err, jobId);
     log.error('job.failed', { code: envelope.error.code, step: envelope.error.step }, err);
