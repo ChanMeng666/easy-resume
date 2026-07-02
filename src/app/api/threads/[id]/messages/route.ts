@@ -91,6 +91,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   let templateId: string;
   let history: HistoryMessage[];
   let baseResume: ResumeData;
+  // The thread's current working cover letter ('' when the anchored resume has
+  // none), seeded into the agent so a letter edit builds on prior letter edits.
+  let baseCoverLetter = '';
+  let baseCoverLetterTypst = '';
   // The thread's max sequence at load time — passed to appendTurn for optimistic
   // concurrency so a turn racing another on the same thread can't silently drop edits.
   let baseSeq = 0;
@@ -107,6 +111,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const snapshot = await latestResumeSnapshot(caller.userId, threadId);
     baseResume = snapshot.resumeData;
     templateId = snapshot.templateId;
+    baseCoverLetter = snapshot.coverLetter ?? '';
+    baseCoverLetterTypst = snapshot.coverLetterTypst ?? '';
     const prior = await loadHistory(caller.userId, threadId);
     // Replay only user + assistant TEXT turns (the live resume is injected fresh).
     history = prior
@@ -130,21 +136,34 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
       try {
         const result = await runEditTurn(
-          { baseResume, templateId, history, userMessage, signal: request.signal },
+          { baseResume, templateId, baseCoverLetter, baseCoverLetterTypst, history, userMessage, signal: request.signal },
           defaultEditAgentDeps({ onEvent: (e) => safeSend(e), logger: log })
         );
 
         // Persist the turn (free, owner-scoped). The assistant message carries the
-        // resume snapshot ONLY when something changed, so a reopen restores edits.
+        // resume snapshot when the resume OR the cover letter changed, so a reopen
+        // restores both edits. The snapshot always records the CURRENT working
+        // letter (not only when it changed this turn) so a resume-only turn can't
+        // drop a letter edited in a prior turn.
         const messages: TurnMessageInput[] = [{ role: 'user', content: userMessage }];
         for (const call of result.toolCalls) {
           messages.push({ role: 'tool', content: '', toolName: call.toolName, toolArgs: call.args, toolResult: call.result });
         }
+        const changedSomething = result.changed || result.coverLetterChanged;
         messages.push({
           role: 'assistant',
           content: result.assistantText,
-          toolResult: result.changed
-            ? { resumeData: result.resumeData, typstCode: result.typstCode, templateId }
+          toolResult: changedSomething
+            ? {
+                resumeData: result.resumeData,
+                typstCode: result.typstCode,
+                templateId,
+                // Include the letter fields only when a letter exists, so a
+                // resume-only thread keeps writing the pre-letter snapshot shape.
+                ...(result.coverLetter
+                  ? { coverLetter: result.coverLetter, coverLetterTypst: result.coverLetterTypst }
+                  : {}),
+              }
             : null,
         });
 

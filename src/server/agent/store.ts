@@ -25,6 +25,11 @@ export interface ResumeSnapshot {
   resumeData: ResumeData;
   typstCode: string;
   templateId: string;
+  /** The working cover letter body ('' / omitted when the resume has no letter).
+   * Optional so old snapshots written before the letter tools still validate. */
+  coverLetter?: string;
+  /** The rendered Typst for `coverLetter` (omitted when there is no letter). */
+  coverLetterTypst?: string;
 }
 
 /** Lightweight row for the thread list view. */
@@ -73,6 +78,8 @@ type JobResult = {
   resumeData?: ResumeData;
   typstCode?: string;
   templateId?: string;
+  coverLetter?: string;
+  coverLetterTypst?: string;
 };
 
 const MAX_TITLE_LEN = 80;
@@ -101,11 +108,15 @@ const MAX_TURN_MESSAGES = 64;
 const MAX_MESSAGE_CONTENT = 100_000;
 const MAX_TOOL_JSON_BYTES = 20_000;
 const MAX_TYPST_SNAPSHOT = 200_000;
+// Whole-letter cap, matching manualVersionCreateSchema.coverLetter (10k chars).
+const MAX_COVER_LETTER_SNAPSHOT = 10_000;
 // Whole-snapshot JSON cap: resumeData (≤60KB by the manual-version bound) +
-// typstCode (≤MAX_TYPST_SNAPSHOT) + a small templateId, with headroom. Caps the
-// entire toolResult so the snapshot branch can't be a hole for unbounded JSON.
-const MAX_SNAPSHOT_JSON_BYTES = 280_000;
-const SNAPSHOT_KEYS = new Set(['resumeData', 'typstCode', 'templateId']);
+// typstCode (≤MAX_TYPST_SNAPSHOT) + a small templateId, PLUS the optional cover
+// letter (≤10KB) and its Typst (≤MAX_TYPST_SNAPSHOT), with headroom. Bumped by
+// ~220KB over the resume-only cap to cover the letter fields. Caps the entire
+// toolResult so the snapshot branch can't be a hole for unbounded JSON.
+const MAX_SNAPSHOT_JSON_BYTES = 500_000;
+const SNAPSHOT_KEYS = new Set(['resumeData', 'typstCode', 'templateId', 'coverLetter', 'coverLetterTypst']);
 
 /** UTF-8 byte length of a value's JSON (not its UTF-16 char count, which would
  * let multi-byte text — e.g. CJK — slip past a byte cap). Non-serializable values
@@ -153,6 +164,19 @@ export function assertTurnBounds(messages: TurnMessageInput[]): void {
       });
       if (!parsed.success) {
         throw new ValidationError('Resume snapshot is invalid or too large');
+      }
+      // Optional cover-letter fields: when present, the body is bounded like a
+      // manual version's letter and its Typst like the resume Typst. Absence is
+      // fine (backward compat with pre-letter snapshots).
+      if (snap.coverLetter !== undefined) {
+        if (typeof snap.coverLetter !== 'string' || snap.coverLetter.length > MAX_COVER_LETTER_SNAPSHOT) {
+          throw new ValidationError('Cover letter snapshot is invalid or too large');
+        }
+      }
+      if (snap.coverLetterTypst !== undefined) {
+        if (typeof snap.coverLetterTypst !== 'string' || snap.coverLetterTypst.length > MAX_TYPST_SNAPSHOT) {
+          throw new ValidationError('Cover letter snapshot is invalid or too large');
+        }
       }
       if (jsonByteLen(snap) > MAX_SNAPSHOT_JSON_BYTES) {
         throw new ValidationError('Resume snapshot is too large');
@@ -202,12 +226,21 @@ export function pickLatestSnapshot(
     const parsed = resumeDataSchema.safeParse(snap.resumeData);
     if (!parsed.success) continue;
     if (!best || m.sequenceNum > best.seq) {
+      // Carry the letter forward from the snapshot when it recorded one; otherwise
+      // fall back to the anchor's letter. A snapshot that changed only the resume
+      // (letter fields absent) thus keeps the current letter rather than dropping
+      // it, and an old (pre-letter) snapshot inherits the anchor letter.
+      const coverLetter = typeof snap.coverLetter === 'string' ? snap.coverLetter : fallback.coverLetter;
+      const coverLetterTypst =
+        typeof snap.coverLetterTypst === 'string' ? snap.coverLetterTypst : fallback.coverLetterTypst;
       best = {
         seq: m.sequenceNum,
         snap: {
           resumeData: parsed.data,
           typstCode: snap.typstCode,
           templateId: typeof snap.templateId === 'string' ? snap.templateId : fallback.templateId,
+          coverLetter,
+          coverLetterTypst,
         },
       };
     }
@@ -419,6 +452,11 @@ export async function latestResumeSnapshot(userId: string, threadId: string): Pr
     resumeData: parsedBaseline.data,
     typstCode: result.typstCode,
     templateId: typeof result.templateId === 'string' ? result.templateId : 'two-column',
+    // The anchor job's cover letter (from its pipeline result) seeds the baseline;
+    // '' when the resume was generated without one. Snapshots that don't carry a
+    // letter fall back to this in pickLatestSnapshot.
+    coverLetter: typeof result.coverLetter === 'string' ? result.coverLetter : '',
+    coverLetterTypst: typeof result.coverLetterTypst === 'string' ? result.coverLetterTypst : '',
   };
   // Query the most recent SNAPSHOT-BEARING assistant messages directly
   // (descending). The `toolResult IS NOT NULL` filter excludes text-only assistant

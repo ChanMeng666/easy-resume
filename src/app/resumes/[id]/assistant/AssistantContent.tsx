@@ -46,6 +46,9 @@ function toolLabel(name: string): string {
     removeSkillCategory: 'Removing skill category',
     reorderSkills: 'Reordering skills',
     previewResume: 'Reviewing the resume',
+    rewriteCoverLetterParagraph: 'Editing cover letter',
+    setCoverLetterText: 'Rewriting cover letter',
+    previewCoverLetter: 'Reviewing the cover letter',
   };
   return map[name] ?? name;
 }
@@ -74,6 +77,14 @@ export function AssistantContent({ jobId }: { jobId: string }) {
   const [committedTypst, setCommittedTypst] = useState(''); // last successfully-saved render (revert target)
   const [resumeData, setResumeData] = useState<ResumeData | null>(null); // last SAVED resume (what "Save as version" sends)
   const [templateId, setTemplateId] = useState('two-column');
+  // Cover letter — tracked INDEPENDENTLY of the resume (its own draft/commit/revert),
+  // mirroring the resume state above. `coverLetter` is the last SAVED letter body
+  // (what "Save as version" sends); '' when the resume has no letter.
+  const [coverLetter, setCoverLetter] = useState('');
+  const [letterTypst, setLetterTypst] = useState(''); // live letter preview
+  const [committedLetterTypst, setCommittedLetterTypst] = useState(''); // revert target
+  const [letterDirty, setLetterDirty] = useState(false); // letter changed this session → include in save
+  const [preview, setPreview] = useState<'resume' | 'letter'>('resume');
   const [input, setInput] = useState('');
   const [phase, setPhase] = useState<'init' | 'ready' | 'error'>('init');
   const [initError, setInitError] = useState<string | null>(null);
@@ -140,6 +151,9 @@ export function AssistantContent({ jobId }: { jobId: string }) {
           setCommittedTypst(snapshot.typstCode);
           setResumeData(snapshot.resumeData);
           setTemplateId(snapshot.templateId ?? 'two-column');
+          setCoverLetter(snapshot.coverLetter ?? '');
+          setLetterTypst(snapshot.coverLetterTypst ?? '');
+          setCommittedLetterTypst(snapshot.coverLetterTypst ?? '');
         } else {
           setUnavailable(true);
         }
@@ -182,8 +196,12 @@ export function AssistantContent({ jobId }: { jobId: string }) {
       // turn persists ('saved'). A failed/aborted turn reverts the preview to the
       // last committed render and never marks the resume saveable.
       const revertTypst = committedTypst;
+      const revertLetterTypst = committedLetterTypst;
       let draftResume: ResumeData | null = null;
       let draftTypst: string | null = null;
+      // Cover letter draft (independent of the resume draft above).
+      let draftCoverLetter: string | null = null;
+      let draftLetterTypst: string | null = null;
       let savedThisTurn = false;
 
       try {
@@ -251,6 +269,15 @@ export function AssistantContent({ jobId }: { jobId: string }) {
                 draftResume = (ev.resumeData as ResumeData) ?? draftResume;
                 if (typeof ev.templateId === 'string') setTemplateId(ev.templateId);
                 setTypstCode(draftTypst);
+                setPreview('resume');
+                break;
+              case 'cover-letter':
+                // Live letter draft (independent of the resume). Surface it by
+                // switching the preview to the letter so the edit is visible.
+                draftLetterTypst = String(ev.coverLetterTypst ?? '');
+                draftCoverLetter = String(ev.coverLetter ?? '');
+                setLetterTypst(draftLetterTypst);
+                setPreview('letter');
                 break;
               case 'saved':
                 savedThisTurn = true;
@@ -283,7 +310,8 @@ export function AssistantContent({ jobId }: { jobId: string }) {
       } finally {
         // Commit the streamed edits ONLY if the turn persisted ('saved'); otherwise
         // revert the live preview to the last committed render and leave the
-        // saveable resume untouched (a failed/aborted turn is never saveable).
+        // saveable resume/letter untouched (a failed/aborted turn is never saveable).
+        // Resume and letter are committed/reverted independently.
         if (savedThisTurn && draftResume && draftTypst !== null) {
           setResumeData(draftResume);
           setCommittedTypst(draftTypst);
@@ -291,11 +319,19 @@ export function AssistantContent({ jobId }: { jobId: string }) {
         } else if (draftTypst !== null) {
           setTypstCode(revertTypst);
         }
+        if (savedThisTurn && draftCoverLetter !== null && draftLetterTypst !== null) {
+          setCoverLetter(draftCoverLetter);
+          setCommittedLetterTypst(draftLetterTypst);
+          setLetterDirty(true);
+          setDirty(true);
+        } else if (draftLetterTypst !== null) {
+          setLetterTypst(revertLetterTypst);
+        }
         setStreaming(false);
         abortRef.current = null;
       }
     },
-    [threadId, streaming, unavailable, committedTypst]
+    [threadId, streaming, unavailable, committedTypst, committedLetterTypst]
   );
 
   const saveVersion = useCallback(async () => {
@@ -306,18 +342,26 @@ export function AssistantContent({ jobId }: { jobId: string }) {
       const res = await fetch(`/api/resumes/${jobId}/versions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ resumeData, templateId }),
+        // Include the edited cover letter only when it changed this session; the
+        // server regenerates its Typst (client Typst is never trusted) and carries
+        // the parent's letter forward untouched otherwise.
+        body: JSON.stringify({ resumeData, templateId, ...(letterDirty && coverLetter ? { coverLetter } : {}) }),
       });
       if (!res.ok) throw new Error('save failed');
       const { id } = await res.json();
       setSavedId(id);
       setDirty(false);
+      setLetterDirty(false);
     } catch {
       setTurnError('Could not save this as a new version. Please try again.');
     } finally {
       setSaving(false);
     }
-  }, [resumeData, saving, dirty, jobId, templateId]);
+  }, [resumeData, saving, dirty, jobId, templateId, letterDirty, coverLetter]);
+
+  // Show the Resume/Letter toggle only once the thread has a cover letter to show
+  // (either a saved one from the anchor/prior edits, or one drafted this session).
+  const hasLetter = Boolean(coverLetter || letterTypst);
 
   if (user === undefined || user === null) {
     return (
@@ -491,8 +535,26 @@ export function AssistantContent({ jobId }: { jobId: string }) {
 
             {/* Live PDF column */}
             <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <span className="proof-label">live preview</span>
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <span className="proof-label">live preview</span>
+                  {/* Resume / Letter toggle — only when the resume has a cover letter. */}
+                  {hasLetter && (
+                    <div className="inline-flex rounded-lg border-2 border-black overflow-hidden">
+                      {(['resume', 'letter'] as const).map((tab) => (
+                        <button
+                          key={tab}
+                          onClick={() => setPreview(tab)}
+                          className={`px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-[0.12em] transition-colors ${
+                            preview === tab ? 'bg-purple-600 text-white' : 'bg-white hover:bg-gray-100'
+                          } ${tab === 'letter' ? 'border-l-2 border-black' : ''}`}
+                        >
+                          {tab}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <Button
                   variant="outline"
                   size="sm"
@@ -505,7 +567,10 @@ export function AssistantContent({ jobId }: { jobId: string }) {
                 </Button>
               </div>
               <div className="rounded-xl border-2 border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] overflow-hidden">
-                <LivePdfPreview typstCode={typstCode} filename="resume" />
+                <LivePdfPreview
+                  typstCode={preview === 'letter' ? letterTypst : typstCode}
+                  filename={preview === 'letter' ? 'cover-letter' : 'resume'}
+                />
               </div>
             </div>
           </div>
