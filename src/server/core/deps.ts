@@ -19,10 +19,16 @@ import { getTemplateById } from '@/templates/registry';
 import { generateTypstCode } from '@/lib/typst/generator';
 import { generateCoverLetterTypst } from '@/lib/typst/cover-letter';
 import { compileTypstToPdf } from './compile';
+import { withJdParseCache } from './jdParseCache';
 import { billingMeter } from '@/server/billing/meter';
 import { createLogger } from '@/server/log/logger';
 import type { PipelineDeps, ProgressEvent } from './pipeline.types';
 import type { RefineDeps } from './refine';
+
+// Process-wide cached JD parser shared by BOTH pipelines: identical postings
+// (agents re-generating against one JD; refines of old jobs without a persisted
+// parsedJD) parse once per model/prompt-version instead of per request.
+const cachedParseJobDescription = withJdParseCache(parseJobDescription);
 
 /** Build the real pipeline dependencies, optionally wiring a progress sink. */
 export function defaultDeps(opts?: {
@@ -31,7 +37,7 @@ export function defaultDeps(opts?: {
 }): PipelineDeps {
   return {
     agent: {
-      parseJobDescription,
+      parseJobDescription: cachedParseJobDescription,
       parseBackground,
       analyzeMatch,
       tailorResume,
@@ -59,7 +65,7 @@ export function defaultRefineDeps(opts?: {
 }): RefineDeps {
   return {
     agent: {
-      parseJobDescription,
+      parseJobDescription: cachedParseJobDescription,
       reviseResume,
       reviseCoverLetter,
       scoreATS: scoreATSDeterministic,
