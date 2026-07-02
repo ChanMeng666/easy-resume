@@ -10,7 +10,7 @@ import { parseJobDescription } from '@/lib/agent/jd-parser';
 import { parseBackground } from '@/lib/agent/background-parser';
 import { analyzeMatch } from '@/lib/agent/matching-engine';
 import { tailorResume } from '@/lib/agent/resume-tailor';
-import { scoreATS } from '@/lib/agent/ats-scorer';
+import { scoreATSDeterministic } from '@/lib/agent/ats-scorer';
 import { generateCoverLetter } from '@/lib/agent/cover-letter';
 import { selectTemplate } from '@/lib/agent/template-selector';
 import { getTemplateById } from '@/templates/registry';
@@ -32,7 +32,7 @@ export function defaultDeps(opts?: {
       parseBackground,
       analyzeMatch,
       tailorResume,
-      scoreATS,
+      scoreATS: scoreATSDeterministic,
       generateCoverLetter,
       selectTemplate,
     },

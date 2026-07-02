@@ -47,7 +47,10 @@ function makeDeps(overrides: Partial<PipelineDeps['agent']> & { compile?: Pipeli
       .fn()
       .mockResolvedValue({ overallScore: 80, skillMatch: { matched: ['Rust'], missing: [] } }),
     tailorResume: vi.fn().mockResolvedValue({ basics: { name: 'Jane' } }),
-    scoreATS: vi.fn().mockResolvedValue({ overallScore: 90 }),
+    // Deterministic (synchronous) ATS scorer: returns the coverage-shaped result.
+    scoreATS: vi
+      .fn()
+      .mockReturnValue({ overallScore: 90, keywords: { found: [], missing: [], score: 90 } }),
     generateCoverLetter: vi.fn().mockResolvedValue('Dear Hiring Manager, ...'),
     selectTemplate: vi.fn().mockReturnValue('two-column'),
     ...overrides,

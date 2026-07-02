@@ -21,7 +21,6 @@ export const PROMPT_FUNCTION_IDS = [
   'parse-background',
   'analyze-match',
   'tailor-resume',
-  'score-ats',
   'cover-letter',
   // Conversational edit agent (P2-1): the system prompt that drives the
   // tool-calling resume editor.
@@ -40,7 +39,6 @@ export const PROMPT_VERSIONS: Record<PromptFunctionId, string> = {
   'parse-background': 'v1',
   'analyze-match': 'v1',
   'tailor-resume': 'v1',
-  'score-ats': 'v1',
   'cover-letter': 'v1',
   'edit-agent': 'v1',
 };

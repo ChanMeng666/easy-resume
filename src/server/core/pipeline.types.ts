@@ -87,7 +87,7 @@ export interface PipelineDeps {
     parseBackground: typeof import('@/lib/agent/background-parser').parseBackground;
     analyzeMatch: typeof import('@/lib/agent/matching-engine').analyzeMatch;
     tailorResume: typeof import('@/lib/agent/resume-tailor').tailorResume;
-    scoreATS: typeof import('@/lib/agent/ats-scorer').scoreATS;
+    scoreATS: typeof import('@/lib/agent/ats-scorer').scoreATSDeterministic;
     generateCoverLetter: typeof import('@/lib/agent/cover-letter').generateCoverLetter;
     selectTemplate: typeof import('@/lib/agent/template-selector').selectTemplate;
   };
