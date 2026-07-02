@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+
+    # Harmless placeholder values so `next build` can construct clients that read
+    # env at module init (e.g. Stack Auth) during static generation. No real
+    # secrets are needed: tests use DI fakes and the Typst binary is not required
+    # (the golden-set test self-skips when typst is absent).
+    env:
+      NEXT_PUBLIC_STACK_PROJECT_ID: a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d
+      NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY: ci-placeholder
+      STACK_SECRET_SERVER_KEY: ci-placeholder
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      # `next build` collects page data by importing route modules; the Neon and
+      # Stripe clients are constructed at module scope and only need a value to
+      # exist — nothing connects during the build.
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+      STRIPE_SECRET_KEY: sk_test_ci_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_ci_placeholder
+      OPENAI_API_KEY: sk-ci-placeholder
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        # --legacy-peer-deps matches the Dockerfile's npm ci: @stackframe/stack
+        # pins a react-18-era lucide-react, and the lockfile is resolved under
+        # this flag. A plain npm ci re-resolves peers strictly and demands a
+        # different esbuild tree than the lockfile records.
+        run: npm ci --legacy-peer-deps
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build

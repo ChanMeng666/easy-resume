@@ -10,7 +10,44 @@ env:
   IMAGE: ghcr.io/chanmeng666/easy-resume/web
 
 jobs:
+  # Verification gate: run the same checks as ci.yml before building/deploying.
+  # The build step is intentionally omitted here — it is already exercised by the
+  # Docker image build in build-and-push.
+  checks:
+    runs-on: ubuntu-latest
+
+    # Harmless placeholders for modules that read env at init (e.g. Stack Auth).
+    env:
+      NEXT_PUBLIC_STACK_PROJECT_ID: ci-placeholder
+      NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY: ci-placeholder
+      STACK_SECRET_SERVER_KEY: ci-placeholder
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        # --legacy-peer-deps matches the Docker build's npm ci (see ci.yml note).
+        run: npm ci --legacy-peer-deps
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
   build-and-push:
+    needs: checks
     runs-on: ubuntu-latest
     permissions:
       contents: read
