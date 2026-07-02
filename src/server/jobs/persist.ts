@@ -80,13 +80,15 @@ type WireResult = ReturnType<typeof toWireResult>;
  *    deleted, so a later key-reuse re-charges correctly).
  *  - `replay`: this key already produced a result — stream it, never re-run.
  *  - `in_progress`: a concurrent request owns the key — do not run a second time.
+ *    Carries the `jobId` of the in-flight row so a polling caller (the v1 job
+ *    runner) can hand its own row back; the web SSE path ignores it and 409s.
  *  - `conflict`: the key belongs to another user — refuse.
  */
 export type ReserveResult =
   | { mode: 'created'; jobId: string }
   | { mode: 'reclaimed'; jobId: string }
   | { mode: 'replay'; jobId: string; result: WireResult }
-  | { mode: 'in_progress' }
+  | { mode: 'in_progress'; jobId: string }
   | { mode: 'conflict' };
 
 export interface ReserveJobArgs {
@@ -100,6 +102,13 @@ export interface ReserveJobArgs {
    * generation still runs, just without a chain link).
    */
   parentJobId?: string;
+  /**
+   * Status a freshly-claimed (or reclaimed) row starts in. Defaults to
+   * `'running'` for the web SSE callers, which run the pipeline synchronously
+   * inside the request. The v1 job runner passes `'queued'`: its rows start
+   * queued and `runJob` flips them to `'running'` when the background run begins.
+   */
+  initialStatus?: 'queued' | 'running';
 }
 
 /**
@@ -159,7 +168,7 @@ export async function sweepStaleRunningJobs(logger?: Logger): Promise<void> {
  * win.
  */
 export async function reserveJob(args: ReserveJobArgs): Promise<ReserveResult> {
-  const { caller, input, idempotencyKey } = args;
+  const { caller, input, idempotencyKey, initialStatus = 'running' } = args;
   const { db } = await import('@/lib/db/client');
 
   // Reconcile abandoned jobs first, so a same-key row left `running` by a crash
@@ -187,10 +196,11 @@ export async function reserveJob(args: ReserveJobArgs): Promise<ReserveResult> {
     }
   }
 
-  // Claim the key with a fresh running row. Only one concurrent caller wins.
+  // Claim the key with a fresh row. Only one concurrent caller wins. The status
+  // is the caller's initialStatus (web: 'running'; v1 runner: 'queued').
   const [created] = await db
     .insert(generationJobs)
-    .values({ userId: caller.userId, status: 'running', input, idempotencyKey, parentJobId, rootJobId })
+    .values({ userId: caller.userId, status: initialStatus, input, idempotencyKey, parentJobId, rootJobId })
     .onConflictDoNothing({ target: generationJobs.idempotencyKey })
     .returning({ id: generationJobs.id });
   if (created) return { mode: 'created', jobId: created.id };
@@ -213,16 +223,17 @@ export async function reserveJob(args: ReserveJobArgs): Promise<ReserveResult> {
   }
   if (existing.status === 'failed') {
     // Atomically reclaim a failed attempt: only the request that flips it out of
-    // 'failed' runs, so two concurrent retries can't both deliver.
+    // 'failed' runs, so two concurrent retries can't both deliver. Reclaim means
+    // "re-run it", so the row (re)starts in the caller's initialStatus.
     const [reclaimed] = await db
       .update(generationJobs)
-      .set({ status: 'running', error: null, updatedAt: new Date() })
+      .set({ status: initialStatus, error: null, updatedAt: new Date() })
       .where(and(eq(generationJobs.id, existing.id), eq(generationJobs.status, 'failed')))
       .returning({ id: generationJobs.id });
     if (reclaimed) return { mode: 'reclaimed', jobId: reclaimed.id };
   }
   // queued / running (or someone else just reclaimed it): in flight.
-  return { mode: 'in_progress' };
+  return { mode: 'in_progress', jobId: existing.id };
 }
 
 /**

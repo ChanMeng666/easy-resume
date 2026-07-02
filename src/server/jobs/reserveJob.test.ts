@@ -74,7 +74,7 @@ describe('reserveJob', () => {
       update: updateReturning([]),
     };
     const r = await reserveJob({ caller, input, idempotencyKey: 'key-1' });
-    expect(r).toEqual({ mode: 'in_progress' });
+    expect(r).toEqual({ mode: 'in_progress', jobId: 'job_run' });
   });
 
   it('conflict: refuses when the key belongs to another user', async () => {
@@ -105,7 +105,65 @@ describe('reserveJob', () => {
       update: updateReturning([]), // conditional update matched nothing
     };
     const r = await reserveJob({ caller, input, idempotencyKey: 'key-1' });
-    expect(r).toEqual({ mode: 'in_progress' });
+    expect(r).toEqual({ mode: 'in_progress', jobId: 'job_failed' });
+  });
+});
+
+describe('reserveJob initialStatus', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  /** Capturing insert: records the values() payload, then returns `rows`. */
+  function captureInsert(rows: unknown[], sink: { values?: Record<string, unknown> }) {
+    return () => ({
+      values: (v: Record<string, unknown>) => {
+        sink.values = v;
+        return { onConflictDoNothing: () => ({ returning: () => Promise.resolve(rows) }) };
+      },
+    });
+  }
+  /** Capturing update: records the set() payload, then returns `rows`. */
+  function captureUpdate(rows: unknown[], sink: { set?: Record<string, unknown> }) {
+    return () => ({
+      set: (v: Record<string, unknown>) => {
+        sink.set = v;
+        return { where: () => ({ returning: () => Promise.resolve(rows) }) };
+      },
+    });
+  }
+
+  it('defaults a fresh claim to a running row (web SSE behavior)', async () => {
+    const sink: { values?: Record<string, unknown> } = {};
+    fakeDb = {
+      insert: captureInsert([{ id: 'job_new' }], sink),
+      select: selectReturning([]),
+      update: updateReturning([]),
+    };
+    await reserveJob({ caller, input, idempotencyKey: 'k' });
+    expect(sink.values).toMatchObject({ status: 'running' });
+  });
+
+  it('inserts a queued row when initialStatus=queued (v1 runner)', async () => {
+    const sink: { values?: Record<string, unknown> } = {};
+    fakeDb = {
+      insert: captureInsert([{ id: 'job_new' }], sink),
+      select: selectReturning([]),
+      update: updateReturning([]),
+    };
+    const r = await reserveJob({ caller, input, idempotencyKey: 'k', initialStatus: 'queued' });
+    expect(r).toEqual({ mode: 'created', jobId: 'job_new' });
+    expect(sink.values).toMatchObject({ status: 'queued' });
+  });
+
+  it('reclaims a failed attempt into the given initialStatus', async () => {
+    const sink: { set?: Record<string, unknown> } = {};
+    fakeDb = {
+      insert: insertReturning([]),
+      select: selectReturning([{ id: 'job_failed', userId: 'u1', status: 'failed', result: null }]),
+      update: captureUpdate([{ id: 'job_failed' }], sink),
+    };
+    const r = await reserveJob({ caller, input, idempotencyKey: 'k', initialStatus: 'queued' });
+    expect(r).toEqual({ mode: 'reclaimed', jobId: 'job_failed' });
+    expect(sink.set).toMatchObject({ status: 'queued' });
   });
 });
 
