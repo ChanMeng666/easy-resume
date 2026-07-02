@@ -200,11 +200,14 @@ export async function runGenerationPipeline(
   }
 
   // Steps 5 & 6 both depend only on the tailored resume + JD, not on each
-  // other — run them concurrently.
+  // other — run them concurrently. ATS scoring is deterministic (pure keyword
+  // coverage, no LLM), so it can't fail transiently and skips the runStep retry
+  // wrapper; it stays in this Promise.all position (wrapped in Promise.resolve)
+  // and still emits its progress event so the client's 8-step bar stays in lockstep.
   progress('score_ats', 5, 'Scoring ATS compatibility...');
   progress('cover_letter', 6, 'Generating cover letter...');
   const [atsReport, coverLetter] = await Promise.all([
-    runStep('score_ats', () => deps.agent.scoreATS(tailoredResume, parsedJD)),
+    Promise.resolve(deps.agent.scoreATS(tailoredResume, parsedJD)),
     runStep('cover_letter', () => deps.agent.generateCoverLetter(tailoredResume, parsedJD)),
   ]);
 
