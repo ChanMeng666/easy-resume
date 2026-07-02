@@ -20,12 +20,15 @@ export interface HistoryMessage {
 /**
  * A streamed event from a turn. Consumed by the SSE route (PR3) to update the
  * chat transcript + live PDF; `resume` carries the re-rendered working resume
- * after a successful edit.
+ * after a successful edit and `cover-letter` the re-rendered working cover letter
+ * (the two artifacts are tracked independently — a letter edit never emits a
+ * `resume` event and vice versa).
  */
 export type EditEvent =
   | { type: 'tool-call'; toolName: string; toolArgs: unknown }
   | { type: 'tool-result'; toolName: string; toolResult: unknown }
   | { type: 'resume'; resumeData: ResumeData; typstCode: string; templateId: string }
+  | { type: 'cover-letter'; coverLetter: string; coverLetterTypst: string }
   | { type: 'text'; text: string };
 
 export type EditEventSink = (event: EditEvent) => void;
@@ -36,6 +39,12 @@ export interface EditAgentDeps {
   model: LanguageModel;
   /** Deterministic ResumeData → Typst renderer (default: template/base generator). */
   render: (data: ResumeData, templateId: string) => string;
+  /**
+   * Deterministic cover-letter → Typst renderer (default: generateCoverLetterTypst).
+   * Optional so existing resume-only callers/tests need not supply it; the letter
+   * tools fall back to the default when it is absent.
+   */
+  renderCoverLetter?: (letterText: string, data: ResumeData) => string;
   /** Optional per-event sink for streaming (SSE route). */
   onEvent?: EditEventSink;
   /** Optional structured logger. */
@@ -49,6 +58,14 @@ export interface RunEditTurnArgs {
   baseResume: ResumeData;
   /** The template the resume renders with. */
   templateId: string;
+  /**
+   * The current working cover letter body ('' when the anchored resume has no
+   * cover letter). Seeds the letter tools so an edit turn can build on prior
+   * letter edits; optional for backward compatibility with resume-only callers.
+   */
+  baseCoverLetter?: string;
+  /** The rendered Typst for `baseCoverLetter` ('' when there is no letter). */
+  baseCoverLetterTypst?: string;
   /** Prior conversation (text turns) for context. */
   history: HistoryMessage[];
   /** The user's new instruction. */
@@ -75,4 +92,15 @@ export interface RunEditTurnResult {
   typstCode: string;
   /** Whether any tool actually changed the resume. */
   changed: boolean;
+  /**
+   * The cover letter after all edits — always the current working letter (the
+   * unchanged baseline when no letter edit was made, '' when there is no letter).
+   * Callers persist this so the letter survives across turns even when a turn only
+   * touched the resume.
+   */
+  coverLetter: string;
+  /** The re-rendered Typst for `coverLetter` ('' when there is no letter). */
+  coverLetterTypst: string;
+  /** Whether any tool actually changed the cover letter this turn. */
+  coverLetterChanged: boolean;
 }

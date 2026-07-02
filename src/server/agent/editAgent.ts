@@ -19,6 +19,7 @@ import { reasonModel, WRITING_TEMPERATURE } from '@/lib/agent/models';
 import { aiTelemetry } from '@/lib/agent/telemetry';
 import { PROMPT_VERSIONS } from '@/lib/agent/prompt-registry';
 import { generateTypstCode } from '@/lib/typst/generator';
+import { generateCoverLetterTypst } from '@/lib/typst/cover-letter';
 import { getTemplateById } from '@/templates/registry';
 import { sanitizeForPrompt } from '@/server/core/sanitize';
 import type { ResumeData } from '@/lib/validation/schema';
@@ -49,9 +50,9 @@ export function defaultEditRender(data: ResumeData, templateId: string): string 
   return template ? template.generator(data) : generateTypstCode(data);
 }
 
-/** Default DI for production: real model + deterministic renderer. */
+/** Default DI for production: real model + deterministic renderers. */
 export function defaultEditAgentDeps(overrides?: Partial<EditAgentDeps>): EditAgentDeps {
-  return { model: reasonModel, render: defaultEditRender, ...overrides };
+  return { model: reasonModel, render: defaultEditRender, renderCoverLetter: generateCoverLetterTypst, ...overrides };
 }
 
 /**
@@ -61,6 +62,7 @@ export function defaultEditAgentDeps(overrides?: Partial<EditAgentDeps>): EditAg
  */
 export async function runEditTurn(args: RunEditTurnArgs, deps: EditAgentDeps): Promise<RunEditTurnResult> {
   const { baseResume, templateId, history, userMessage, signal } = args;
+  const baseCoverLetter = args.baseCoverLetter ?? '';
 
   const ctx: EditContext = {
     resume: baseResume,
@@ -68,12 +70,21 @@ export async function runEditTurn(args: RunEditTurnArgs, deps: EditAgentDeps): P
     typstCode: deps.render(baseResume, templateId),
     changed: false,
     version: 0,
+    coverLetter: baseCoverLetter,
+    // Trust the caller's rendered letter Typst when supplied; otherwise re-render
+    // from the body so the working state is always consistent (empty stays '').
+    coverLetterTypst: baseCoverLetter
+      ? args.baseCoverLetterTypst ?? (deps.renderCoverLetter ?? generateCoverLetterTypst)(baseCoverLetter, baseResume)
+      : '',
+    coverLetterChanged: false,
+    coverLetterVersion: 0,
   };
   const tools = buildEditTools(ctx, deps);
   const maxSteps = resolveMaxSteps(deps.maxSteps);
   const onEvent = deps.onEvent;
   const toolCalls: RecordedToolCall[] = [];
   let lastEmittedVersion = 0;
+  let lastEmittedCoverLetterVersion = 0;
 
   // Replay prior turns as text-only messages (the live resume state is injected
   // into the system prompt, so tool history need not be replayed). Sanitize all
@@ -86,7 +97,7 @@ export async function runEditTurn(args: RunEditTurnArgs, deps: EditAgentDeps): P
 
   const result = await generateText({
     model: deps.model,
-    system: buildEditSystemPrompt(baseResume),
+    system: buildEditSystemPrompt(baseResume, baseCoverLetter),
     messages,
     tools,
     stopWhen: stepCountIs(maxSteps),
@@ -118,6 +129,12 @@ export async function runEditTurn(args: RunEditTurnArgs, deps: EditAgentDeps): P
         lastEmittedVersion = ctx.version;
         onEvent?.({ type: 'resume', resumeData: ctx.resume, typstCode: ctx.typstCode, templateId: ctx.templateId });
       }
+      // Same, independently, for the cover letter: one snapshot per step that
+      // changed the letter (a letter edit never emits a `resume` event).
+      if (ctx.coverLetterVersion > lastEmittedCoverLetterVersion) {
+        lastEmittedCoverLetterVersion = ctx.coverLetterVersion;
+        onEvent?.({ type: 'cover-letter', coverLetter: ctx.coverLetter, coverLetterTypst: ctx.coverLetterTypst });
+      }
       if (step.text && step.text.trim()) {
         onEvent?.({ type: 'text', text: step.text });
       }
@@ -130,5 +147,8 @@ export async function runEditTurn(args: RunEditTurnArgs, deps: EditAgentDeps): P
     resumeData: ctx.resume,
     typstCode: ctx.typstCode,
     changed: ctx.changed,
+    coverLetter: ctx.coverLetter,
+    coverLetterTypst: ctx.coverLetterTypst,
+    coverLetterChanged: ctx.coverLetterChanged,
   };
 }

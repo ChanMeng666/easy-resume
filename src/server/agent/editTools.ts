@@ -17,6 +17,7 @@ import 'server-only';
 import { tool } from 'ai';
 import { z } from 'zod';
 import { manualVersionCreateSchema, type ResumeData } from '@/lib/validation/schema';
+import { generateCoverLetterTypst } from '@/lib/typst/cover-letter';
 import { sanitizeDeep } from '@/server/core/sanitize';
 import type { EditAgentDeps } from './editAgent.types';
 
@@ -29,6 +30,19 @@ export interface EditContext {
   /** Bumped on every successful edit so the agent can detect per-step changes
    * and emit a single up-to-date resume snapshot (clean event ordering). */
   version: number;
+  /**
+   * The working cover letter body ('' when the anchored resume has no letter).
+   * Tracked INDEPENDENTLY of the resume: a letter edit never sets `changed` or
+   * re-renders the resume Typst, and vice versa.
+   */
+  coverLetter: string;
+  /** The rendered Typst for `coverLetter` ('' when there is no letter). */
+  coverLetterTypst: string;
+  /** Whether any tool changed the cover letter this turn. */
+  coverLetterChanged: boolean;
+  /** Bumped on every successful letter edit, mirroring `version` for the resume,
+   * so the agent can emit a single up-to-date cover-letter snapshot per step. */
+  coverLetterVersion: number;
 }
 
 // Caps mirror the conversational nature of an edit: a handful of bullets/keywords
@@ -37,9 +51,25 @@ export interface EditContext {
 const MAX_BULLETS = 30;
 const MAX_KEYWORDS = 40;
 const MAX_FIELD_LEN = 4_000;
+// Whole-letter cap, matching manualVersionCreateSchema.coverLetter (10k chars) so a
+// letter authored/edited here can always be persisted as a manual version.
+const MAX_COVER_LETTER_LEN = 10_000;
+// Returned verbatim when a letter tool is called on a thread whose resume has no
+// cover letter — a clear string the model reads and relays, never a throw.
+const NO_COVER_LETTER = 'Error: this resume has no cover letter.';
 
 const bulletList = z.array(z.string().min(1).max(MAX_FIELD_LEN)).max(MAX_BULLETS);
 const keywordList = z.array(z.string().min(1).max(200)).max(MAX_KEYWORDS);
+
+/** Split a cover letter into its logical blocks (greeting, body paragraphs,
+ * closing, signature). Blocks are separated by a blank line; trimmed + empties
+ * dropped so preview and rewrite share one consistent 0-based indexing. */
+function splitCoverLetterBlocks(letter: string): string[] {
+  return letter
+    .split(/\n\s*\n/)
+    .map((b) => b.trim())
+    .filter(Boolean);
+}
 
 /**
  * Apply a mutation to a CLONE of the working resume, validate it against the
@@ -85,6 +115,38 @@ function assertIndex(index: number, length: number, label: string): void {
   if (!Number.isInteger(index) || index < 0 || index >= length) {
     throw new Error(`${label} index ${index} is out of range (0..${length - 1})`);
   }
+}
+
+/**
+ * Commit a new cover letter body: bound + render-then-commit, mirroring applyEdit
+ * but for the letter artifact. Renders the letter Typst BEFORE committing so a
+ * render failure leaves the working state intact (no partial edit / stale Typst).
+ * Never sets the resume `changed` flag or re-renders the resume — the two
+ * artifacts' change tracking is independent. Returns a confirmation string on
+ * success or an `Error: ...` string the model can recover from — never throws.
+ */
+function applyCoverLetterEdit(
+  ctx: EditContext,
+  deps: EditAgentDeps,
+  nextLetter: string,
+  okMessage: string
+): string {
+  const trimmed = nextLetter.trim();
+  if (trimmed.length < 1 || trimmed.length > MAX_COVER_LETTER_LEN) {
+    return `Error: the cover letter text is empty or exceeds ${MAX_COVER_LETTER_LEN} characters; no change applied.`;
+  }
+  const render = deps.renderCoverLetter ?? generateCoverLetterTypst;
+  let typstCode: string;
+  try {
+    typstCode = render(trimmed, ctx.resume);
+  } catch (err) {
+    return `Error: could not render that cover letter change (${err instanceof Error ? err.message : 'render error'}); no change applied.`;
+  }
+  ctx.coverLetter = trimmed;
+  ctx.coverLetterTypst = typstCode;
+  ctx.coverLetterChanged = true;
+  ctx.coverLetterVersion += 1;
+  return okMessage;
 }
 
 /**
@@ -274,6 +336,54 @@ export function buildEditTools(ctx: EditContext, deps: EditAgentDeps) {
           projects: ctx.resume.projects.map((p, i) => ({ index: i, name: p.name, highlights: p.highlights })),
           skills: ctx.resume.skills.map((s, i) => ({ index: i, name: s.name, keywords: s.keywords })),
         }),
+    }),
+
+    rewriteCoverLetterParagraph: tool({
+      description:
+        'Rewrite ONE block of the cover letter, identified by 0-based index. The letter is split on blank lines into blocks: index 0 is the greeting, the last blocks are the closing/signature, so the body paragraphs are typically indices 1..n-2. Call previewCoverLetter first to see the indexed blocks. Rewrite existing content only — never invent facts. Only works when a cover letter already exists.',
+      inputSchema: z.object({
+        paragraphIndex: z.number().int().min(0).describe('0-based index of the block to replace (see previewCoverLetter).'),
+        text: z.string().min(1).max(MAX_FIELD_LEN).describe('The new text for that block.'),
+      }),
+      execute: async (input) => {
+        if (!ctx.coverLetter.trim()) return NO_COVER_LETTER;
+        const { paragraphIndex, text } = sanitizeDeep(input);
+        const blocks = splitCoverLetterBlocks(ctx.coverLetter);
+        if (!Number.isInteger(paragraphIndex) || paragraphIndex < 0 || paragraphIndex >= blocks.length) {
+          return `Error: paragraph index ${paragraphIndex} is out of range (0..${blocks.length - 1}); no change applied.`;
+        }
+        const trimmed = text.trim();
+        if (!trimmed) return 'Error: the replacement text is empty; no change applied.';
+        blocks[paragraphIndex] = trimmed;
+        return applyCoverLetterEdit(ctx, deps, blocks.join('\n\n'), `Rewrote cover letter block ${paragraphIndex}.`);
+      },
+    }),
+
+    setCoverLetterText: tool({
+      description:
+        'Replace the ENTIRE cover letter with new text (blocks separated by blank lines: greeting, body paragraphs, closing, signature). Use this to author a letter when none exists yet, or for a holistic rewrite. Rewrite existing facts only — never fabricate.',
+      inputSchema: z.object({
+        text: z.string().min(1).max(MAX_COVER_LETTER_LEN).describe('The full cover letter text.'),
+      }),
+      execute: async (input) => {
+        const { text } = sanitizeDeep(input);
+        return applyCoverLetterEdit(ctx, deps, text, 'Updated the cover letter.');
+      },
+    }),
+
+    previewCoverLetter: tool({
+      description:
+        'Inspect the current working cover letter (after any edits this turn). Returns the letter split into 0-based indexed blocks so you can target rewriteCoverLetterParagraph. Only works when a cover letter exists.',
+      inputSchema: z.object({}),
+      // Sanitize the payload for the same reason previewResume does: the letter is
+      // the user's own text, and returning it raw would re-inject it into the
+      // model's next step. sanitizeDeep defangs injection vectors identically.
+      execute: async () => {
+        if (!ctx.coverLetter.trim()) return NO_COVER_LETTER;
+        return sanitizeDeep({
+          blocks: splitCoverLetterBlocks(ctx.coverLetter).map((text, index) => ({ index, text })),
+        });
+      },
     }),
   };
 }

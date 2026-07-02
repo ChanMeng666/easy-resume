@@ -132,6 +132,26 @@ describe('pickLatestSnapshot', () => {
     expect(out.templateId).toBe('two-column');
     expect(out.resumeData.basics.label).toBe('NoTemplate');
   });
+
+  it('carries the snapshot cover letter forward when the snapshot recorded one', () => {
+    const fb: ResumeSnapshot = { ...snapshot('Baseline'), coverLetter: 'anchor letter', coverLetterTypst: 'anchorTypst' };
+    const withLetter = { role: 'assistant', sequenceNum: 3, toolResult: { ...snapshot('Edited'), coverLetter: 'edited letter', coverLetterTypst: 'editedTypst' } };
+    const out = pickLatestSnapshot([withLetter] as Pick<StoredMessage, 'role' | 'toolResult' | 'sequenceNum'>[], fb);
+    expect(out.coverLetter).toBe('edited letter');
+    expect(out.coverLetterTypst).toBe('editedTypst');
+  });
+
+  it('falls back to the anchor cover letter when the latest snapshot lacks letter fields (backward compat)', () => {
+    // Simulates a resume-only edit snapshot OR an old pre-letter snapshot: it has
+    // no coverLetter/coverLetterTypst, so the anchor's letter must be preserved
+    // rather than dropped.
+    const fb: ResumeSnapshot = { ...snapshot('Baseline'), coverLetter: 'anchor letter', coverLetterTypst: 'anchorTypst' };
+    const noLetter = assistantMsg(4, snapshot('ResumeOnlyEdit'));
+    const out = pickLatestSnapshot([noLetter], fb);
+    expect(out.resumeData.basics.label).toBe('ResumeOnlyEdit');
+    expect(out.coverLetter).toBe('anchor letter');
+    expect(out.coverLetterTypst).toBe('anchorTypst');
+  });
 });
 
 describe('assertTurnBounds', () => {
@@ -194,5 +214,34 @@ describe('assertTurnBounds', () => {
     const bad = { resumeData: makeResume('Bad'), typstCode: { huge: 'z'.repeat(500_000) }, templateId: 'two-column' };
     const turn: TurnMessageInput[] = [{ role: 'assistant', content: 'ok', toolResult: bad }];
     expect(() => assertTurnBounds(turn)).toThrow(/invalid or too large/i);
+  });
+
+  it('accepts a snapshot carrying cover letter fields within bounds', () => {
+    const snap = { ...snapshot('WithLetter'), coverLetter: 'Dear Hiring Manager,\n\nHello.', coverLetterTypst: '#set page()\nDear' };
+    const turn: TurnMessageInput[] = [{ role: 'assistant', content: 'ok', toolResult: snap }];
+    expect(() => assertTurnBounds(turn)).not.toThrow();
+  });
+
+  it('still accepts an OLD snapshot without cover letter fields (backward compat)', () => {
+    const turn: TurnMessageInput[] = [{ role: 'assistant', content: 'ok', toolResult: snapshot('NoLetter') }];
+    expect(() => assertTurnBounds(turn)).not.toThrow();
+  });
+
+  it('rejects a snapshot whose cover letter exceeds the size cap', () => {
+    const snap = { ...snapshot('BigLetter'), coverLetter: 'z'.repeat(10_001) };
+    const turn: TurnMessageInput[] = [{ role: 'assistant', content: 'ok', toolResult: snap }];
+    expect(() => assertTurnBounds(turn)).toThrow(/cover letter snapshot is invalid or too large/i);
+  });
+
+  it('rejects a snapshot whose cover letter Typst exceeds the size cap', () => {
+    const snap = { ...snapshot('BigLetterTypst'), coverLetter: 'ok', coverLetterTypst: '#'.repeat(200_001) };
+    const turn: TurnMessageInput[] = [{ role: 'assistant', content: 'ok', toolResult: snap }];
+    expect(() => assertTurnBounds(turn)).toThrow(/cover letter snapshot is invalid or too large/i);
+  });
+
+  it('rejects a snapshot whose cover letter is a non-string', () => {
+    const snap = { ...snapshot('BadLetter'), coverLetter: { evil: 1 } as unknown as string };
+    const turn: TurnMessageInput[] = [{ role: 'assistant', content: 'ok', toolResult: snap }];
+    expect(() => assertTurnBounds(turn)).toThrow(/cover letter snapshot is invalid or too large/i);
   });
 });
