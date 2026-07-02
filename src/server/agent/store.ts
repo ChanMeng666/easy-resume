@@ -14,7 +14,7 @@
  */
 
 import 'server-only';
-import { and, asc, desc, eq, isNotNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm';
 import { db } from '@/lib/db/client';
 import { agentThreads, agentMessages, generationJobs } from '@/lib/db/schema';
 import { ConflictError, NotFoundError, ValidationError } from '@/server/errors/AppError';
@@ -536,7 +536,63 @@ export async function appendTurn(
   } catch {
     // Swallow: the messages are durably persisted; metadata self-heals next turn.
   }
+
+  // Best-effort snapshot GC: when this turn persisted a new snapshot, clear the
+  // large snapshot blobs on older assistant rows (keep the newest SNAPSHOT_KEEP).
+  // A long editing session otherwise accumulates a near-identical multi-hundred-KB
+  // blob per edited turn. Failure never affects the persisted turn.
+  if (messages.some((m) => m.role === 'assistant' && m.toolResult != null)) {
+    try {
+      await gcThreadSnapshots(threadId);
+    } catch {
+      // Swallow: GC is hygiene; the next snapshot-bearing turn retries it.
+    }
+  }
   return inserted;
+}
+
+// How many snapshot-bearing assistant messages to KEEP per thread when garbage-
+// collecting older snapshots. Only the newest valid snapshot is ever read
+// (latestResumeSnapshot), so older blobs (~up to 500KB each) are pure storage
+// growth; keeping 3 leaves a corruption margin (pickLatestSnapshot skips invalid
+// snapshots and falls back to the next one, then the anchor baseline).
+const SNAPSHOT_KEEP = 3;
+
+/**
+ * Pick which snapshot-bearing rows to clear, keeping the newest `keep` by
+ * sequence number. Pure — unit-tested separately from the SQL wrapper.
+ */
+export function selectSnapshotIdsToGc(
+  rows: Array<{ id: string; sequenceNum: number }>,
+  keep: number = SNAPSHOT_KEEP
+): string[] {
+  return [...rows]
+    .sort((a, b) => b.sequenceNum - a.sequenceNum)
+    .slice(Math.max(0, keep))
+    .map((r) => r.id);
+}
+
+/**
+ * Best-effort snapshot GC for one thread: null out the `tool_result` of older
+ * snapshot-bearing ASSISTANT rows, keeping the newest SNAPSHOT_KEEP. Tool rows
+ * (small, transcript-visible) are never touched — only the large assistant
+ * snapshot blobs. Failures are logged by the caller and swallowed: GC is pure
+ * hygiene and must never fail a fully-persisted turn.
+ */
+export async function gcThreadSnapshots(threadId: string): Promise<void> {
+  const rows = await db
+    .select({ id: agentMessages.id, sequenceNum: agentMessages.sequenceNum })
+    .from(agentMessages)
+    .where(
+      and(
+        eq(agentMessages.threadId, threadId),
+        eq(agentMessages.role, 'assistant'),
+        isNotNull(agentMessages.toolResult)
+      )
+    );
+  const toClear = selectSnapshotIdsToGc(rows);
+  if (toClear.length === 0) return;
+  await db.update(agentMessages).set({ toolResult: null }).where(inArray(agentMessages.id, toClear));
 }
 
 /** Read the current MAX(sequence_num) and insert the batch at MAX+1.. (one statement). */
