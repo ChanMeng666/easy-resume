@@ -14,7 +14,7 @@ jobs:
     # secrets are needed: tests use DI fakes and the Typst binary is not required
     # (the golden-set test self-skips when typst is absent).
     env:
-      NEXT_PUBLIC_STACK_PROJECT_ID: 00000000-0000-0000-0000-000000000000
+      NEXT_PUBLIC_STACK_PROJECT_ID: a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d
       NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY: ci-placeholder
       STACK_SECRET_SERVER_KEY: ci-placeholder
       NEXT_PUBLIC_APP_URL: http://localhost:3000
