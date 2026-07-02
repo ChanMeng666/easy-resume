@@ -70,7 +70,7 @@ Vitex is an AI-powered resume generation platform that transforms a job descript
 - **ATS Optimization** -- Real-time ATS compatibility scoring with actionable feedback
 - **Cover Letter Generation** -- Automatically generated alongside the resume
 - **Typst-Powered PDF** -- Local compilation in <100ms, no external APIs required
-- **Natural Language Refinement** -- Describe changes in plain English, AI regenerates the resume
+- **Natural Language Refinement** -- Describe changes in plain English; AI applies a targeted, free refinement (resume and/or cover letter) — not a full regeneration
 - **Credit System** -- Stripe-powered subscription plans for usage management
 - **Resume Sharing** -- Public share links with unique tokens
 - **Cloud Storage** -- Persistent resume management with user accounts
