@@ -126,6 +126,13 @@ export const manualVersionCreateSchema = z
     resumeData: resumeDataSchema,
     templateId: z.string().trim().min(1).max(50).optional(),
     versionLabel: z.string().trim().max(120).optional(),
+    // Optional edited cover letter body. When present the server regenerates the
+    // cover-letter Typst from it (client Typst is never trusted); when absent the
+    // parent's letter is carried forward unchanged. `.min(1)` (after `.trim()`) so
+    // an explicit empty string is a validation error rather than silently wiping
+    // the parent's letter — a caller that wants to keep the letter simply omits
+    // the field. Capped like other free-text fields (e.g. application `notes`).
+    coverLetter: z.string().trim().min(1).max(10_000).optional(),
   })
   .superRefine((val, ctx) => {
     const r = val.resumeData;

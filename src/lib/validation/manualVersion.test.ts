@@ -66,4 +66,35 @@ describe('manualVersionCreateSchema bounds', () => {
     });
     expect(r.success).toBe(false);
   });
+
+  it('accepts an optional edited coverLetter', () => {
+    const r = manualVersionCreateSchema.safeParse({
+      resumeData: baseResume(),
+      coverLetter: 'Dear hiring manager, I am excited to apply.',
+    });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.coverLetter).toBe('Dear hiring manager, I am excited to apply.');
+  });
+
+  it('accepts a payload with no coverLetter (field is optional)', () => {
+    const r = manualVersionCreateSchema.safeParse({ resumeData: baseResume() });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.coverLetter).toBeUndefined();
+  });
+
+  it('rejects an empty-string coverLetter (must omit to keep the parent letter)', () => {
+    const r = manualVersionCreateSchema.safeParse({
+      resumeData: baseResume(),
+      coverLetter: '   ',
+    });
+    expect(r.success).toBe(false);
+  });
+
+  it('rejects a coverLetter over 10k chars', () => {
+    const r = manualVersionCreateSchema.safeParse({
+      resumeData: baseResume(),
+      coverLetter: 'x'.repeat(10_001),
+    });
+    expect(r.success).toBe(false);
+  });
 });
