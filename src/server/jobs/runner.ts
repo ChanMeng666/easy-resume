@@ -22,6 +22,7 @@ import { ConflictError, NotFoundError } from '@/server/errors/AppError';
 import { toErrorEnvelope } from '@/server/errors/envelope';
 import { createLogger } from '@/server/log/logger';
 import { reserveJob, finalizeSucceededJob, failJob } from '@/server/jobs/persist';
+import { createSemaphore } from '@/server/jobs/concurrency';
 import type { Caller, GenerateInput, GenerateResult } from '@/server/core/pipeline.types';
 
 /**
@@ -48,7 +49,34 @@ export function isRefineInput(input: GenerateInput): input is RefineJobInput {
 }
 
 /** Signature of the background runner, injectable so createJob is unit-testable. */
-type RunFn = (jobId: string, caller: Caller) => void;
+type RunFn = (jobId: string, caller: Caller) => void | Promise<void>;
+
+/**
+ * Cap on concurrently EXECUTING background jobs (generation + refine share one
+ * gate). Excess accepted jobs wait FIFO with their rows still `queued` — accurate
+ * for pollers — and are dequeued as slots free. Tune via JOB_CONCURRENCY; the
+ * default is deliberately small: each run is a chain of LLM calls plus a typst
+ * subprocess on a single VPS.
+ */
+const JOB_CONCURRENCY = (() => {
+  const raw = Number(process.env.JOB_CONCURRENCY);
+  return Number.isInteger(raw) && raw >= 1 ? raw : 2;
+})();
+
+const jobGate = createSemaphore(JOB_CONCURRENCY);
+
+/**
+ * Schedule a background run through the concurrency gate, detached. Errors are
+ * already handled inside runJob (failJob + structured log); a scheduling-level
+ * failure is logged and swallowed — the stale-job sweeper reconciles the row.
+ */
+function scheduleRun(run: RunFn, jobId: string, caller: Caller): void {
+  void jobGate
+    .run(() => Promise.resolve(run(jobId, caller)))
+    .catch((err) => {
+      createLogger({ jobId, route: 'v1.jobs' }).error('job.schedule_failed', {}, err);
+    });
+}
 
 /**
  * Create (or resolve) the job for an idempotency key, then kick off the pipeline
@@ -88,9 +116,12 @@ export async function createJob(
 
   // A fresh (created) or reclaimed-from-failed (reclaimed) slot: we own the run.
   // Detached — the long-lived VPS process keeps running this after POST returns.
+  // The concurrency gate bounds how many execute at once; a queued job's row
+  // stays `queued` until runJob dequeues and flips it to `running` (which also
+  // touches updatedAt — the dequeue heartbeat for the stale-job sweeper).
   if (reservation.mode === 'created' || reservation.mode === 'reclaimed') {
     const job = await getJob(reservation.jobId);
-    run(job.id, caller);
+    scheduleRun(run, job.id, caller);
     return job;
   }
 
