@@ -75,7 +75,7 @@ interface CompareDetail {
   summary: string;
 }
 
-/** Progress steps displayed during generation. */
+/** Progress steps displayed during a full generation (8-step pipeline). */
 const PROGRESS_STEPS = [
   { label: 'Analyzing job description...', icon: Search },
   { label: 'Parsing your background...', icon: UserCheck },
@@ -86,6 +86,21 @@ const PROGRESS_STEPS = [
   { label: 'Generating resume document...', icon: FileText },
   { label: 'Compiling your PDF...', icon: Printer },
 ] as const;
+
+/**
+ * Progress steps displayed during a targeted refinement (4-step refine core).
+ * Labels track src/server/core/refine.ts's onProgress messages so the galley
+ * matches what the backend actually reports.
+ */
+const REFINE_PROGRESS_STEPS = [
+  { label: 'Applying your feedback...', icon: Wand2 },
+  { label: 'Re-scoring ATS compatibility...', icon: CheckCircle2 },
+  { label: 'Regenerating your document...', icon: FileText },
+  { label: 'Compiling your PDF...', icon: Printer },
+] as const;
+
+/** Which artifact(s) a refinement should touch. */
+type RefineScope = 'resume' | 'cover_letter' | 'both';
 
 /** Read timeout for SSE — heartbeat is 15s server-side, so 45s is 3x slack. */
 const SSE_READ_TIMEOUT_MS = 45_000;
@@ -275,6 +290,139 @@ async function runGenerationStream(
   }
 }
 
+/**
+ * Run the targeted-refinement pipeline via SSE against /api/refine. A near-clone
+ * of runGenerationStream with the same event taxonomy, timeout, and error
+ * classification — it only posts a different body (the parent job id + feedback +
+ * scope) to a different endpoint. Duplication of the reader is intentional here;
+ * a later PR consolidates the two into one SSE hook.
+ */
+async function runRefineStream(
+  refineOfJobId: string,
+  feedback: string,
+  scope: RefineScope,
+  idempotencyKey: string,
+  signal: AbortSignal,
+  { onProgress, onResult, onSaved }: StreamCallbacks
+): Promise<void> {
+  let response: Response;
+  try {
+    response = await fetch('/api/refine', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        // Fresh per-refine key: a retry/reconnect of the same refine reuses it so
+        // the server returns the stored result instead of producing a duplicate.
+        'Idempotency-Key': idempotencyKey,
+      },
+      body: JSON.stringify({ refineOfJobId, feedback, scope }),
+      signal,
+    });
+  } catch (err) {
+    if ((err as Error).name === 'AbortError') throw err;
+    const e: GenerationError = {
+      kind: 'network',
+      message: 'Network error — please check your connection and try again.',
+    };
+    throw Object.assign(new Error(e.message), e);
+  }
+
+  if (!response.ok) {
+    const errData = await response.json().catch(() => ({}));
+    const envelope = errData.error ?? {};
+    const code: string | undefined = envelope.code;
+    const message: string =
+      envelope.message ||
+      (typeof errData.error === 'string' ? errData.error : '') ||
+      `Server error (${response.status})`;
+    const kind: ErrorKind =
+      code === 'INSUFFICIENT_CREDITS'
+        ? 'credits'
+        : code === 'UNAUTHENTICATED'
+          ? 'auth'
+          : 'server';
+    throw Object.assign(new Error(message), { kind, message });
+  }
+
+  const reader = response.body?.getReader();
+  if (!reader) {
+    const e: GenerationError = { kind: 'other', message: 'No response body received.' };
+    throw Object.assign(new Error(e.message), e);
+  }
+
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  /** Race reader.read() against a timeout so a dropped TCP connection surfaces fast. */
+  function readWithTimeout(): Promise<ReadableStreamReadResult<Uint8Array>> {
+    return new Promise((resolve, reject) => {
+      const t = setTimeout(() => {
+        const e: GenerationError = {
+          kind: 'timeout',
+          message: 'Connection timed out — refinement may have been interrupted. Please retry.',
+        };
+        reject(Object.assign(new Error(e.message), e));
+      }, SSE_READ_TIMEOUT_MS);
+      reader!
+        .read()
+        .then((res) => {
+          clearTimeout(t);
+          resolve(res);
+        })
+        .catch((err) => {
+          clearTimeout(t);
+          reject(err);
+        });
+    });
+  }
+
+  try {
+    while (true) {
+      const { done, value } = await readWithTimeout();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+
+      const lines = buffer.split('\n\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        const dataLine = line.replace(/^data: /, '').trim();
+        if (!dataLine) continue;
+        try {
+          const event = JSON.parse(dataLine);
+          if (event.type === 'progress') onProgress(event.step);
+          else if (event.type === 'result') onResult(event.data);
+          else if (event.type === 'saved') onSaved?.(event.jobId);
+          else if (event.type === 'error') {
+            const code: string | undefined = event.error?.code;
+            const message: string = event.error?.message || event.message || 'Refinement failed.';
+            const kind: ErrorKind =
+              code === 'INSUFFICIENT_CREDITS'
+                ? 'credits'
+                : code === 'UNAUTHENTICATED'
+                  ? 'auth'
+                  : event.error?.retriable
+                    ? 'server'
+                    : 'other';
+            throw Object.assign(new Error(message), { kind, message });
+          }
+          // 'heartbeat', 'saved', and 'done' events fall through silently.
+        } catch (parseErr) {
+          if (parseErr instanceof SyntaxError) continue;
+          throw parseErr;
+        }
+      }
+    }
+  } finally {
+    try {
+      reader.cancel();
+    } catch {
+      // Ignore — reader may already be released.
+    }
+  }
+}
+
 /** Pull the (kind, message) tuple out of an unknown thrown value. */
 function classifyError(err: unknown): GenerationError {
   if (err && typeof err === 'object' && 'kind' in err && 'message' in err) {
@@ -316,9 +464,11 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
   // "Edit with AI" entry: the assistant edits the PERSISTED resume, so it must not
   // be opened on a stale baseline while local edits are unsaved.
   const [unsavedEdits, setUnsavedEdits] = useState(false);
-  // Refine cost-disclosure dialog: a refine re-runs the LLM pipeline and costs 1
-  // credit, so we confirm before charging.
-  const [refineCostOpen, setRefineCostOpen] = useState(false);
+  // Which artifact(s) a refine should touch (resume / cover letter / both).
+  const [refineScope, setRefineScope] = useState<RefineScope>('resume');
+  // Which step labels the progress galley shows: the 8-step full generation or
+  // the 4-step targeted refine. Set before each run.
+  const [progressMode, setProgressMode] = useState<'generate' | 'refine'>('generate');
   // Free, client-side structured field editing (no LLM, no charge).
   const [editMode, setEditMode] = useState(false);
   // Versions in the current refine chain (for the version strip).
@@ -403,6 +553,7 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
       }
       const idempotencyKey = idempotencyKeyRef.current;
 
+      setProgressMode('generate');
       setIsGenerating(true);
       setCurrentStep(0);
       setResult(null);
@@ -582,26 +733,66 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
     setTimeout(() => setCoverLetterCodeCopied(false), 2000);
   }, [result?.coverLetterTypst]);
 
-  /** Open the cost-disclosure dialog before a (billable) refine. */
-  const handleRefine = useCallback(() => {
-    if (!refinementText.trim() || !result || !effJd.trim() || !effBg.trim()) return;
-    setRefineCostOpen(true);
-  }, [refinementText, result, effBg, effJd]);
-
   /**
-   * Confirmed refine: re-run the LLM pipeline (a deliberate new charge). The
-   * refinement is appended to the background and the new generation links to the
-   * current job as its parent (version chain). A fresh idempotency key is minted
-   * inside startGeneration, so this is a new, separately-billed result that does
-   * NOT overwrite the previous version.
+   * Run a targeted refinement against the current persisted job (FREE — no
+   * credit). Unlike the old billable refine, this does NOT re-run the full
+   * pipeline or append to the background: the refine core operates on the parent
+   * job's stored artifacts server-side, revising only the in-scope artifact(s).
+   * A fresh idempotency key is minted so the result is a NEW version in the
+   * chain that does not overwrite the current one.
    */
-  const confirmRefine = useCallback(() => {
-    if (!refinementText.trim() || !effJd.trim() || !effBg.trim()) return;
-    const refinedBg = `${effBg}\n\nAdditional instructions: ${refinementText}`;
+  const startRefine = useCallback(
+    (feedback: string, scope: RefineScope) => {
+      if (!currentJobId) return;
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      idempotencyKeyRef.current = crypto.randomUUID();
+      const idempotencyKey = idempotencyKeyRef.current;
+
+      setProgressMode('refine');
+      setIsGenerating(true);
+      setCurrentStep(0);
+      setResult(null);
+      setError(null);
+      setWasHiddenDuringGeneration(false);
+      setUnsavedEdits(true);
+
+      runRefineStream(currentJobId, feedback, scope, idempotencyKey, controller.signal, {
+        onProgress: setCurrentStep,
+        onResult: (data) => setResult(data),
+        onSaved: (savedJobId) => {
+          try {
+            window.history.replaceState(null, '', `/editor?job=${savedJobId}`);
+          } catch {
+            // Ignore — non-critical URL sync.
+          }
+          setCurrentJobId(savedJobId);
+          setUnsavedEdits(false);
+          fetchVersions(savedJobId);
+        },
+      })
+        .catch((err) => {
+          if ((err as Error)?.name === 'AbortError') return;
+          setError(classifyError(err));
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) {
+            setIsGenerating(false);
+          }
+        });
+    },
+    [currentJobId, fetchVersions]
+  );
+
+  /** Kick off a free refine from the input box (guarded on a saved parent job). */
+  const handleRefine = useCallback(() => {
+    if (!refinementText.trim() || !result || !currentJobId) return;
+    const feedback = refinementText;
     setRefinementText('');
-    setRefineCostOpen(false);
-    startGeneration(effJd, refinedBg, false, undefined, currentJobId ?? undefined);
-  }, [refinementText, effBg, effJd, currentJobId, startGeneration]);
+    startRefine(feedback, refineScope);
+  }, [refinementText, result, currentJobId, refineScope, startRefine]);
 
   /**
    * Apply free, client-side structured edits: re-render the Typst from the
@@ -853,7 +1044,11 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
 
   // --- Progress State (typeset "compile log" galley) ---
   if (isGenerating) {
-    const shownStep = Math.min(Math.max(currentStep, 1), PROGRESS_STEPS.length);
+    // The backend streams a 1-based step index/total per event; the active mode's
+    // array determines the labels/icons and the total shown.
+    const activeSteps = progressMode === 'refine' ? REFINE_PROGRESS_STEPS : PROGRESS_STEPS;
+    const logTitle = progressMode === 'refine' ? 'refining resume' : 'composing resume';
+    const shownStep = Math.min(Math.max(currentStep, 1), activeSteps.length);
     return (
       <main className="container mx-auto max-w-2xl px-4 pt-12 md:pt-16 pb-16">
         <CropFrame>
@@ -864,13 +1059,13 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
         >
           {/* Log header */}
           <div className="flex items-center justify-between border-b-2 border-black bg-gray-50 px-4 py-3">
-            <span className="proof-label">compile.log — composing resume</span>
-            <span className="proof-label !text-primary">STEP {pad2(shownStep)} / {pad2(PROGRESS_STEPS.length)}</span>
+            <span className="proof-label">compile.log — {logTitle}</span>
+            <span className="proof-label !text-primary">STEP {pad2(shownStep)} / {pad2(activeSteps.length)}</span>
           </div>
 
           {/* Line-numbered galley */}
           <div className="px-2 sm:px-4 py-3 font-mono">
-            {PROGRESS_STEPS.map((step, index) => {
+            {activeSteps.map((step, index) => {
               const StepIcon = step.icon;
               const stepNum = index + 1;
               const isActive = stepNum === currentStep;
@@ -1294,37 +1489,6 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
         </motion.div>
       </div>
 
-      {/* Refine cost-disclosure dialog — a refine re-runs the LLM (1 credit). */}
-      <Dialog open={refineCostOpen} onOpenChange={setRefineCostOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Refine with AI — uses 1 credit</DialogTitle>
-            <DialogDescription>
-              This re-runs the AI pipeline to tailor a fresh version and costs
-              1 credit. Your current version is kept — you can switch back to it
-              from the version strip. (Small text fixes are free under
-              &ldquo;Edit fields&rdquo;.)
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setRefineCostOpen(false)}
-              className="border-2 border-black font-bold"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={confirmRefine}
-              className="border-2 border-black bg-purple-600 font-bold text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:bg-purple-700 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
-            >
-              <Send className="mr-2 h-4 w-4" />
-              Use 1 credit &amp; refine
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* Save-as-profile dialog — persists the raw background for reuse. */}
       <Dialog open={saveProfileOpen} onOpenChange={setSaveProfileOpen}>
         <DialogContent>
@@ -1452,30 +1616,69 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
         className="mt-6 rounded-xl border-2 border-black bg-white p-4 sm:p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
       >
         <p className="proof-label mb-1">§ recompile</p>
-        <h3 className="mb-2 sm:mb-3 text-base sm:text-lg font-black">Refine Your Resume</h3>
+        <div className="mb-2 flex items-center gap-2 sm:mb-3">
+          <h3 className="text-base sm:text-lg font-black">Refine Your Resume</h3>
+          <span className="rounded border border-black bg-green-100 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase">
+            Free
+          </span>
+        </div>
         <p className="text-xs sm:text-sm text-gray-500 mb-3">
-          Describe what to change and the AI will regenerate your resume.{' '}
-          <span className="font-semibold text-foreground">Uses 1 credit</span> and keeps
-          the previous version. For small text fixes, use{' '}
-          <span className="font-semibold text-foreground">Edit fields</span> instead — that&apos;s free.
+          Describe what to change and the AI revises just what you ask — no credit,
+          and your current version is kept (switch back from the version strip).
+          Pick what it should touch below. For quick text fixes, use{' '}
+          <span className="font-semibold text-foreground">Edit fields</span> instead.
         </p>
+
+        {/* Scope selector — which artifact(s) the refine should revise. */}
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <span className="proof-label !text-muted-foreground">Apply to</span>
+          {([
+            { value: 'resume', label: 'Resume' },
+            { value: 'cover_letter', label: 'Cover letter' },
+            { value: 'both', label: 'Both' },
+          ] as const).map((opt) => {
+            const active = refineScope === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setRefineScope(opt.value)}
+                aria-pressed={active}
+                className={`rounded-lg border-2 border-black px-2.5 py-1 font-mono text-xs font-bold transition-all duration-200 ${
+                  active
+                    ? 'bg-primary text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]'
+                    : 'bg-white hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-1px] hover:translate-y-[-1px]'
+                }`}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
           <Input
             placeholder='e.g., "Focus more on data analysis skills"'
             value={refinementText}
             onChange={(e) => setRefinementText(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') handleRefine(); }}
+            disabled={!currentJobId}
             className="flex-1 border-2 border-black font-medium shadow-none focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] transition-all duration-200"
           />
           <Button
             onClick={handleRefine}
-            disabled={!refinementText.trim()}
+            disabled={!refinementText.trim() || !currentJobId}
             className="w-full sm:w-auto border-2 border-black bg-purple-600 font-bold text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:bg-purple-700 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
           >
             <Send className="mr-2 h-4 w-4" />
             Refine
           </Button>
         </div>
+        {!currentJobId && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            Refinement will be available once this resume finishes saving.
+          </p>
+        )}
       </motion.div>
     </main>
   );

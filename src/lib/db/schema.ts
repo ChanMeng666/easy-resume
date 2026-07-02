@@ -285,6 +285,12 @@ export const generationJobs = pgTable("generation_jobs", {
     baseResume?: ResumeData;
     // The candidate_profile that seeded this generation, if any.
     profileId?: string;
+    // Targeted-refinement provenance (set only on rows created by POST /api/refine).
+    // Carried on the row so a refine-of-refine records its full context and
+    // deriveJobTitle still works off the inherited jobDescription.
+    refineOfJobId?: string;
+    feedback?: string;
+    scope?: 'resume' | 'cover_letter' | 'both';
   }>().notNull(),
   result: jsonb("result").$type<Record<string, unknown>>(), // wire-shaped GenerateResult (no PDF bytes)
   error: jsonb("error").$type<Record<string, unknown>>(), // error envelope on failure

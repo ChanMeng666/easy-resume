@@ -513,6 +513,22 @@ timing/token/cost but not the candidate's text.
 - **cover-letter.ts**: `generateText` → 3-4 paragraph cover letter — **reason tier**
 - **template-selector.ts**: rule-based industry/level → template ID (no LLM)
 
+### Targeted Refinement (`src/server/core/refine.ts`)
+A refine doesn't re-run the 8-step pipeline. `runRefinementPipeline` operates on
+a completed parent job's stored artifacts and runs **4 steps** — revise (resume
+∥ cover letter, in one parallel reason-tier wave, scoped) → deterministic ATS
+re-score → render → compile — returning the same `GenerateResult` shape so
+transports/persistence handle it identically. It is **FREE by default**
+(`REFINE_COST_CREDITS = 0`; the charge path is wired + tested behind the
+constant). Exposed at **`POST /api/refine`** (SSE, mirrors `/api/generate`'s
+event shapes; auth + `refine:{userId}` rate limit 10/60s; body `{ refineOfJobId,
+feedback, scope? }`). The route loads the owner-scoped parent, builds artifacts
+via `buildRefineArtifacts` (`src/server/jobs/refineArtifacts.ts`, unit-tested for
+old jobs missing parsedJD/coverLetter/templateId), reserves a job linked to the
+parent (version chain), then persists via the shared `finalizeSucceededJob`. The
+editor's Refine box now calls this (free, with a resume/cover-letter/both scope
+selector and a 4-step progress galley) instead of re-running the full pipeline.
+
 ### Adding/Changing a Pipeline Step
 Edit `runGenerationPipeline` in `src/server/core/pipeline.ts`, add the dep to
 `PipelineDeps`/`defaultDeps`, keep the single billing call site after compile,
