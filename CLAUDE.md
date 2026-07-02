@@ -69,10 +69,14 @@ under `src/server/`, separate from the HTTP/SSE routes (which are thin adapters)
 ```
 src/server/
 ├── core/
-│   ├── pipeline.ts        # runGenerationPipeline() — the 8-step orchestrator (no HTTP/SSE)
+│   ├── pipeline.ts        # runGenerationPipeline() — the 8-step generation orchestrator (no HTTP/SSE)
+│   ├── refine.ts          # runRefinementPipeline() — the 4-step targeted refine core (free by default)
+│   ├── step.ts            # makeStepRunner() — bounded retry/backoff + typed errors, shared by both pipelines
 │   ├── pipeline.types.ts  # Caller, GenerateInput/Result, ProgressEvent, PipelineDeps
 │   ├── compile.ts         # compileTypstToPdf() — Typst→PDF core (napi-rs-ready seam)
-│   └── deps.ts            # defaultDeps() — wires real agent/render/compile/meter/logger
+│   ├── jdParseCache.ts    # withJdParseCache() — cross-user LRU around parseJobDescription (deps seam)
+│   ├── sanitize.ts        # prompt-injection sanitizers for user input pre-LLM
+│   └── deps.ts            # defaultDeps()/defaultRefineDeps() — wire real agent/render/compile/meter/logger
 ├── billing/
 │   ├── meter.ts           # BillingMeter — charges once, only on success, idempotent
 │   └── stripeWebhook.ts   # applyStripeEvent() — webhook business logic (unit tested)
@@ -80,8 +84,15 @@ src/server/
 │   ├── apiKeys.ts         # mint/verify API keys (sha256 hash; raw shown once)
 │   └── caller.ts          # getCaller() — resolves Bearer key OR Stack cookie → Caller
 ├── jobs/
-│   ├── runner.ts          # in-process async job runner for the v1 API (no microservice)
-│   └── persist.ts         # shared toWireResult/deriveJobTitle/persistCompletedJob/storeResumePdf/deleteJobPdfs
+│   ├── runner.ts          # in-process async job runner for the v1 API (generation + refine dispatch)
+│   ├── concurrency.ts     # createSemaphore() — FIFO cap on in-flight background jobs (JOB_CONCURRENCY)
+│   ├── refineArtifacts.ts # buildRefineArtifacts() — parent job's stored input+result → RefineArtifacts
+│   └── persist.ts         # shared reserveJob/finalizeSucceededJob/failJob/toWireResult/deriveJobTitle/
+│                          #   createManualVersion/storeResumePdf/deleteJobPdfs
+├── agent/                 # conversational edit agent (P2): editAgent.ts (tool loop), editTools.ts,
+│                          #   prompts.ts (edit-agent v3), store.ts (threads/messages/version snapshots + GC)
+├── profiles/store.ts      # candidate_profiles CRUD (P1)
+├── applications/store.ts  # applications CRUD (P2 tracker)
 ├── storage/
 │   ├── blobStore.ts       # getBlobStore() seam — R2 store if configured, else no-op NullBlobStore
 │   └── r2.ts              # Cloudflare R2 (S3-compatible) impl; @aws-sdk/client-s3 imported lazily
@@ -89,7 +100,7 @@ src/server/
 │   ├── AppError.ts        # typed errors: code/httpStatus/retriable/step/headers
 │   └── envelope.ts        # toErrorEnvelope() + errorResponse()
 ├── log/
-│   └── logger.ts          # zero-dep structured JSON logger (AI-readable)
+│   └── logger.ts          # zero-dep structured JSON logger (AI-readable; serializes err.cause chain)
 └── ratelimit.ts           # Postgres-backed fixed-window rate limiting (fail-open)
 ```
 
@@ -107,7 +118,15 @@ Thin transports sit over this core:
 3. **`/api/resumes`** — cookie-session (or Bearer) WEB history API over the same
    `generationJobs` table: `GET` (list, `?q`/`limit`/`offset`), `GET [id]`
    (detail, powers free editor re-open), `DELETE [id]` (also drops stored R2
-   PDFs), and `GET [id]/cover-letter/pdf`. Owner-checked → NotFound for non-owners.
+   PDFs), `GET [id]/cover-letter/pdf`, and `[id]/versions` (version chain +
+   `versions/compare`). Owner-checked → NotFound for non-owners.
+4. **`POST /api/refine`** — SSE adapter for the web UI's targeted refinement;
+   mirrors `/api/generate`'s event shapes, reserves a job linked to the parent
+   (version chain), runs `runRefinementPipeline`. Free by default.
+5. **`POST /api/v1/resumes/{id}/refine`** — public agent-facing refine (async
+   202 job over the same core; the runner dispatches refine-shaped inputs).
+6. **`/api/threads`** — conversational edit-agent transport (P2): thread CRUD +
+   `[id]/messages` (SSE tool-loop turn). Editing is free.
 
 ### Conventions (apply to all backend code)
 - **Errors are machine-readable, never prose.** Throw an `AppError` subclass;
@@ -134,10 +153,17 @@ Thin transports sit over this core:
 ## Billing & Credits (outcome-based)
 
 - Prepaid credits in the `credits` table (3 free on signup). 1 credit per
-  successfully generated resume result.
-- The **sole charge call site** is inside `runGenerationPipeline`, *after* the
-  PDF compiles successfully. Any earlier failure skips it → failures are free.
-- **Idempotent**: `creditService.useCreditsIdempotent()` keys on the generation
+  successfully generated resume result. Charge kinds: `resume_generation` and
+  `resume_refinement` (`BillingMeter`).
+- **Generation always charges; refinement and edits are free.** The primary
+  charge call site is inside `runGenerationPipeline`, *after* the PDF compiles.
+  `runRefinementPipeline` has a **mirror charge site guarded by
+  `REFINE_COST_CREDITS` (= 0)** — the whole charge path is implemented + tested
+  behind the constant, but with it at 0 a refine takes no credits (a paid
+  generation already bought the first PDF). The conversational edit agent and
+  manual version saves never charge at all. In every case the charge (when it
+  runs) happens only *after* a successful compile → any earlier failure is free.
+- **Idempotent**: `creditService.useCreditsIdempotent()` keys on the
   `idempotencyKey` (stored as `creditTransactions.referenceId`) so SSE
   reconnects / job retries never double-charge.
 - Stripe top-ups go through `applyStripeEvent()`; the webhook dedupes by Stripe
@@ -149,8 +175,11 @@ Thin transports sit over this core:
 Postgres** (`rate_limits` table, atomic upsert) — NOT Redis (Upstash was removed
 after being idle-deleted). `enforceRateLimit()` throws `RateLimitedError` (429)
 carrying `Retry-After` + `X-RateLimit-*` headers; success responses also carry
-`X-RateLimit-*`. Fail-open on DB error. Applied to `/api/generate` (15/min) and
-`POST /api/v1/resumes` (30/min).
+`X-RateLimit-*`. Fail-open on DB error. Per-caller keys/limits:
+`gen:` `/api/generate` 15/min · `refine:` `/api/refine` 10/min ·
+`chat:` `/api/threads/[id]/messages` 30/min · `v1gen:` `POST /api/v1/resumes`
+30/min · `v1refine:` `POST /api/v1/resumes/[id]/refine` 10/min (plus write
+limits on the applications/profiles/threads/versions CRUD routes).
 
 ## Database & Migrations
 
@@ -167,27 +196,35 @@ carrying `Retry-After` + `X-RateLimit-*` headers; success responses also carry
   generate`** to produce migrations — `scripts/migrate.ts` is authoritative; add
   idempotent DDL there when you add a table/column.
 - **Active tables**: `generation_jobs` (the single persistence model for ALL
-  generations — web + v1 API; columns include `title`, `input`, `result` JSONB,
-  `pdf_url`, `charged`, `idempotency_key`), `credits`, `credit_transactions`,
-  `api_keys`, `stripe_events`, `rate_limits`. JSONB columns are typed via Drizzle
-  `.$type<...>()`.
-- **Unused scaffolding** (defined in schema + migrate.ts but NO CRUD anywhere —
+  generations AND refinements — web + v1 API; columns include `title`, `input`,
+  `result` JSONB, `pdf_url`, `charged`, `idempotency_key`, and `parent_job_id`
+  for the refine/version chain), `credits`, `credit_transactions`, `api_keys`,
+  `stripe_events`, `rate_limits`. P1/P2 activated more: `candidate_profiles`
+  (profiles store), `applications` (tracker), `agent_threads`/`agent_messages`
+  (edit-agent conversations + version snapshots). JSONB columns are typed via
+  Drizzle `.$type<...>()`.
+- **Unused scaffolding** (defined in schema + migrate.ts but still NO CRUD —
   do not assume they hold data): `resumes` (+ its dead `pdf_blob_url`/`pdf_updated_at`
-  columns), `tailored_resumes`, `applications`, `job_descriptions`,
-  `agent_threads`/`agent_messages`, `resume_versions`. Kept deliberately as
-  forward scaffolding; the live "My Resumes" history uses `generation_jobs`, not
-  these.
+  columns), `tailored_resumes`, `job_descriptions`, `resume_versions` (the live
+  version chain is `generation_jobs.parent_job_id`/`root_job_id`, NOT this
+  table). Kept as forward scaffolding; the live "My Resumes" history uses
+  `generation_jobs`, not these.
 
 ## Testing
 
-- **Vitest** (`npm test`). Config in `vitest.config.ts` aliases `@` → `src` and
-  stubs `server-only` (so server modules import cleanly in Node).
-- Money-path is covered: `src/server/core/pipeline.test.ts` (billing gating:
-  charge once on success, no charge on failure, fast-fail on no credits) and
-  `src/server/billing/stripeWebhook.test.ts` (credit grants / pro renewal).
-- Pure helpers are covered: `src/server/jobs/persist.test.ts` (toWireResult /
-  deriveJobTitle) and `src/server/storage/blobStore.test.ts` (key derivation +
-  no-op store). DB/route/R2 I/O is left to integration runs, not unit tests.
+- **Vitest** (`npm test`, ~240 tests). Config in `vitest.config.ts` aliases
+  `@` → `src` and stubs `server-only` (so server modules import cleanly in Node).
+- Money-path is covered: `src/server/core/pipeline.test.ts` and
+  `src/server/core/refine.test.ts` (billing gating: charge once on success, no
+  charge on failure, fast-fail on no credits; refine's charge path is exercised
+  via the `costCredits` override) and `src/server/billing/stripeWebhook.test.ts`
+  (credit grants / pro renewal).
+- Core/helper coverage includes `jdParseCache.test.ts`, `concurrency.test.ts`
+  (FIFO semaphore), `step.test.ts` (retry classification), `runner.test.ts`
+  (job runner + refine dispatch), `reserveJob`/`refineArtifacts`/
+  `createManualVersion` tests, `logger.test.ts` (JSON + cause chain),
+  `prompts.test.ts`, `resumeData` schema tests, edit-agent + store tests, and
+  `persist`/`blobStore` helpers. DB/route/R2 I/O is left to integration runs.
 - Prefer testing the **core with injected fakes** over hitting the DB/LLM.
 
 ## Data-Driven Architecture
@@ -315,11 +352,11 @@ The UI follows a **Neobrutalism** design aesthetic with these key characteristic
 
 #### Editor Page (`src/app/editor/page.tsx`)
 - **Result review page**: Shows AI generation progress, then PDF preview with actions
-- **Progress state**: 8-step animated progress synced with backend SSE pipeline (the 8th step is server-side PDF compilation)
+- **Progress state**: generation shows 8-step animated progress; a refine shows a separate 4-step gallery (`PROGRESS_STEPS` vs `REFINE_PROGRESS_STEPS`), synced with the backend SSE pipelines
 - **Auth required**: generation now needs a signed-in user (you cannot charge an anonymous caller); the SSE error event carries the structured envelope
 - **Result state**: PDF preview + ATS score badge + matched skills + cover letter
 - **Export actions**: Download PDF, Download .typ, Copy Code, Show Cover Letter
-- **Refinement input**: Natural language feedback → re-runs pipeline (a deliberate new charge)
+- **Refinement input**: Natural language feedback with a `resume | cover_letter | both` scope selector → calls `POST /api/refine` (**free**, targeted 4-step refine — NOT a full re-run/re-charge); the result becomes a new version in the parent's chain
 - **Persisted + resumable**: a successful generation is saved (see "Backend
   Architecture"); the SSE `saved` event deep-links the URL to `/editor?job=<id>`
   so a refresh restores the result. `/editor?job=<id>` (used by My Resumes "Open")
@@ -373,11 +410,15 @@ src/
 │   ├── layout.tsx            # Root layout with metadata
 │   ├── globals.css           # Global styles and CSS variables
 │   ├── api/
-│   │   ├── generate/route.ts # SSE adapter for web UI → pipeline core (persists result)
+│   │   ├── generate/route.ts # SSE adapter for web UI → generation pipeline core (persists result)
+│   │   ├── refine/route.ts   # SSE adapter for web UI → refinement core (free; version chain)
 │   │   ├── compile/route.ts  # Thin wrapper over compileTypstToPdf core
 │   │   ├── keys/route.ts     # API key mint/list/revoke (cookie-session protected)
-│   │   ├── resumes/          # WEB history API: route (GET list, q/limit/offset) + [id] (GET/DELETE) + [id]/cover-letter/pdf
-│   │   ├── v1/resumes/       # PUBLIC agent API (job-based): route + [id] + [id]/pdf
+│   │   ├── resumes/          # WEB history API: route (GET list) + [id] (GET/DELETE) + [id]/cover-letter/pdf + [id]/versions(/compare)
+│   │   ├── threads/          # Edit-agent transport: thread CRUD + [id]/messages (SSE tool loop)
+│   │   ├── profiles/         # candidate_profiles CRUD (P1)
+│   │   ├── applications/     # application tracker CRUD (P2)
+│   │   ├── v1/resumes/       # PUBLIC agent API (job-based): route + [id] + [id]/pdf + [id]/refine
 │   │   └── credits/          # Credit balance + Stripe webhook
 │   ├── editor/
 │   │   ├── page.tsx          # Editor wrapper (Suspense; reads ?job=<id> to re-open)
@@ -387,13 +428,15 @@ src/
 │   ├── pricing/page.tsx      # Pricing tiers
 │   └── handler/[...stack]/   # Neon Auth (Stack Auth) pages
 ├── server/                   # ← transport-agnostic backend core (see "Backend Architecture")
-│   ├── core/                 # pipeline.ts, pipeline.types.ts, compile.ts, deps.ts
+│   ├── core/                 # pipeline.ts, refine.ts, step.ts, compile.ts, jdParseCache.ts, sanitize.ts, deps.ts, *.types.ts
 │   ├── billing/              # meter.ts, stripeWebhook.ts (+ *.test.ts)
 │   ├── auth/                 # apiKeys.ts, caller.ts
-│   ├── jobs/                 # runner.ts (v1 job runner), persist.ts (shared persistence + R2 store/delete)
+│   ├── jobs/                 # runner.ts, concurrency.ts, refineArtifacts.ts, persist.ts (reserveJob/finalize/createManualVersion + R2)
+│   ├── agent/                # editAgent.ts, editTools.ts, prompts.ts, store.ts (conversational edit agent)
+│   ├── profiles/, applications/ # candidate_profiles / application tracker stores
 │   ├── storage/              # blobStore.ts (R2 seam) + r2.ts (S3-compatible impl) + *.test.ts
 │   ├── errors/               # AppError.ts, envelope.ts
-│   ├── log/                  # logger.ts (structured JSON)
+│   ├── log/                  # logger.ts (structured JSON, err.cause chain)
 │   └── ratelimit.ts          # Postgres fixed-window rate limiting
 ├── components/
 │   ├── auth/                 # Authentication components
@@ -408,8 +451,11 @@ src/
 │   │   ├── background-parser.ts # Free text → ResumeData (reason tier)
 │   │   ├── matching-engine.ts # Resume ↔ JD analysis (reason tier)
 │   │   ├── resume-tailor.ts  # Tailors resume to JD (reason tier)
-│   │   ├── ats-scorer.ts     # ATS scoring (extract tier)
+│   │   ├── resume-reviser.ts, cover-letter-reviser.ts # minimal-diff refine agents (reason tier)
+│   │   ├── ats-scorer.ts, keyword-coverage.ts # deterministic ATS score (no LLM)
+│   │   ├── faithfulness-check.ts # deterministic grounding gate (no LLM)
 │   │   ├── cover-letter.ts   # Cover letter generation (reason tier)
+│   │   ├── prompt-registry.ts # per-step prompt version source of truth
 │   │   └── template-selector.ts # Rule-based template selection (no LLM)
 │   ├── typst/
 │   │   ├── generator.ts      # Main Typst code generation
@@ -486,14 +532,18 @@ independent pairs parallelized for latency:
 1. **Parse JD** (`parseJobDescription`) ∥ 2. **Parse Background** (`parseBackground`) — run concurrently
 3. **Analyze Match** (`analyzeMatch`) — deterministic skill overlap + LLM
 4. **Tailor Resume** (`tailorResume`)
-5. **Score ATS** (`scoreATS`) ∥ 6. **Cover Letter** (`generateCoverLetter`) — run concurrently
+5. **Score ATS** (`scoreATS` = `scoreATSDeterministic`, **no LLM**) ∥ 6. **Cover Letter** (`generateCoverLetter`) — run concurrently
 7. **Render** (`selectTemplate` + template generator → Typst code + cover-letter Typst)
 8. **Compile** (`compileTypstToPdf` → PDF bytes — the billable artifact)
 
 After step 8 succeeds, the **single billing charge** happens (`deps.meter.chargeForResult`).
-Each step is wrapped so failures become typed `PipelineStepError`/`CompilationError`
-(no charge). Progress is pushed via `deps.onProgress` so the SSE route can stream
-it. User input is zod-validated and prompt-injection-sanitized before reaching LLMs.
+Each step is wrapped (`makeStepRunner`, `src/server/core/step.ts`) so retriable
+infra blips back off and any final failure becomes a typed `PipelineStepError`/
+`CompilationError` (no charge). Step 1's `parseJobDescription` runs through a
+cross-user LRU cache (`withJdParseCache`, `src/server/core/jdParseCache.ts`) at
+the deps seam. Progress is pushed via `deps.onProgress` so the SSE route can
+stream it. User input is zod-validated and prompt-injection-sanitized before
+reaching LLMs.
 
 ### Agent Modules (`src/lib/agent/`)
 Models are **tiered** (`src/lib/agent/models.ts`): `extractModel` (default
@@ -509,25 +559,73 @@ timing/token/cost but not the candidate's text.
 - **background-parser.ts**: `generateObject` → ResumeData from free text — **reason tier**
 - **matching-engine.ts**: deterministic skill overlap + LLM analysis → MatchAnalysis — **reason tier**
 - **resume-tailor.ts**: rewrites bullets, reorders skills, adjusts summary — **reason tier**
-- **ats-scorer.ts**: formatting/keywords/experience/skills → ATSReport (0-100) — **extract tier**
+- **ats-scorer.ts**: `scoreATSDeterministic` — pure keyword coverage (`keyword-coverage.ts`), **no LLM** (the old extract-tier LLM report was 100% discarded downstream and was removed)
 - **cover-letter.ts**: `generateText` → 3-4 paragraph cover letter — **reason tier**
+- **resume-reviser.ts** / **cover-letter-reviser.ts**: minimal-diff revise agents used by the refine core — **reason tier**
+- **faithfulness-check.ts**: deterministic grounding gate (revision must not invent facts vs the original) — no LLM
 - **template-selector.ts**: rule-based industry/level → template ID (no LLM)
+- **prompt-registry.ts**: single source of truth for per-step prompt versions
+  (attached to telemetry + recorded on results); `score-ats` was removed with the LLM scorer
 
 ### Targeted Refinement (`src/server/core/refine.ts`)
 A refine doesn't re-run the 8-step pipeline. `runRefinementPipeline` operates on
-a completed parent job's stored artifacts and runs **4 steps** — revise (resume
-∥ cover letter, in one parallel reason-tier wave, scoped) → deterministic ATS
-re-score → render → compile — returning the same `GenerateResult` shape so
-transports/persistence handle it identically. It is **FREE by default**
-(`REFINE_COST_CREDITS = 0`; the charge path is wired + tested behind the
-constant). Exposed at **`POST /api/refine`** (SSE, mirrors `/api/generate`'s
-event shapes; auth + `refine:{userId}` rate limit 10/60s; body `{ refineOfJobId,
-feedback, scope? }`). The route loads the owner-scoped parent, builds artifacts
-via `buildRefineArtifacts` (`src/server/jobs/refineArtifacts.ts`, unit-tested for
-old jobs missing parsedJD/coverLetter/templateId), reserves a job linked to the
-parent (version chain), then persists via the shared `finalizeSucceededJob`. The
-editor's Refine box now calls this (free, with a resume/cover-letter/both scope
-selector and a 4-step progress galley) instead of re-running the full pipeline.
+a completed parent job's stored artifacts (`RefineArtifacts`) + first-class
+sanitized `feedback` (1..8000 chars) + an explicit `scope`
+(`'resume'|'cover_letter'|'both'`, default `'resume'`) and runs **4 steps** —
+revise → deterministic ATS re-score → render → compile — returning the same
+`GenerateResult` shape so transports/persistence handle it identically:
+1. **Revise** — ONE parallel reason-tier wave: `reviseResume` (skipped when
+   scope=`cover_letter`) ∥ `reviseCoverLetter` (skipped when scope=`resume`),
+   each a minimal-diff agent. A resume revision passes a deterministic
+   **faithfulness gate**; a violation triggers exactly one corrective revise
+   pass. For jobs stored before `parsedJD` persistence the JD is re-parsed once,
+   folded into this step (still 4 progress events).
+2. **Score ATS** — deterministic keyword re-score (no LLM).
+3. **Render** — parent's template generator → resume + cover-letter Typst.
+4. **Compile** — the (billable, when enabled) PDF.
+
+It is **FREE by default** (`REFINE_COST_CREDITS = 0`; the whole charge path —
+kind `resume_refinement` — is wired + tested behind the constant via the
+`costCredits` dep override). `GenerateResult` now carries `parsedJD` (persisted
+via `toWireResult`) so a refine-of-refine never re-parses.
+
+Two transports over the shared core:
+- **`POST /api/refine`** — web SSE, mirrors `/api/generate`'s event shapes; auth
+  + `refine:{userId}` 10/60s; body `{ refineOfJobId, feedback, scope? }`. Loads
+  the owner-scoped parent, builds artifacts via `buildRefineArtifacts`
+  (`src/server/jobs/refineArtifacts.ts`, tolerant of old jobs missing
+  parsedJD/coverLetter/templateId), reserves a job linked to the parent (version
+  chain), then persists via the shared `finalizeSucceededJob`.
+- **`POST /api/v1/resumes/{id}/refine`** — agent-facing async 202 job; the
+  shared runner dispatches refine-shaped inputs (`isRefineInput`) to the same
+  core. Same failed-key reclaim semantics as generation (`docs/api/v1.md`).
+
+The editor's Refine box calls the web endpoint (free, with a resume/cover-letter/
+both scope selector and a 4-step progress gallery) instead of re-running the
+full pipeline.
+
+### Conversational Edit Agent (`src/server/agent/`)
+A bounded AI-SDK tool-calling loop (`runEditTurn` in `editAgent.ts`) lets the
+user edit a working `ResumeData` **and** cover letter in natural language; the
+document is deterministically re-rendered to Typst after each edit. **Free** — no
+billing here; the sole charge site stays the post-compile call in
+`runGenerationPipeline`. Key traits:
+- **Controlled tools** (`editTools.ts`): whole-list `editWorkHighlights`/
+  `editProjectHighlights` plus single-bullet `editWorkHighlight`/
+  `editProjectHighlight`, skill/section edits, and cover-letter tools
+  `rewriteCoverLetterParagraph`/`setCoverLetterText`/`previewCoverLetter`. Every
+  input is zod-validated, sanitized, and render-bounded.
+- **Token streaming**: `streamText` with `onChunk` text deltas; `onError` is
+  captured and rethrown so a mid-stream failure still rejects.
+- **Context cost control**: the system prompt embeds a compact tool-editable
+  projection (`buildResumeProjection`) not the full ResumeData, and history
+  replay is windowed to the last 30 text turns (`tailHistoryWindow`) with an
+  omission marker. Prompt id `edit-agent` is at **v3**.
+- **Persistence** (`store.ts`): turns append to `agent_threads`/`agent_messages`;
+  snapshots carry optional cover-letter fields (old snapshots stay valid) and are
+  GC'd to the newest 3 assistant blobs per thread (`gcThreadSnapshots`,
+  best-effort). Manual version saves (`createManualVersion`) are free and
+  re-render the letter's Typst server-side.
 
 ### Adding/Changing a Pipeline Step
 Edit `runGenerationPipeline` in `src/server/core/pipeline.ts`, add the dep to
@@ -690,6 +788,27 @@ This project underwent multiple architectural transformations:
       page has a debounced search box, result count, and Load more.
     - **Env**: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`,
       `R2_BUCKET` (all optional; wired into `deploy.yml` runtime env).
+
+14. **P3 "refinement-first" refactor** (current, PRs #32–#48; see
+    `docs/decisions/0002-refinement-first-architecture.md`):
+    - **Added**: targeted refinement core `src/server/core/refine.ts`
+      (`runRefinementPipeline`, 4 steps, scoped, **free** behind
+      `REFINE_COST_CREDITS`) + minimal-diff revise agents + shared
+      `step.ts`/`refineArtifacts.ts`; both transports `POST /api/refine`
+      (web SSE) and `POST /api/v1/resumes/{id}/refine` (agent async job).
+      `GenerateResult` now persists `parsedJD` (refine-of-refine never
+      re-parses). JD parse cache (`jdParseCache.ts`) + FIFO job semaphore
+      (`concurrency.ts`, `JOB_CONCURRENCY`). Edit-agent cover-letter tools +
+      token streaming + context projection/history window + snapshot GC.
+      Ops: `.github/workflows/ci.yml` + `logs.yml`, logger err.cause chain.
+    - **Removed**: the step-5 ATS **LLM** call (its output was 100% discarded) —
+      scoring is now pure `scoreATSDeterministic`; `atsReportSchema`/`ATSReport`
+      and prompt id `score-ats` deleted. Removed unused `openai` dep + `vercel.json`.
+    - **Fixed**: `resumeDataSchema` now tolerates empty strings on fields the AI
+      must never invent (education/work dates+location, project description;
+      `parse-background` v2) so a truthful "unknown" no longer fails validation.
+    - **Invariant preserved**: charge-once-after-compile holds — the refine
+      charge site is a guarded sibling (constant = 0), edits/manual versions are free.
 
 **Legacy reference**: `A4_RESUME_USAGE.md` documents the original HTML/CSS approach (not currently used)
 
