@@ -47,7 +47,9 @@ export const PROMPT_VERSIONS: Record<PromptFunctionId, string> = {
   'revise-resume': 'v1',
   'revise-cover-letter': 'v1',
   // v2: added the cover-letter section + the three letter-editing tools.
-  'edit-agent': 'v2',
+  // v3: resume embedded as a compact tool-editable projection (not full JSON);
+  //     replayed history windowed to the most recent turns.
+  'edit-agent': 'v3',
 };
 
 /** The version string for a given agent step. */

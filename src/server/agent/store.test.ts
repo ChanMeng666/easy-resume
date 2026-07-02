@@ -11,6 +11,7 @@ import {
   deriveThreadTitle,
   pickLatestSnapshot,
   selectSnapshotIdsToGc,
+  tailHistoryWindow,
   type ResumeSnapshot,
   type StoredMessage,
   type TurnMessageInput,
@@ -271,5 +272,34 @@ describe('selectSnapshotIdsToGc', () => {
     const rows = [row('a', 1), row('b', 2), row('c', 3)];
     expect(selectSnapshotIdsToGc(rows, 1)).toEqual(['b', 'a']);
     expect(selectSnapshotIdsToGc(rows, 0)).toEqual(['c', 'b', 'a']);
+  });
+});
+
+describe('tailHistoryWindow', () => {
+  const items = (n: number) => Array.from({ length: n }, (_, i) => `m${i + 1}`);
+
+  it('passes a short history through untruncated', () => {
+    const out = tailHistoryWindow(items(5), 30);
+    expect(out.truncated).toBe(false);
+    expect(out.items).toHaveLength(5);
+  });
+
+  it('keeps only the most recent max entries and flags truncation', () => {
+    const out = tailHistoryWindow(items(40), 30);
+    expect(out.truncated).toBe(true);
+    expect(out.items).toHaveLength(30);
+    expect(out.items[0]).toBe('m11');
+    expect(out.items[29]).toBe('m40');
+  });
+
+  it('handles the exact-boundary case without truncation', () => {
+    const out = tailHistoryWindow(items(30), 30);
+    expect(out.truncated).toBe(false);
+    expect(out.items).toHaveLength(30);
+  });
+
+  it('returns empty (flagged) for a non-positive window', () => {
+    expect(tailHistoryWindow(items(3), 0)).toEqual({ items: [], truncated: true });
+    expect(tailHistoryWindow([], 0)).toEqual({ items: [], truncated: false });
   });
 });

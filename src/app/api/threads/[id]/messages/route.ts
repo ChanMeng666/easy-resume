@@ -15,7 +15,7 @@
 
 import { NextRequest } from 'next/server';
 import { getCaller } from '@/server/auth/caller';
-import { loadHistory, latestResumeSnapshot, threadMaxSequence, appendTurn, type TurnMessageInput } from '@/server/agent/store';
+import { loadHistory, latestResumeSnapshot, threadMaxSequence, appendTurn, tailHistoryWindow, type TurnMessageInput } from '@/server/agent/store';
 import { runEditTurn, defaultEditAgentDeps } from '@/server/agent/editAgent';
 import type { HistoryMessage } from '@/server/agent/editAgent.types';
 import { threadMessageSchema, type ResumeData } from '@/lib/validation/schema';
@@ -33,6 +33,10 @@ const CHAT_WINDOW_SECONDS = 60;
 // Hard cap on the request body (a message is at most 8k chars + small JSON
 // overhead); rejected before parsing so a huge body can't be buffered first.
 const MAX_BODY_BYTES = 32_000;
+// Replay only the most recent text turns to the model. The system prompt carries
+// the LIVE resume/letter state, so older turns are conversational color, not
+// state — a long thread otherwise grows the prompt monotonically.
+const HISTORY_WINDOW = 30;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -114,10 +118,17 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     baseCoverLetter = snapshot.coverLetter ?? '';
     baseCoverLetterTypst = snapshot.coverLetterTypst ?? '';
     const prior = await loadHistory(caller.userId, threadId);
-    // Replay only user + assistant TEXT turns (the live resume is injected fresh).
-    history = prior
+    // Replay only user + assistant TEXT turns (the live resume is injected fresh),
+    // windowed to the most recent HISTORY_WINDOW: old turns add token cost without
+    // adding state (the system prompt carries the live resume/letter). A dropped
+    // prefix is flagged with a static one-liner so the model knows there's a gap.
+    const allText = prior
       .filter((m) => (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string' && m.content.trim())
       .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
+    const windowed = tailHistoryWindow(allText, HISTORY_WINDOW);
+    history = windowed.truncated
+      ? [{ role: 'assistant' as const, content: 'Earlier conversation omitted.' }, ...windowed.items]
+      : windowed.items;
   } catch (error) {
     return errorResponse(error, requestId);
   }
