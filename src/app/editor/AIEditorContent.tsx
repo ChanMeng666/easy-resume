@@ -472,6 +472,14 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
   const [progressMode, setProgressMode] = useState<'generate' | 'refine'>('generate');
   // Free, client-side structured field editing (no LLM, no charge).
   const [editMode, setEditMode] = useState(false);
+  // True when the visible result has local field edits (Edit fields → Apply)
+  // that are NOT yet persisted to the `currentJobId` row. The conversational
+  // "Edit with AI" assistant opens the PERSISTED resume, so it must persist these
+  // edits first (persist-before-navigate) or they'd be silently dropped.
+  const [editsDirty, setEditsDirty] = useState(false);
+  // Non-blocking error surfaced in the Advanced-edit disclosure (e.g. a
+  // persist-before-navigate save failed) so we can stay on the page.
+  const [advancedEditError, setAdvancedEditError] = useState<string | null>(null);
   // Secondary "Advanced edit" disclosure — folds the two power-user edit
   // surfaces (structured field editor + conversational AI editor) so the
   // conversational Refine box stays the calm, primary edit surface.
@@ -570,6 +578,7 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
       setResult(null);
       setError(null);
       setWasHiddenDuringGeneration(false);
+      setEditsDirty(false);
 
       runGenerationStream(
         currentJd,
@@ -635,6 +644,7 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
       }
       // This IS the current job — track it as a refine parent and load its chain.
       setCurrentJobId(id);
+      setEditsDirty(false); // a freshly loaded persisted job has no local edits
       fetchVersions(id);
     } catch (err) {
       setError(classifyError(err));
@@ -761,6 +771,7 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
       setResult(null);
       setError(null);
       setWasHiddenDuringGeneration(false);
+      setEditsDirty(false);
 
       runRefineStream(currentJobId, feedback, idempotencyKey, controller.signal, {
         onProgress: setCurrentStep,
@@ -809,28 +820,45 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
       const newTypst = renderTypstFromResume(next, result.templateId);
       setResult({ ...result, resumeData: next, typstCode: newTypst });
       setEditMode(false);
+      // Local edit applied in-memory only — it now diverges from the persisted
+      // currentJobId row until Save as version / Edit with AI persists it.
+      setEditsDirty(true);
     },
     [result]
   );
 
   /**
-   * Persist a free structured edit as a NEW version (no charge). The server
-   * re-renders the Typst and writes an uncharged generation_jobs row in the same
-   * chain; we then deep-link to it so a refresh restores the saved version. This
-   * is pure storage — NO LLM, NO credit (unlike the billable Refine).
+   * Persist the given resume data as a NEW version (no charge) and return the new
+   * job id. The server re-renders the Typst and writes an uncharged
+   * generation_jobs row in the same chain. Pure storage — NO LLM, NO credit.
+   * Throws on failure so callers can decide whether to navigate or stay.
+   */
+  const persistVersion = useCallback(
+    async (next: ResumeData): Promise<string> => {
+      if (!result || !currentJobId) throw new Error('No result to persist');
+      const res = await fetch(`/api/resumes/${currentJobId}/versions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resumeData: next, templateId: result.templateId }),
+      });
+      if (!res.ok) throw new Error(`Save failed (${res.status})`);
+      const { id: newId } = await res.json();
+      return newId as string;
+    },
+    [result, currentJobId]
+  );
+
+  /**
+   * Save a free structured edit as a NEW version and re-open it in place (deep-
+   * linked so a refresh restores it). This is the explicit "Save as version"
+   * action from the field editor.
    */
   const handleSaveAsVersion = useCallback(
     async (next: ResumeData) => {
       if (!result || !currentJobId) return;
       setSavingVersion(true);
       try {
-        const res = await fetch(`/api/resumes/${currentJobId}/versions`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ resumeData: next, templateId: result.templateId }),
-        });
-        if (!res.ok) throw new Error(`Save failed (${res.status})`);
-        const { id: newId } = await res.json();
+        const newId = await persistVersion(next);
         setEditMode(false);
         try {
           window.history.replaceState(null, '', `/editor?job=${newId}`);
@@ -844,8 +872,36 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
         setSavingVersion(false);
       }
     },
-    [result, currentJobId, loadJob]
+    [result, currentJobId, loadJob, persistVersion]
   );
+
+  /**
+   * Open the conversational "Edit with AI" assistant on THIS resume. The
+   * assistant loads the PERSISTED resume, so any unsaved local field edits must
+   * be persisted first (persist-before-navigate) — otherwise they'd be silently
+   * dropped. On a persist failure we stay on the page and surface the error; we
+   * only navigate once a durable job id exists.
+   */
+  const handleEditWithAI = useCallback(async () => {
+    if (!currentJobId || !result) return;
+    setAdvancedEditError(null);
+
+    // No unsaved edits — the persisted resume already matches; navigate directly.
+    if (!editsDirty) {
+      window.location.href = `/resumes/${currentJobId}/assistant`;
+      return;
+    }
+
+    setSavingVersion(true);
+    try {
+      const newId = await persistVersion(result.resumeData);
+      window.location.href = `/resumes/${newId}/assistant`;
+    } catch (err) {
+      console.error('Failed to persist edits before Edit with AI:', err);
+      setAdvancedEditError('Could not save your edits. Please try again before editing with AI.');
+      setSavingVersion(false);
+    }
+  }, [currentJobId, result, editsDirty, persistVersion]);
 
   /** Persist a rename of the current version's label (owner-scoped PATCH). */
   const handleRenameVersion = useCallback(async () => {
@@ -1574,20 +1630,31 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
                   </Button>
 
                   {/* Conversational AI editing of THIS saved resume — free (no credit).
-                      Available whenever the result is persisted (currentJobId set); the
-                      assistant opens the SAVED resume, so it's guarded on an id only. */}
+                      Available whenever the result is persisted (currentJobId set). The
+                      assistant opens the PERSISTED resume, so any unsaved local field
+                      edits are persisted first (persist-before-navigate) rather than
+                      being silently dropped. */}
                   {currentJobId && (
                     <Button
                       variant="outline"
+                      disabled={savingVersion}
                       className="w-full border-2 border-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
-                      onClick={() => (window.location.href = `/resumes/${currentJobId}/assistant`)}
+                      onClick={handleEditWithAI}
                     >
-                      <Wand2 className="mr-2 h-4 w-4" />
-                      Edit with AI
+                      {savingVersion ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Wand2 className="mr-2 h-4 w-4" />
+                      )}
+                      {savingVersion ? 'Saving edits…' : 'Edit with AI'}
                       <span className="ml-2 rounded border border-black bg-green-100 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase">
                         Free
                       </span>
                     </Button>
+                  )}
+
+                  {advancedEditError && (
+                    <p className="proof-label !text-red-700">{advancedEditError}</p>
                   )}
                 </div>
               )}
