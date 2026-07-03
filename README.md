@@ -64,7 +64,7 @@ Vitex is an AI-powered resume generation platform that transforms a job descript
 
 - **AI Resume Generation** -- Paste a job description + describe your background, get a tailored resume PDF
 - **8-Step AI Pipeline** -- JD parsing, background parsing, match analysis, tailoring, ATS scoring, cover letter, document generation, server-side PDF compilation
-- **Agent-Ready API** -- Operate the whole product over HTTP with an API key; no browser, 2FA, or CAPTCHA (see `docs/api/v1.md`)
+- **Agent-Ready API** -- Operate the whole product over HTTP with an API key; no browser, 2FA, or CAPTCHA (see `docs/api/v1.md`, the OpenAPI spec at `public/openapi.yaml`, and the runnable curl playbook at [`public/skill.md`](public/skill.md))
 - **Outcome-Based Billing** -- Credits are charged only when a resume is successfully produced (failures are free), idempotently
 - **7 Professional Templates** -- Auto-selected by AI based on industry and role (two-column, modern-cv, executive, creative, compact, banking, academic)
 - **ATS Optimization** -- Real-time ATS compatibility scoring with actionable feedback
