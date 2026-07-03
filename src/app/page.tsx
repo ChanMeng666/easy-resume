@@ -225,6 +225,18 @@ export default function HomePage() {
     } catch {
       // Private mode / quota exceeded — window global is our fallback.
     }
+
+    // Generation requires a signed-in user (we can't charge an anonymous
+    // caller). Gate on the way IN rather than letting the editor ambush the user
+    // with an auth error after they've already typed and clicked Generate: route
+    // straight to sign-in with a return-to-/editor. sessionStorage survives the
+    // same-origin auth round-trip, so on return the editor restores the inputs
+    // and auto-starts generation. (The window global is dropped by the full
+    // navigation; sessionStorage is the survivor here.)
+    if (!user) {
+      router.push(`/handler/sign-in?after_auth_return_to=${encodeURIComponent('/editor')}`);
+      return;
+    }
     router.push('/editor');
   }
 
