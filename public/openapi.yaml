@@ -1,0 +1,535 @@
+openapi: 3.1.0
+info:
+  title: Vitex Public API
+  version: "1.0.0"
+  description: >-
+    The API is the UI. Everything the Vitex web app does, an AI agent can do over
+    HTTP with a Bearer API key — no browser, cookie, 2FA, or CAPTCHA. Generation
+    is outcome-billed: you are charged 1 credit only when a job produces a
+    compiled PDF; validation errors, LLM-step failures, and compilation failures
+    are free; refinement is currently free. This document is hand-written and
+    kept in sync with the route source; the prose reference is docs/api/v1.md.
+  license:
+    name: MIT
+    identifier: MIT
+servers:
+  - url: https://www.vitex.org.nz
+    description: Production
+security:
+  - bearerApiKey: []
+tags:
+  - name: resumes
+    description: Generate, poll, download, and refine resumes (async job model).
+  - name: profiles
+    description: Reusable candidate backgrounds ("enter once, reuse across JDs").
+paths:
+  /api/v1/resumes:
+    post:
+      tags: [resumes]
+      operationId: createResumeJob
+      summary: Create a resume generation job
+      description: >-
+        Runs the full generation pipeline asynchronously. Provide either
+        `background` or a saved `profile_id`. Returns a job handle to poll.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateRequest'
+      responses:
+        '202':
+          description: Job accepted and queued.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobHandle'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '402':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/Error'
+        '500':
+          $ref: '#/components/responses/Error'
+  /api/v1/resumes/{id}:
+    get:
+      tags: [resumes]
+      operationId: getResumeJob
+      summary: Poll a resume job
+      parameters:
+        - $ref: '#/components/parameters/JobId'
+      responses:
+        '200':
+          description: The job's current state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+        '401':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '500':
+          $ref: '#/components/responses/Error'
+  /api/v1/resumes/{id}/pdf:
+    get:
+      tags: [resumes]
+      operationId: getResumePdf
+      summary: Download the compiled PDF
+      description: >-
+        Available once the job has succeeded. Served from object storage when
+        present, otherwise recompiled on demand from the stored Typst source.
+      parameters:
+        - $ref: '#/components/parameters/JobId'
+      responses:
+        '200':
+          description: The compiled resume PDF.
+          headers:
+            X-Pdf-Source:
+              description: Whether the bytes came from object storage or an on-demand recompile.
+              schema:
+                type: string
+                enum: [r2, compiled]
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Error'
+        '404':
+          description: Job not found, not yours, or its PDF is not available yet.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/Error'
+  /api/v1/resumes/{id}/refine:
+    post:
+      tags: [resumes]
+      operationId: refineResumeJob
+      summary: Refine a succeeded resume with natural-language feedback
+      description: >-
+        Creates a new job in the parent's version chain (the parent is never
+        mutated). Currently free. The parent must be one of your succeeded jobs
+        with a stored result, else NOT_FOUND.
+      parameters:
+        - $ref: '#/components/parameters/JobId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefineRequest'
+      responses:
+        '202':
+          description: Refine job accepted and queued.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobHandle'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/Error'
+        '500':
+          $ref: '#/components/responses/Error'
+  /api/profiles:
+    get:
+      tags: [profiles]
+      operationId: listProfiles
+      summary: List your saved backgrounds
+      responses:
+        '200':
+          description: Your profiles, newest-updated first.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProfileSummary'
+        '401':
+          $ref: '#/components/responses/Error'
+        '500':
+          $ref: '#/components/responses/Error'
+    post:
+      tags: [profiles]
+      operationId: createProfile
+      summary: Create a profile from raw background text
+      description: The raw background is always parsed server-side; creating a profile is free.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileCreateRequest'
+      responses:
+        '201':
+          description: The created profile summary.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileSummary'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/Error'
+        '500':
+          $ref: '#/components/responses/Error'
+  /api/profiles/{id}:
+    get:
+      tags: [profiles]
+      operationId: getProfile
+      summary: Fetch a profile with its parsed data
+      parameters:
+        - $ref: '#/components/parameters/ProfileId'
+      responses:
+        '200':
+          description: The profile detail.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileDetail'
+        '401':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '500':
+          $ref: '#/components/responses/Error'
+    put:
+      tags: [profiles]
+      operationId: updateProfile
+      summary: Update a profile's label or raw background
+      description: >-
+        At least one of `label` or `rawBackground` is required. Changing
+        `rawBackground` re-parses it server-side.
+      parameters:
+        - $ref: '#/components/parameters/ProfileId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileUpdateRequest'
+      responses:
+        '200':
+          description: The updated profile detail.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileDetail'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/Error'
+        '500':
+          $ref: '#/components/responses/Error'
+    delete:
+      tags: [profiles]
+      operationId: deleteProfile
+      summary: Delete a profile
+      parameters:
+        - $ref: '#/components/parameters/ProfileId'
+      responses:
+        '200':
+          description: Deletion acknowledged.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [deleted]
+                properties:
+                  deleted:
+                    type: boolean
+                    const: true
+        '401':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '500':
+          $ref: '#/components/responses/Error'
+components:
+  securitySchemes:
+    bearerApiKey:
+      type: http
+      scheme: bearer
+      description: >-
+        A Vitex API key, formatted `vitex_<prefix>_<secret>`. Mint one while
+        signed in to the web app (POST /api/keys, cookie-session only); the raw
+        token is shown once.
+  parameters:
+    JobId:
+      name: id
+      in: path
+      required: true
+      description: A generation/refine job id (UUID).
+      schema:
+        type: string
+        format: uuid
+    ProfileId:
+      name: id
+      in: path
+      required: true
+      description: A candidate profile id (UUID).
+      schema:
+        type: string
+        format: uuid
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: >-
+        Optional UUID that dedupes the job and (for generation) the charge. If
+        omitted or not a UUID, one is generated server-side. Re-POSTing a
+        succeeded key returns the existing result; an in-flight key returns the
+        same job; a failed key is reclaimed and re-run.
+      schema:
+        type: string
+        format: uuid
+  responses:
+    Error:
+      description: A machine-readable error envelope.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    GenerateRequest:
+      type: object
+      required: [jobDescription]
+      description: >-
+        Provide either `background` or `profile_id`. With `profile_id` the saved
+        profile's stored background and pre-parsed data are reused (the pipeline
+        skips background parsing).
+      properties:
+        jobDescription:
+          type: string
+          minLength: 1
+          description: The target job description.
+        background:
+          type: string
+          description: Free-text career background. Required unless `profile_id` is given.
+        templateId:
+          type: string
+          description: Optional template id; auto-selected from the JD if omitted.
+        profile_id:
+          type: string
+          format: uuid
+          description: Optional saved profile to source the background from (owner-scoped).
+    RefineRequest:
+      type: object
+      required: [feedback]
+      properties:
+        feedback:
+          type: string
+          minLength: 1
+          maxLength: 8000
+          description: Natural-language instruction describing the desired change.
+        scope:
+          type: string
+          enum: [resume, cover_letter, both]
+          default: resume
+          description: Which artifact(s) the feedback revises.
+    JobHandle:
+      type: object
+      required: [id, status, _links]
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/JobStatus'
+        _links:
+          type: object
+          required: [self, pdf]
+          properties:
+            self:
+              type: string
+            pdf:
+              type: string
+    Job:
+      type: object
+      required: [id, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/JobStatus'
+        result:
+          $ref: '#/components/schemas/GenerationResult'
+        error:
+          $ref: '#/components/schemas/ErrorObject'
+        pdfUrl:
+          type: string
+          description: Present only when `status` is `succeeded`.
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    JobStatus:
+      type: string
+      enum: [queued, running, succeeded, failed]
+    GenerationResult:
+      type: object
+      description: >-
+        Present when `status` is `succeeded`. `resumeData`, `matchAnalysis`, and
+        `parsedJD` are structured objects whose full shape is documented in the
+        source; they are intentionally left open here.
+      properties:
+        resumeData:
+          type: object
+          additionalProperties: true
+        typstCode:
+          type: string
+          description: The Typst source for the resume (zero-lock-in download).
+        coverLetter:
+          type: string
+        coverLetterTypst:
+          type: string
+        atsScore:
+          type: number
+        matchAnalysis:
+          type: object
+          additionalProperties: true
+        parsedJD:
+          type: object
+          additionalProperties: true
+        templateId:
+          type: string
+        usage:
+          type: object
+          properties:
+            charged:
+              type: boolean
+            credits:
+              type: integer
+            transactionId:
+              type: string
+      additionalProperties: true
+    ProfileSummary:
+      type: object
+      required: [id, label]
+      properties:
+        id:
+          type: string
+          format: uuid
+        label:
+          type: string
+        createdAt:
+          type: [string, "null"]
+          format: date-time
+        updatedAt:
+          type: [string, "null"]
+          format: date-time
+    ProfileDetail:
+      allOf:
+        - $ref: '#/components/schemas/ProfileSummary'
+        - type: object
+          properties:
+            rawBackground:
+              type: string
+            data:
+              type: object
+              additionalProperties: true
+              description: The server-parsed structured background (ResumeData shape).
+    ProfileCreateRequest:
+      type: object
+      required: [rawBackground]
+      properties:
+        rawBackground:
+          type: string
+          minLength: 1
+          maxLength: 50000
+        label:
+          type: string
+          minLength: 1
+          maxLength: 255
+    ProfileUpdateRequest:
+      type: object
+      minProperties: 1
+      description: At least one field is required (enforced server-side).
+      properties:
+        label:
+          type: string
+          minLength: 1
+          maxLength: 255
+        rawBackground:
+          type: string
+          minLength: 1
+          maxLength: 50000
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          $ref: '#/components/schemas/ErrorObject'
+    ErrorObject:
+      type: object
+      required: [code, message, retriable]
+      properties:
+        code:
+          type: string
+          enum:
+            - VALIDATION_FAILED
+            - UNAUTHENTICATED
+            - INSUFFICIENT_CREDITS
+            - RATE_LIMITED
+            - PIPELINE_STEP_FAILED
+            - PIPELINE_COMPILATION_FAILED
+            - PIPELINE_TIMEOUT
+            - NOT_FOUND
+            - CONFLICT
+            - INTERNAL
+        message:
+          type: string
+        retriable:
+          type: boolean
+          description: Whether a blind retry may help.
+        step:
+          type: string
+          description: The pipeline step where the error occurred, when applicable.
+          enum:
+            - validate
+            - parse_jd
+            - parse_background
+            - analyze_match
+            - tailor
+            - score_ats
+            - cover_letter
+            - render
+            - compile
+            - billing
+            - revise
+            - revise_resume
+            - revise_cover_letter
+        requestId:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
