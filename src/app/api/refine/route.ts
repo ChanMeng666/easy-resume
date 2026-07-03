@@ -18,6 +18,7 @@ import { z } from 'zod';
 import { eq } from 'drizzle-orm';
 import { getCaller } from '@/server/auth/caller';
 import { runRefinementPipeline, type RefineArtifacts } from '@/server/core/refine';
+import { inferRefineScope } from '@/server/core/refineScope';
 import { defaultRefineDeps } from '@/server/core/deps';
 import { buildRefineArtifacts } from '@/server/jobs/refineArtifacts';
 import { reserveJob, finalizeSucceededJob, failJob } from '@/server/jobs/persist';
@@ -99,7 +100,10 @@ export async function POST(request: NextRequest) {
     );
   }
   const { refineOfJobId, feedback } = parsedBody.data;
-  const scope = parsedBody.data.scope ?? 'resume';
+  // `scope` is an optional explicit override (v1 API / old clients still send
+  // it). When omitted — the converged web editor no longer asks — infer it
+  // deterministically from the feedback text (no LLM, zero added latency).
+  const scope = parsedBody.data.scope ?? inferRefineScope(feedback);
 
   // A stable client idempotency key dedupes a refine intent across retries /
   // reconnects (same semantics as /api/generate). It is the RESERVATION key; the
