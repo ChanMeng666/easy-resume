@@ -14,6 +14,15 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import { compilePdf, downloadTypFile, copyToClipboard } from '@/lib/typst/compiler';
 import { generateTypstCode } from '@/lib/typst/generator';
 import { getTemplateById } from '@/templates/registry';
@@ -454,7 +463,6 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
   const [copySuccess, setCopySuccess] = useState(false);
   const [coverLetterCopied, setCoverLetterCopied] = useState(false);
   const [coverLetterCodeCopied, setCoverLetterCodeCopied] = useState(false);
-  const [showCoverLetter, setShowCoverLetter] = useState(false);
   // The persisted job id of the CURRENT result — set from the `jobId` prop (job
   // mode) or the SSE `saved` event. Used as a refine's parent and to load the
   // version strip.
@@ -476,6 +484,12 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
   // surfaces (structured field editor + conversational AI editor) so the
   // conversational Refine box stays the calm, primary edit surface.
   const [advancedEditOpen, setAdvancedEditOpen] = useState(false);
+  // Collapsed "History (n)" disclosure for the version chain (Compare/rename live
+  // inside it) — the chain is context, not a primary control.
+  const [historyOpen, setHistoryOpen] = useState(false);
+  // Which artifact the preview tab shows: the resume or the cover letter. Both
+  // render through LivePdfPreview.
+  const [previewTab, setPreviewTab] = useState<'resume' | 'cover_letter'>('resume');
   // Versions in the current refine chain (for the version strip).
   const [versions, setVersions] = useState<VersionItem[]>([]);
   // Inline rename of the current version's label.
@@ -1179,13 +1193,26 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
         <h1 className="font-brand text-2xl sm:text-3xl">Your resume is ready.</h1>
       </motion.div>
 
-      {/* Version strip — switch between versions of a refine chain (free). */}
+      {/* History — the refine chain, collapsed into a small disclosure (free).
+          Compare/rename live inside; the chain is context, not a primary control. */}
       {versions.length > 1 && (
-        <div className="mb-6 flex flex-wrap items-center gap-2 rounded-xl border-2 border-black bg-white p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
-          <span className="proof-label !text-muted-foreground inline-flex items-center gap-1">
-            <History className="h-3.5 w-3.5" />
-            Versions:
-          </span>
+        <div className="mb-6 rounded-xl border-2 border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
+          <button
+            type="button"
+            onClick={() => setHistoryOpen((v) => !v)}
+            aria-expanded={historyOpen}
+            className="flex w-full items-center justify-between rounded-xl px-3 py-2 font-mono text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <span className="inline-flex items-center gap-2">
+              <History className="h-3.5 w-3.5" />
+              History ({versions.length})
+            </span>
+            <ChevronDown
+              className={`h-4 w-4 transition-transform duration-200 ${historyOpen ? 'rotate-180' : ''}`}
+            />
+          </button>
+          {historyOpen && (
+          <div className="flex flex-wrap items-center gap-2 border-t-2 border-black p-3">
           {versions.map((v) => {
             const labelText = v.versionLabel || `v${v.version}`;
             const ats = typeof v.atsScore === 'number' ? ` · ATS ${v.atsScore}` : '';
@@ -1257,6 +1284,8 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
             <Columns2 className="h-4 w-4" />
             Compare
           </Button>
+          </div>
+          )}
         </div>
       )}
 
@@ -1351,14 +1380,52 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
       </Dialog>
 
       <div className="vitex-grid">
-        {/* Left (60%): PDF proof */}
+        {/* Left (60%): PDF proof — Resume | Cover letter tabs, both rendering
+            through the same LivePdfPreview (replaces the old show/hide toggle). */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <CropFrame className="rounded-xl border-2 border-black bg-white p-3 sm:p-4 shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)]">
-            <LivePdfPreview typstCode={typstCode} filename={filename} />
-          </CropFrame>
+          <Tabs
+            value={previewTab}
+            onValueChange={(v) => setPreviewTab(v as 'resume' | 'cover_letter')}
+          >
+            <TabsList className="mb-1">
+              <TabsTrigger value="resume">
+                <FileText className="mr-2 h-4 w-4" />
+                Resume
+              </TabsTrigger>
+              {result.coverLetter && (
+                <TabsTrigger value="cover_letter">
+                  <Mail className="mr-2 h-4 w-4" />
+                  Cover letter
+                </TabsTrigger>
+              )}
+            </TabsList>
+
+            <TabsContent value="resume">
+              <CropFrame className="rounded-xl border-2 border-black bg-white p-3 sm:p-4 shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)]">
+                <LivePdfPreview typstCode={typstCode} filename={filename} />
+              </CropFrame>
+            </TabsContent>
+
+            {result.coverLetter && (
+              <TabsContent value="cover_letter">
+                <CropFrame className="rounded-xl border-2 border-black bg-white p-3 sm:p-4 shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)]">
+                  {result.coverLetterTypst ? (
+                    <LivePdfPreview
+                      typstCode={result.coverLetterTypst}
+                      filename={`${filename}_cover_letter`}
+                    />
+                  ) : (
+                    <div className="whitespace-pre-wrap rounded-lg border-2 border-gray-200 bg-gray-50 p-3 sm:p-4 text-sm leading-relaxed text-gray-700">
+                      {result.coverLetter}
+                    </div>
+                  )}
+                </CropFrame>
+              </TabsContent>
+            )}
+          </Tabs>
         </motion.div>
 
         {/* Right (40%): score, skills, actions */}
@@ -1455,34 +1522,76 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
               Download PDF
             </Button>
 
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant="outline"
-                className="w-full border-2 border-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
-                onClick={handleDownloadTyp}
-              >
-                <FileCode className="mr-2 h-4 w-4" />
-                .typ
-              </Button>
+            {/* Secondary exports — the resume .typ/code and every cover-letter
+                export are consolidated into one Export menu so Download PDF stays
+                the single primary action. */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full border-2 border-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Export
+                  <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Resume</DropdownMenuLabel>
+                <DropdownMenuItem onClick={handleDownloadTyp}>
+                  <FileCode className="mr-2 h-4 w-4" />
+                  Download .typ
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleCopy}>
+                  {copySuccess ? (
+                    <Check className="mr-2 h-4 w-4 text-green-600" />
+                  ) : (
+                    <Copy className="mr-2 h-4 w-4" />
+                  )}
+                  {copySuccess ? 'Copied!' : 'Copy code'}
+                </DropdownMenuItem>
 
-              <Button
-                variant="outline"
-                className="w-full border-2 border-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
-                onClick={handleCopy}
-              >
-                {copySuccess ? <Check className="mr-2 h-4 w-4 text-green-600" /> : <Copy className="mr-2 h-4 w-4" />}
-                {copySuccess ? 'Copied!' : 'Copy'}
-              </Button>
-            </div>
-
-            <Button
-              variant="outline"
-              className="w-full border-2 border-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
-              onClick={() => setShowCoverLetter(!showCoverLetter)}
-            >
-              <Mail className="mr-2 h-4 w-4" />
-              {showCoverLetter ? 'Hide' : 'Show'} Cover Letter
-            </Button>
+                {result.coverLetter && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel>Cover letter</DropdownMenuLabel>
+                    <DropdownMenuItem
+                      onClick={handleDownloadCoverLetterPdf}
+                      disabled={!result.coverLetterTypst}
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      Download PDF
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={handleDownloadCoverLetterTyp}
+                      disabled={!result.coverLetterTypst}
+                    >
+                      <FileCode className="mr-2 h-4 w-4" />
+                      Download .typ
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={handleCopyCoverLetterCode}
+                      disabled={!result.coverLetterTypst}
+                    >
+                      {coverLetterCodeCopied ? (
+                        <Check className="mr-2 h-4 w-4 text-green-600" />
+                      ) : (
+                        <Copy className="mr-2 h-4 w-4" />
+                      )}
+                      {coverLetterCodeCopied ? 'Copied!' : 'Copy code'}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleCopyCoverLetter}>
+                      {coverLetterCopied ? (
+                        <Check className="mr-2 h-4 w-4 text-green-600" />
+                      ) : (
+                        <Copy className="mr-2 h-4 w-4" />
+                      )}
+                      {coverLetterCopied ? 'Copied!' : 'Copy text'}
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             {/* Advanced edit — a demoted, unobtrusive disclosure. The primary edit
                 surface is the conversational Refine box below; these two power-user
@@ -1612,78 +1721,6 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Cover Letter (expandable) */}
-      {showCoverLetter && result.coverLetter && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          className="mt-4 rounded-xl border-2 border-black bg-white p-4 sm:p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
-        >
-          <p className="proof-label mb-1">§ cover-letter.pdf</p>
-          <h3 className="mb-3 sm:mb-4 text-base sm:text-lg font-black">Cover Letter</h3>
-
-          {/* PDF preview */}
-          {result.coverLetterTypst && (
-            <div className="mb-4">
-              <LivePdfPreview
-                typstCode={result.coverLetterTypst}
-                filename={`${filename}_cover_letter`}
-              />
-            </div>
-          )}
-
-          {/* Action buttons */}
-          <div className="mb-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-2">
-            <Button
-              size="sm"
-              className="w-full sm:w-auto border-2 border-black bg-purple-600 font-bold text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:bg-purple-700 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
-              onClick={handleDownloadCoverLetterPdf}
-              disabled={!result.coverLetterTypst}
-            >
-              <Download className="mr-2 h-3.5 w-3.5" />
-              Download PDF
-            </Button>
-
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full sm:w-auto border-2 border-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
-              onClick={handleDownloadCoverLetterTyp}
-              disabled={!result.coverLetterTypst}
-            >
-              <FileCode className="mr-2 h-3.5 w-3.5" />
-              Download .typ
-            </Button>
-
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full sm:w-auto border-2 border-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
-              onClick={handleCopyCoverLetterCode}
-              disabled={!result.coverLetterTypst}
-            >
-              {coverLetterCodeCopied ? <Check className="mr-2 h-3.5 w-3.5 text-green-600" /> : <Copy className="mr-2 h-3.5 w-3.5" />}
-              {coverLetterCodeCopied ? 'Copied!' : 'Copy Code'}
-            </Button>
-
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full sm:w-auto border-2 border-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
-              onClick={handleCopyCoverLetter}
-            >
-              {coverLetterCopied ? <Check className="mr-2 h-3.5 w-3.5 text-green-600" /> : <Copy className="mr-2 h-3.5 w-3.5" />}
-              {coverLetterCopied ? 'Copied!' : 'Copy Text'}
-            </Button>
-          </div>
-
-          {/* Plain text preview */}
-          <div className="whitespace-pre-wrap rounded-lg border-2 border-gray-200 bg-gray-50 p-3 sm:p-4 text-sm leading-relaxed text-gray-700">
-            {result.coverLetter}
-          </div>
-        </motion.div>
-      )}
 
       {/* Refinement Section */}
       <motion.div
