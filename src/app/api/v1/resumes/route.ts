@@ -72,6 +72,7 @@ export async function POST(request: NextRequest) {
       input.background = profile.rawBackground;
       input.baseResume = profile.data;
       input.profileId = profile.id;
+      input.voiceSample = profile.voiceSample ?? undefined;
     } else if (typeof body.background !== 'string' || !body.background.trim()) {
       throw new ValidationError('background is required (or supply profile_id)');
     }

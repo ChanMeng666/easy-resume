@@ -45,6 +45,9 @@ const inputSchema = z.object({
   // produces. zod strips unknown keys, so this must be declared to survive.
   baseResume: resumeDataSchema.optional(),
   profileId: z.string().trim().max(64).optional(),
+  // Optional writing sample used to voice-match the cover letter. Declared so
+  // zod (which strips undeclared keys) lets it survive to the sanitize boundary.
+  voiceSample: z.string().trim().max(4000).optional(),
 });
 
 /**
@@ -80,6 +83,10 @@ export async function runGenerationPipeline(
 
   const jobDescription = sanitizeForPrompt(input.jobDescription);
   const background = sanitizeForPrompt(input.background);
+  // Same prompt-injection sanitize boundary as jobDescription/background: the
+  // voice sample is candidate-supplied free text that lands in the cover-letter
+  // prompt, so it must be defanged before reaching the LLM.
+  const voiceSample = input.voiceSample ? sanitizeForPrompt(input.voiceSample) : undefined;
 
   const progress = (step: PipelineStep, index: number, message: string) => {
     const e: ProgressEvent = { step, index, total: TOTAL_STEPS, message };
@@ -145,7 +152,7 @@ export async function runGenerationPipeline(
   progress('cover_letter', 6, 'Generating cover letter...');
   const [atsReport, coverLetter] = await Promise.all([
     Promise.resolve(deps.agent.scoreATS(tailoredResume, parsedJD)),
-    runStep('cover_letter', () => deps.agent.generateCoverLetter(tailoredResume, parsedJD)),
+    runStep('cover_letter', () => deps.agent.generateCoverLetter(tailoredResume, parsedJD, voiceSample)),
   ]);
 
   progress('render', 7, 'Generating resume document...');

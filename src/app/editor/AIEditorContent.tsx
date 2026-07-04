@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { LivePdfPreview } from '@/components/preview/LivePdfPreview';
 import { CropFrame } from '@/components/shared/CropFrame';
 import {
@@ -505,6 +506,8 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
   // "Save as profile" — persist the background as a reusable candidate_profile.
   const [saveProfileOpen, setSaveProfileOpen] = useState(false);
   const [saveProfileLabel, setSaveProfileLabel] = useState('');
+  // Optional writing sample so future cover letters match the user's voice.
+  const [saveProfileVoice, setSaveProfileVoice] = useState('');
   const [saveProfileState, setSaveProfileState] = useState<'idle' | 'saving' | 'saved' | 'error'>(
     'idle'
   );
@@ -962,6 +965,7 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
         body: JSON.stringify({
           label: saveProfileLabel.trim() || undefined,
           rawBackground: effBg,
+          voiceSample: saveProfileVoice.trim() || undefined,
         }),
       });
       if (!res.ok) {
@@ -973,7 +977,7 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
     } catch {
       setSaveProfileState('error');
     }
-  }, [effBg, saveProfileLabel]);
+  }, [effBg, saveProfileLabel, saveProfileVoice]);
 
   /** Open the save-as-profile dialog, defaulting the label to the parsed title. */
   const openSaveProfile = useCallback(() => {
@@ -1698,6 +1702,16 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
                 if (e.key === 'Enter') handleSaveProfile();
               }}
               className="border-2 border-black font-medium shadow-none focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] transition-all duration-200"
+            />
+            <label htmlFor="profile-voice" className="proof-label !text-foreground">
+              Your writing sample — we&apos;ll match your voice
+            </label>
+            <Textarea
+              id="profile-voice"
+              placeholder="Paste a paragraph you wrote (a past cover letter, a bio). Optional."
+              value={saveProfileVoice}
+              onChange={(e) => setSaveProfileVoice(e.target.value)}
+              className="min-h-[96px] rounded-lg border-2 border-black font-medium shadow-none focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] transition-all duration-200"
             />
             {saveProfileState === 'error' && (
               <p className="proof-label !text-red-700">Could not save — please try again.</p>

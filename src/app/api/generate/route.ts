@@ -96,6 +96,7 @@ export async function POST(request: NextRequest) {
       input.background = profile.rawBackground;
       input.baseResume = profile.data;
       input.profileId = profile.id;
+      input.voiceSample = profile.voiceSample ?? undefined;
     } catch (error) {
       return errorResponse(error, requestId);
     }

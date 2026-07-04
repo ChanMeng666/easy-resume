@@ -474,6 +474,10 @@ components:
           type: string
           minLength: 1
           maxLength: 255
+        voiceSample:
+          type: string
+          maxLength: 4000
+          description: Optional writing sample; cover-letter generation matches this voice.
     ProfileUpdateRequest:
       type: object
       minProperties: 1
@@ -487,6 +491,10 @@ components:
           type: string
           minLength: 1
           maxLength: 50000
+        voiceSample:
+          type: string
+          maxLength: 4000
+          description: Optional writing sample; cover-letter generation matches this voice.
     Error:
       type: object
       required: [error]

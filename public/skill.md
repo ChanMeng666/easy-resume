@@ -47,7 +47,8 @@ curl -sS -X POST "$VITEX_BASE/api/profiles" \
   -H "Content-Type: application/json" \
   -d '{
     "label": "My Background",
-    "rawBackground": "8 years building payment systems at Acme and Globex. Led a team of 5. Go, TypeScript, Postgres, Stripe."
+    "rawBackground": "8 years building payment systems at Acme and Globex. Led a team of 5. Go, TypeScript, Postgres, Stripe.",
+    "voiceSample": "Optional: paste a paragraph you wrote so cover letters match your voice."
   }'
 # -> 201 { "id": "<profileId>", "label": "...", "createdAt": "...", "updatedAt": "..." }
 ```
