@@ -21,6 +21,7 @@ import { runRefinementPipeline, type RefineArtifacts } from '@/server/core/refin
 import { inferRefineScope } from '@/server/core/refineScope';
 import { defaultRefineDeps } from '@/server/core/deps';
 import { buildRefineArtifacts } from '@/server/jobs/refineArtifacts';
+import { resolveRefineVoiceSample } from '@/server/jobs/refineVoice';
 import { reserveJob, finalizeSucceededJob, failJob } from '@/server/jobs/persist';
 import { generationJobs } from '@/lib/db/schema';
 import type { GenerateInput } from '@/server/core/pipeline.types';
@@ -125,6 +126,7 @@ export async function POST(request: NextRequest) {
         status: generationJobs.status,
         input: generationJobs.input,
         result: generationJobs.result,
+        rootJobId: generationJobs.rootJobId,
       })
       .from(generationJobs)
       .where(eq(generationJobs.id, refineOfJobId))
@@ -144,6 +146,15 @@ export async function POST(request: NextRequest) {
 
     // Throws ValidationError when the parent has no resume data.
     artifacts = buildRefineArtifacts(parentInputObj, parentResult);
+
+    // Re-fetch the originating profile's voice (owner-scoped, best-effort) so the
+    // cover-letter revision keeps the candidate's voice. Never persisted into the
+    // result — resolved fresh here. Any failure → undefined (no voice).
+    artifacts.voiceSample = await resolveRefineVoiceSample(
+      caller,
+      parent.input as Parameters<typeof resolveRefineVoiceSample>[1],
+      parent.rootJobId
+    );
 
     // Self-describing input for the reserved row: full parent context + this
     // refine's request, so a refine-of-refine carries everything downstream.
