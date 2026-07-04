@@ -15,7 +15,7 @@
 
 import 'server-only';
 import { randomBytes } from 'node:crypto';
-import { and, desc, eq, isNotNull } from 'drizzle-orm';
+import { and, desc, eq, isNotNull, sql } from 'drizzle-orm';
 import { db } from '@/lib/db/client';
 import { candidateProfiles, type CandidateProfile } from '@/lib/db/schema';
 import { parseBackground } from '@/lib/agent/background-parser';
@@ -36,6 +36,10 @@ export interface ProfileSummary {
   // publishedAt != null, NOT slug presence.
   publicSlug: string | null;
   publishedAt: Date | null;
+  // Whether the owner saved a voice-writing sample. A derived boolean only — the
+  // raw text is never carried in a list payload (kept lightweight) and is echoed
+  // solely on the owner-scoped detail GET, never on any public surface.
+  hasVoiceSample: boolean;
 }
 
 /**
@@ -86,6 +90,7 @@ export async function listProfiles(userId: string): Promise<ProfileSummary[]> {
       updatedAt: candidateProfiles.updatedAt,
       publicSlug: candidateProfiles.publicSlug,
       publishedAt: candidateProfiles.publishedAt,
+      hasVoiceSample: sql<boolean>`${candidateProfiles.voiceSample} is not null`,
     })
     .from(candidateProfiles)
     .where(eq(candidateProfiles.userId, userId))

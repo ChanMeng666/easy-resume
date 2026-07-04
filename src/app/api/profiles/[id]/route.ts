@@ -1,7 +1,7 @@
 /**
  * Candidate profile detail API — fetch, update, delete a single profile.
  *
- *   GET    /api/profiles/{id}  -> { id, label, rawBackground, data, createdAt, updatedAt }
+ *   GET    /api/profiles/{id}  -> { id, label, rawBackground, voiceSample, data, createdAt, updatedAt }
  *   PUT    /api/profiles/{id}  -> updated profile (label/rawBackground/data; re-parses on raw change)
  *   DELETE /api/profiles/{id}  -> { deleted: true }
  *
@@ -37,6 +37,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         id: profile.id,
         label: profile.label,
         rawBackground: profile.rawBackground,
+        // Owner-only echo of the raw writing sample so the owner can view/edit/
+        // clear it. The PUBLIC projection (toPublicProfile) never carries this —
+        // see the ALLOWLIST sentinel test in publicProfile.test.ts.
+        voiceSample: profile.voiceSample,
         data: profile.data,
         createdAt: profile.createdAt,
         updatedAt: profile.updatedAt,
@@ -89,6 +93,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         id: profile.id,
         label: profile.label,
         rawBackground: profile.rawBackground,
+        voiceSample: profile.voiceSample,
         data: profile.data,
         createdAt: profile.createdAt,
         updatedAt: profile.updatedAt,

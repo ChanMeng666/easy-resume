@@ -24,7 +24,8 @@ vi.mock('@/lib/agent/background-parser', () => ({
   parseBackground: (...a: unknown[]) => parseBackground(...a),
 }));
 
-const { createProfile, getProfile, deleteProfile, deriveProfileLabel } = await import('./store');
+const { createProfile, getProfile, updateProfile, deleteProfile, deriveProfileLabel } =
+  await import('./store');
 
 const fullResume = {
   basics: { name: 'Jane', label: 'Staff Engineer', profiles: [] },
@@ -52,6 +53,24 @@ function selectReturning(rows: unknown[]) {
 function deleteReturning(rows: unknown[]) {
   return () => ({ where: () => ({ returning: () => Promise.resolve(rows) }) });
 }
+/** db.insert(...).values(v).returning() -> rows, capturing the inserted values. */
+function insertCapturing(rows: unknown[], sink: { values?: unknown }) {
+  return () => ({
+    values: (v: unknown) => {
+      sink.values = v;
+      return { returning: () => Promise.resolve(rows) };
+    },
+  });
+}
+/** db.update(...).set(s).where().returning() -> rows, capturing the set patch. */
+function updateCapturing(rows: unknown[], sink: { set?: unknown }) {
+  return () => ({
+    set: (s: unknown) => {
+      sink.set = s;
+      return { where: () => ({ returning: () => Promise.resolve(rows) }) };
+    },
+  });
+}
 
 describe('deriveProfileLabel', () => {
   it('prefers an explicit label, then the parsed title, then a default', () => {
@@ -77,6 +96,52 @@ describe('createProfile', () => {
 
     expect(parseBackground).toHaveBeenCalledTimes(1);
     expect(parseBackground).toHaveBeenCalledWith('10 years building APIs');
+  });
+
+  it('stores a trimmed voiceSample, normalizing an absent/blank one to null', async () => {
+    parseBackground.mockResolvedValue(fullResume);
+
+    const withVoice: { values?: unknown } = {};
+    fakeDb = { insert: insertCapturing([{ id: 'p1' }], withVoice) };
+    await createProfile('u1', { rawBackground: 'bg', voiceSample: '  my voice  ' });
+    expect((withVoice.values as { voiceSample?: unknown }).voiceSample).toBe('my voice');
+
+    const blankVoice: { values?: unknown } = {};
+    fakeDb = { insert: insertCapturing([{ id: 'p2' }], blankVoice) };
+    await createProfile('u1', { rawBackground: 'bg', voiceSample: '   ' });
+    expect((blankVoice.values as { voiceSample?: unknown }).voiceSample).toBeNull();
+
+    const noVoice: { values?: unknown } = {};
+    fakeDb = { insert: insertCapturing([{ id: 'p3' }], noVoice) };
+    await createProfile('u1', { rawBackground: 'bg' });
+    expect((noVoice.values as { voiceSample?: unknown }).voiceSample).toBeNull();
+  });
+});
+
+describe('updateProfile voiceSample', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('sets a trimmed voiceSample without re-parsing the background', async () => {
+    const sink: { set?: unknown } = {};
+    fakeDb = {
+      select: selectReturning([{ id: 'p1', userId: 'u1', data: fullResume }]),
+      update: updateCapturing([{ id: 'p1', voiceSample: 'brisk and direct' }], sink),
+    };
+    const row = await updateProfile('u1', 'p1', { voiceSample: '  brisk and direct  ' });
+    expect((sink.set as { voiceSample?: unknown }).voiceSample).toBe('brisk and direct');
+    expect(row.voiceSample).toBe('brisk and direct');
+    expect(parseBackground).not.toHaveBeenCalled();
+  });
+
+  it('clears the voiceSample to null when sent an empty string', async () => {
+    const sink: { set?: unknown } = {};
+    fakeDb = {
+      select: selectReturning([{ id: 'p1', userId: 'u1', data: fullResume }]),
+      update: updateCapturing([{ id: 'p1', voiceSample: null }], sink),
+    };
+    const row = await updateProfile('u1', 'p1', { voiceSample: '' });
+    expect((sink.set as { voiceSample?: unknown }).voiceSample).toBeNull();
+    expect(row.voiceSample).toBeNull();
   });
 });
 
