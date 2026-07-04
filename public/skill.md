@@ -20,6 +20,12 @@ commit-style version chain. You pay only for a successful build.
 > `npx -y vitex-cli mcp` (env `VITEX_API_KEY`) so Claude Desktop / Claude Code /
 > Cursor can drive Vitex directly. See
 > [`cli/README.md`](https://github.com/ChanMeng666/easy-resume/blob/master/cli/README.md).
+>
+> **Not technical / no API key?** Vitex also runs a **hosted MCP server** at
+> `https://www.vitex.org.nz/api/mcp` you can connect inside ChatGPT or Claude with a
+> browser sign-in (OAuth — no key to paste). See the connector guides for
+> [ChatGPT](https://github.com/ChanMeng666/easy-resume/blob/master/docs/connectors/chatgpt.md)
+> and [Claude](https://github.com/ChanMeng666/easy-resume/blob/master/docs/connectors/claude.md).
 
 ---
 

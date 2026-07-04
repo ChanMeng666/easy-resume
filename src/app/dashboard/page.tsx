@@ -22,6 +22,15 @@ interface CreditInfo {
   }>;
 }
 
+interface ApiKeyInfo {
+  id: string;
+  name: string;
+  prefix: string;
+  lastUsedAt: string | null;
+  revokedAt: string | null;
+  createdAt: string | null;
+}
+
 /**
  * Dashboard content — credit balance and billing history for the signed-in user.
  * Reads the `?success=true` query param Stripe appends on a successful checkout
@@ -34,6 +43,8 @@ function DashboardContent() {
   const [creditInfo, setCreditInfo] = useState<CreditInfo | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
+  const [apiKeys, setApiKeys] = useState<ApiKeyInfo[] | null>(null);
+  const [revokingKeyId, setRevokingKeyId] = useState<string | null>(null);
 
   const justPurchased = searchParams.get("success") === "true";
   const [showSuccess, setShowSuccess] = useState(justPurchased);
@@ -59,9 +70,45 @@ function DashboardContent() {
     }
   }, []);
 
+  // Load the caller's API keys (metadata only). Connector sign-ins mint a key
+  // labeled "MCP: <client>", so this list is where a user sees and revokes the
+  // access an MCP connector (ChatGPT / Claude) holds.
+  const fetchApiKeys = useCallback(async () => {
+    try {
+      const response = await fetch("/api/keys");
+      if (response.ok) {
+        const data = await response.json();
+        setApiKeys(Array.isArray(data.keys) ? data.keys : []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch API keys:", error);
+    }
+  }, []);
+
   useEffect(() => {
-    if (user) fetchCredits();
-  }, [user, fetchCredits]);
+    if (user) {
+      fetchCredits();
+      fetchApiKeys();
+    }
+  }, [user, fetchCredits, fetchApiKeys]);
+
+  /** Revoke a key (e.g. disconnect an MCP connector) via the existing endpoint. */
+  const handleRevokeKey = useCallback(
+    async (id: string) => {
+      setRevokingKeyId(id);
+      try {
+        const res = await fetch(`/api/keys?id=${encodeURIComponent(id)}`, {
+          method: "DELETE",
+        });
+        if (res.ok) await fetchApiKeys();
+      } catch (error) {
+        console.error("Failed to revoke key:", error);
+      } finally {
+        setRevokingKeyId(null);
+      }
+    },
+    [fetchApiKeys]
+  );
 
   // After returning from a successful checkout, Stripe's webhook applies the
   // credits asynchronously. Refetch shortly after to reflect the new balance.
@@ -253,6 +300,72 @@ function DashboardContent() {
             </div>
           ) : (
             <Skeleton className="h-[200px] w-full rounded-xl" />
+          )}
+
+          {/* API keys & connections — read-only list + revoke. This is where a
+              user manages the keys their agents hold, including keys minted by an
+              MCP connector (ChatGPT / Claude), which are labeled "MCP: <client>". */}
+          {apiKeys && (
+            <div className="mt-8 bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] overflow-hidden">
+              <div className="flex items-center justify-between p-4 border-b-2 border-black bg-gray-50">
+                <h3 className="proof-label !text-foreground">
+                  Connections &amp; API Keys
+                </h3>
+                <span className="proof-label">
+                  {String(
+                    apiKeys.filter((k) => !k.revokedAt).length
+                  ).padStart(2, "0")}{" "}
+                  active
+                </span>
+              </div>
+              {apiKeys.filter((k) => !k.revokedAt).length === 0 ? (
+                <div className="p-6 text-sm text-muted-foreground font-medium">
+                  No active keys. Connect Vitex to ChatGPT or Claude as an MCP
+                  connector, or mint a key via the API, and it will appear here so
+                  you can revoke it anytime.
+                </div>
+              ) : (
+                <div className="divide-y-2 divide-gray-100">
+                  {apiKeys
+                    .filter((k) => !k.revokedAt)
+                    .map((key) => (
+                      <div
+                        key={key.id}
+                        className="flex items-center justify-between gap-4 p-4"
+                      >
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-bold truncate">
+                              {key.name}
+                            </p>
+                            {key.name.startsWith("MCP:") && (
+                              <span className="flex-shrink-0 px-2 py-0.5 rounded-lg bg-primary text-white border-2 border-black font-mono text-[9px] font-bold uppercase tracking-[0.14em]">
+                                connector
+                              </span>
+                            )}
+                          </div>
+                          <p className="font-mono text-xs text-muted-foreground truncate">
+                            {key.prefix}…
+                            {key.lastUsedAt
+                              ? ` · last used ${new Date(
+                                  key.lastUsedAt
+                                ).toLocaleDateString()}`
+                              : " · never used"}
+                          </p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          onClick={() => handleRevokeKey(key.id)}
+                          disabled={revokingKeyId === key.id}
+                          className="flex-shrink-0"
+                        >
+                          {revokingKeyId === key.id ? "Revoking…" : "Revoke"}
+                        </Button>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
           )}
         </div>
       </main>
