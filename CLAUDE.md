@@ -26,6 +26,17 @@ Vitex is a Typst-based resume generator built with Next.js 15, React 19, and Typ
 
 **Key Architecture Decision**: This project migrated from an HTML/CSS A4 resume builder to a Typst code generator. It uses Typst's built-in grid layout to create a professional two-column layout (60% left / 40% right) that compiles locally via the `typst` binary without requiring any external services.
 
+**Positioning — "one core, N thin adapters" / "Career as Code"**: The target user is
+**a person plus their AI assistant**, and the product is designed so every surface
+(web UI, public v1 REST API, published `vitex-cli`, stdio MCP server, hosted OAuth
+MCP connector) is a *thin adapter* over one shared backend core — "The API is the
+UI". The framing that unifies the feature set is **Career as Code**: your career
+facts are source code (a `candidate_profiles` row = the repo), each tailored PDF is
+a reproducible **build artifact**, the refine chain is a sequence of commits
+(`parent_job_id`/`root_job_id`), outcome billing means you **pay per successful
+build**, and the exported `.typ` source is zero lock-in. This is recorded in
+[ADR 0003](docs/decisions/0003-adapter-strategy-and-hosted-mcp.md).
+
 ## Common Commands
 
 ```bash
@@ -71,6 +82,7 @@ src/server/
 ├── core/
 │   ├── pipeline.ts        # runGenerationPipeline() — the 8-step generation orchestrator (no HTTP/SSE)
 │   ├── refine.ts          # runRefinementPipeline() — the 4-step targeted refine core (free by default)
+│   ├── refineScope.ts     # inferRefineScope() — deterministic resume|cover_letter|both inference from feedback text
 │   ├── step.ts            # makeStepRunner() — bounded retry/backoff + typed errors, shared by both pipelines
 │   ├── pipeline.types.ts  # Caller, GenerateInput/Result, ProgressEvent, PipelineDeps
 │   ├── compile.ts         # compileTypstToPdf() — Typst→PDF core (napi-rs-ready seam)
@@ -91,8 +103,25 @@ src/server/
 │                          #   createManualVersion/storeResumePdf/deleteJobPdfs
 ├── agent/                 # conversational edit agent (P2): editAgent.ts (tool loop), editTools.ts,
 │                          #   prompts.ts (edit-agent v3), store.ts (threads/messages/version snapshots + GC)
-├── profiles/store.ts      # candidate_profiles CRUD (P1)
+├── profiles/              # candidate_profiles store (P1) + public career endpoint
+│   ├── store.ts           # CRUD + voiceSample + publish/unpublish + getPublicProfileBySlug + toPublicProfile (allowlist projection)
+│   ├── publicMarkdown.ts  # PublicProfile → Markdown (the /p/[slug]/md body)
+│   ├── publicAccess.ts    # public-read guard: per-IP `pub:` rate limit + client IP
+│   └── publicUrl.ts       # safePublicUrl() — scheme-allowlisted absolute URL builder for public pages
 ├── applications/store.ts  # applications CRUD (P2 tracker)
+├── oauth/                 # OAuth 2.1 Authorization Server (P5) — a facade that mints first-class API keys
+│   ├── config.ts          # getBaseUrl() (issuer origin from NEXT_PUBLIC_APP_URL, canonical www) + OAUTH_SCOPE
+│   ├── pkce.ts            # S256 code-challenge verify
+│   ├── store.ts           # oauth_clients / oauth_codes persistence (DCR clients, short-lived auth codes)
+│   ├── exchange.ts        # authorization_code → access token (a freshly minted API key); no refresh token
+│   ├── redirect.ts        # redirect_uri validation + error/param redirects
+│   ├── csrf.ts            # consent-form CSRF token mint/verify
+│   ├── errors.ts          # RFC 6749 OAuth error rendering
+│   ├── http.ts            # clientIp() + oauthRateLimit() (per-IP, fail-open)
+│   └── pages.ts           # server-rendered consent / error HTML
+├── mcp/                   # Hosted remote MCP (P5) — in-process twin of the stdio CLI
+│   ├── verifyToken.ts     # withMcpAuth callback — Bearer access token → verifyApiKey → userId on AuthInfo.extra
+│   └── tools.ts           # registerVitexTools() — the 9 tools call the backend core DIRECTLY (DI-testable)
 ├── storage/
 │   ├── blobStore.ts       # getBlobStore() seam — R2 store if configured, else no-op NullBlobStore
 │   └── r2.ts              # Cloudflare R2 (S3-compatible) impl; @aws-sdk/client-s3 imported lazily
@@ -127,6 +156,20 @@ Thin transports sit over this core:
    202 job over the same core; the runner dispatches refine-shaped inputs).
 6. **`/api/threads`** — conversational edit-agent transport (P2): thread CRUD +
    `[id]/messages` (SSE tool-loop turn). Editing is free.
+7. **`GET /api/v1/me`** — cheap read-only identity/balance probe for agents (and
+   the CLI's `whoami`): `{ userId, via, credits, tier }`. Never charges.
+8. **`/api/mcp`** — hosted remote MCP endpoint (Streamable HTTP). Same 9 tools as
+   the CLI, run in-process against the core; OAuth-protected (Bearer = a minted
+   API key). See **OAuth Authorization Server + Hosted MCP** below.
+9. **`/api/oauth/{register,authorize,token}`** + **`/.well-known/oauth-authorization-server`**
+   + **`/.well-known/oauth-protected-resource`** — the OAuth 2.1 AS + discovery so
+   a ChatGPT/Claude connector can sign in and obtain a key without pasting one.
+10. **`/api/profiles`** + **`/api/profiles/[id]`** (GET/PUT, echoes `voiceSample`
+    owner-only) + **`/api/profiles/[id]/publish`** (POST publish / DELETE
+    unpublish) — candidate profile CRUD + Voice Profile + public-endpoint control.
+11. **`/p/[slug]`** (HTML) + **`/p/[slug]/json`** + **`/p/[slug]/md`** — the
+    **public career endpoint** for a published profile (allowlisted projection —
+    never contact PII or raw text). See **Public Career Endpoint** below.
 
 ### Conventions (apply to all backend code)
 - **Errors are machine-readable, never prose.** Throw an `AppError` subclass;
@@ -178,8 +221,16 @@ carrying `Retry-After` + `X-RateLimit-*` headers; success responses also carry
 `X-RateLimit-*`. Fail-open on DB error. Per-caller keys/limits:
 `gen:` `/api/generate` 15/min · `refine:` `/api/refine` 10/min ·
 `chat:` `/api/threads/[id]/messages` 30/min · `v1gen:` `POST /api/v1/resumes`
-30/min · `v1refine:` `POST /api/v1/resumes/[id]/refine` 10/min (plus write
-limits on the applications/profiles/threads/versions CRUD routes).
+30/min · `v1refine:` `POST /api/v1/resumes/[id]/refine` 10/min ·
+`me:` `GET /api/v1/me` 60/min · `mcp:` per-user hosted-MCP tool budget 60/min
+(`src/server/mcp/tools.ts`) · `profilewrite:` profile writes incl. publish/unpublish
+20/min. Two surfaces key on **client IP** instead of userId (they run before or
+without a session): `pub:` public `/p/[slug]` reads 60/min
+(`src/server/profiles/publicAccess.ts`) and the OAuth `oauthreg:` (`/api/oauth/register`,
+10/min) / `oauthtoken:` (`/api/oauth/token`, 20/min) via `oauthRateLimit`
+(`src/server/oauth/http.ts`). Plus write limits on the
+applications/profiles/threads/versions CRUD routes. (`/api/oauth/authorize` is
+session-gated + CSRF-protected rather than rate-limited.)
 
 ## Database & Migrations
 
@@ -195,14 +246,23 @@ limits on the applications/profiles/threads/versions CRUD routes).
   only for `drizzle-kit studio` / type introspection. **Do NOT use `drizzle-kit
   generate`** to produce migrations — `scripts/migrate.ts` is authoritative; add
   idempotent DDL there when you add a table/column.
+- **⚠️ Deploy does NOT run migrations.** `.github/workflows/deploy.yml` builds and
+  ships the container but never runs `scripts/migrate.ts` — after ANY DDL change
+  you MUST run `npm run db:migrate` manually against the prod `DATABASE_URL`
+  before/around the deploy, or the new code hits missing columns/tables.
 - **Active tables**: `generation_jobs` (the single persistence model for ALL
   generations AND refinements — web + v1 API; columns include `title`, `input`,
-  `result` JSONB, `pdf_url`, `charged`, `idempotency_key`, and `parent_job_id`
+  `result` JSONB — which now also carries `parsedJD` and design `tokens` —,
+  `pdf_url`, `charged`, `idempotency_key`, and `parent_job_id`
   for the refine/version chain), `credits`, `credit_transactions`, `api_keys`,
   `stripe_events`, `rate_limits`. P1/P2 activated more: `candidate_profiles`
-  (profiles store), `applications` (tracker), `agent_threads`/`agent_messages`
-  (edit-agent conversations + version snapshots). JSONB columns are typed via
-  Drizzle `.$type<...>()`.
+  (profiles store — now with `voice_sample`, `public_slug`, and `published_at`
+  columns + a unique partial index `uk_candidate_profiles_public_slug` on
+  `public_slug WHERE public_slug IS NOT NULL`), `applications` (tracker),
+  `agent_threads`/`agent_messages` (edit-agent conversations + version snapshots).
+  P5 (OAuth) added `oauth_clients` (Dynamic Client Registration records) and
+  `oauth_codes` (short-lived PKCE authorization codes, `idx_oauth_codes_expires`).
+  JSONB columns are typed via Drizzle `.$type<...>()`.
 - **Unused scaffolding** (defined in schema + migrate.ts but still NO CRUD —
   do not assume they hold data): `resumes` (+ its dead `pdf_blob_url`/`pdf_updated_at`
   columns), `tailored_resumes`, `job_descriptions`, `resume_versions` (the live
@@ -212,8 +272,10 @@ limits on the applications/profiles/threads/versions CRUD routes).
 
 ## Testing
 
-- **Vitest** (`npm test`, ~240 tests). Config in `vitest.config.ts` aliases
-  `@` → `src` and stubs `server-only` (so server modules import cleanly in Node).
+- **Vitest** (`npm test`, ~390 tests across ~42 `src` suites). Config in
+  `vitest.config.ts` aliases `@` → `src` and stubs `server-only` (so server
+  modules import cleanly in Node). The `cli/` package has its own separate vitest
+  config/suite (run from `cli/`, its own CI job).
 - Money-path is covered: `src/server/core/pipeline.test.ts` and
   `src/server/core/refine.test.ts` (billing gating: charge once on success, no
   charge on failure, fast-fail on no credits; refine's charge path is exercised
@@ -225,6 +287,12 @@ limits on the applications/profiles/threads/versions CRUD routes).
   `createManualVersion` tests, `logger.test.ts` (JSON + cause chain),
   `prompts.test.ts`, `resumeData` schema tests, edit-agent + store tests, and
   `persist`/`blobStore` helpers. DB/route/R2 I/O is left to integration runs.
+- Newer suites cover the adapter/OAuth/design work: `refineScope`
+  (scope inference), `src/lib/design/tokens.test.ts` + `src/templates/density.test.ts`
+  (design tokens + density spacing), `src/server/profiles/publicProfile.test.ts`
+  (the allowlist projection — asserts contact PII / raw text never leak),
+  `src/server/oauth/*` (`pkce`, `store`, `redirect`, `exchange`), and
+  `src/server/mcp/*` (`verifyToken`, `tools` with injected fakes).
 - Prefer testing the **core with injected fakes** over hitting the DB/LLM.
 
 ## Data-Driven Architecture
@@ -416,10 +484,15 @@ src/
 │   │   ├── keys/route.ts     # API key mint/list/revoke (cookie-session protected)
 │   │   ├── resumes/          # WEB history API: route (GET list) + [id] (GET/DELETE) + [id]/cover-letter/pdf + [id]/versions(/compare)
 │   │   ├── threads/          # Edit-agent transport: thread CRUD + [id]/messages (SSE tool loop)
-│   │   ├── profiles/         # candidate_profiles CRUD (P1)
+│   │   ├── profiles/         # candidate_profiles CRUD (P1) + [id] (GET/PUT voiceSample echo) + [id]/publish
 │   │   ├── applications/     # application tracker CRUD (P2)
 │   │   ├── v1/resumes/       # PUBLIC agent API (job-based): route + [id] + [id]/pdf + [id]/refine
+│   │   ├── v1/me/            # PUBLIC identity/balance probe (GET → { userId, via, credits, tier })
+│   │   ├── mcp/              # Hosted remote MCP (Streamable HTTP, OAuth-protected; 9 in-process tools)
+│   │   ├── oauth/            # OAuth 2.1 AS: register (DCR) + authorize (consent/PKCE) + token
 │   │   └── credits/          # Credit balance + Stripe webhook
+│   ├── .well-known/          # oauth-authorization-server (RFC 8414) + oauth-protected-resource (RFC 9728)
+│   ├── p/[slug]/             # PUBLIC career endpoint: page.tsx (HTML) + json/ + md/ + not-found.tsx
 │   ├── editor/
 │   │   ├── page.tsx          # Editor wrapper (Suspense; reads ?job=<id> to re-open)
 │   │   └── AIEditorContent.tsx # Result review + refinement + load-past-job mode
@@ -428,12 +501,15 @@ src/
 │   ├── pricing/page.tsx      # Pricing tiers
 │   └── handler/[...stack]/   # Neon Auth (Stack Auth) pages
 ├── server/                   # ← transport-agnostic backend core (see "Backend Architecture")
-│   ├── core/                 # pipeline.ts, refine.ts, step.ts, compile.ts, jdParseCache.ts, sanitize.ts, deps.ts, *.types.ts
+│   ├── core/                 # pipeline.ts, refine.ts, refineScope.ts, step.ts, compile.ts, jdParseCache.ts, sanitize.ts, deps.ts, *.types.ts
 │   ├── billing/              # meter.ts, stripeWebhook.ts (+ *.test.ts)
 │   ├── auth/                 # apiKeys.ts, caller.ts
 │   ├── jobs/                 # runner.ts, concurrency.ts, refineArtifacts.ts, persist.ts (reserveJob/finalize/createManualVersion + R2)
 │   ├── agent/                # editAgent.ts, editTools.ts, prompts.ts, store.ts (conversational edit agent)
-│   ├── profiles/, applications/ # candidate_profiles / application tracker stores
+│   ├── profiles/             # store.ts (CRUD + publish + toPublicProfile) + publicMarkdown/publicAccess/publicUrl.ts
+│   ├── applications/         # application tracker store
+│   ├── oauth/                # OAuth 2.1 AS internals: config, pkce, store, exchange, redirect, csrf, errors, http, pages
+│   ├── mcp/                  # Hosted MCP: verifyToken.ts (auth) + tools.ts (9 in-process tools)
 │   ├── storage/              # blobStore.ts (R2 seam) + r2.ts (S3-compatible impl) + *.test.ts
 │   ├── errors/               # AppError.ts, envelope.ts
 │   ├── log/                  # logger.ts (structured JSON, err.cause chain)
@@ -456,7 +532,8 @@ src/
 │   │   ├── faithfulness-check.ts # deterministic grounding gate (no LLM)
 │   │   ├── cover-letter.ts   # Cover letter generation (reason tier)
 │   │   ├── prompt-registry.ts # per-step prompt version source of truth
-│   │   └── template-selector.ts # Rule-based template selection (no LLM)
+│   │   └── template-selector.ts # Rule-based template + selectDesignTokens (deterministic, no LLM)
+│   ├── design/               # tokens.ts — ACCENT_PAIRS, DesignTokens, resolvePalette/Spacing/emGap
 │   ├── typst/
 │   │   ├── generator.ts      # Main Typst code generation
 │   │   ├── cover-letter.ts   # Cover letter Typst document generator
@@ -475,10 +552,15 @@ src/
     ├── types.ts              # Template type definitions
     └── [template-name]/      # Individual templates (metadata + generator)
 
+cli/                          # `vitex-cli` — SEPARATELY published npm package (own package.json/lockfile/CI)
+    └── src/{client,cli,args,format,mcp}.ts  # v1 HTTP client + CLI + stdio MCP server
 scripts/migrate.ts            # Idempotent raw-SQL migrations (run with tsx)
 vitest.config.ts              # Vitest config (@ alias + server-only stub)
 test/stubs/server-only.ts     # server-only stub for tests
-docs/api/v1.md                # Public v1 API reference (for agents)
+docs/api/v1.md                # Public v1 API reference (for agents; threads + applications documented)
+docs/connectors/{chatgpt,claude}.md  # Hosted-MCP connector setup guides
+docs/decisions/               # ADRs: 0001 money-path · 0002 refinement-first · 0003 adapters + hosted MCP
+public/{openapi.yaml,skill.md} # Hand-written OpenAPI 3.1 spec + agent curl playbook; also public/llms.txt
 ```
 
 ## Important Implementation Notes
@@ -633,6 +715,123 @@ Edit `runGenerationPipeline` in `src/server/core/pipeline.ts`, add the dep to
 and update the step count in `AIEditorContent.tsx`'s `PROGRESS_STEPS`. Add a
 fake-injected case to `pipeline.test.ts`.
 
+## Design Tokens
+
+`src/lib/design/tokens.ts` gives each generated resume a small, bounded, tasteful
+style variation without ever changing layout structure (so ATS compatibility is
+untouched):
+- **`ACCENT_PAIRS`** — 6 named `(primary, accent)` palettes (`slate`, `indigo`,
+  `emerald`, `crimson`, `amber`, `graphite`). `slate` is the historical default and
+  MUST reproduce the pre-tokens output byte-for-byte.
+- **`DesignTokens { palette, density }`** where `density ∈ 'comfortable' | 'compact'`;
+  `DEFAULT_TOKENS` = `{ slate, comfortable }` (today's exact look). `designTokensSchema`
+  defaults both fields so an old persisted job (no `tokens`) parses to the default.
+- **`resolvePalette`** → concrete hex (falls back to `slate` for any unknown name);
+  **`resolveSpacing`/`emGap`** → the vertical-rhythm scale (comfortable = 1.0,
+  compact = 0.8), applied only to inter-block `v(...em)` gaps. At scale 1 the base
+  literal is emitted verbatim (byte-compatibility guarantee).
+- **Selection is deterministic, no LLM**: `selectDesignTokens(jd, seed)` in
+  `src/lib/agent/template-selector.ts` picks tokens from the parsed JD + a stable
+  candidate seed via `fnv1a` hashing, so the same inputs always resolve to the same
+  tokens (a PDF rebuilds identically forever).
+- **Persistence + threading**: tokens are attached to `GenerateResult` and persisted
+  via `toWireResult` (`generation_jobs.result.tokens`), and threaded through EVERY
+  render path (generate / refine / edit / manual version) — see `renderTypst` /
+  `renderTemplate` in `src/server/jobs/persist.ts`. `renderTemplate`'s `lockPalette`
+  keeps executive/creative templates on their brand color while still honoring
+  density. All 7 template generators consume the density spacing.
+
+## Voice Profile
+
+A saved candidate profile can carry an optional **`voiceSample`** (the candidate's
+own writing, `candidate_profiles.voice_sample`, ≤ 4000 chars) so generated cover
+letters match their voice:
+- **Pure prompt builder**: `buildCoverLetterPrompt(resume, jd, voiceSample?)` in
+  `src/lib/agent/cover-letter.ts` folds the sample into a voice block + style rule;
+  the cover-letter prompt is at **v2**. It is profile-only and **sanitized at
+  pipeline entry** (never trusted raw into the LLM).
+- **Owner-only echo**: `GET`/`PUT /api/profiles/[id]` return/accept `voiceSample`
+  for the owner; `ProfileSummary` exposes only a boolean `hasVoiceSample` (never the
+  text) in list views.
+- **Refine wiring**: `src/server/jobs/refineVoice.ts` re-fetches the voice sample
+  owner-scoped via the parent/root job's `profileId` (it is **never persisted** on
+  the job), feeding `reviseCoverLetter` (revise-cover-letter prompt **v2**).
+- **Privacy invariant**: `voiceSample` is raw free text and is on the public-profile
+  NEVER-expose list (see below).
+
+## Public Career Endpoint
+
+A profile can be **published** to a stable, unguessable public URL — "your career
+as a page an agent can read":
+- **Routes**: `/p/[slug]` (HTML, Neobrutalism), `/p/[slug]/json`, `/p/[slug]/md`
+  (`src/server/profiles/publicMarkdown.ts`). `not-found.tsx` for unpublished/unknown.
+- **Store**: `candidate_profiles.public_slug` (stable, unguessable — kept on
+  unpublish so republishing restores the same URL) + `published_at` (visibility is
+  gated purely on `published_at IS NOT NULL`). `publishProfile`/`unpublishProfile`
+  in `src/server/profiles/store.ts`; controlled via `POST`/`DELETE
+  /api/profiles/[id]/publish`.
+- **Allowlist projection — the load-bearing safety invariant**: `toPublicProfile`
+  builds a `PublicProfile` from an **explicit allowlist**. `email`, `phone`, `photo`
+  (contact PII), `rawBackground`, `voiceSample` (raw text), and internal identifiers
+  (`userId`, row `id`) are deliberately ABSENT and must NEVER be added — enforced by
+  `publicProfile.test.ts`.
+- **Hardening**: public reads are IP-rate-limited (`pub:` key,
+  `src/server/profiles/publicAccess.ts`); outbound links are built through
+  `safePublicUrl` (`src/server/profiles/publicUrl.ts`, scheme allowlist).
+
+## OAuth Authorization Server + Hosted MCP
+
+So a **non-technical user** can connect Vitex inside ChatGPT or Claude with a
+sign-in (no API key to paste), the app is both an OAuth 2.1 Authorization Server and
+an OAuth-protected remote MCP server.
+
+- **Authorization Server** (`src/server/oauth/**`, routes `src/app/api/oauth/*` +
+  `src/app/.well-known/*`):
+  - `/.well-known/oauth-authorization-server` (RFC 8414 discovery),
+    `/api/oauth/register` (Dynamic Client Registration, RFC 7591),
+    `/api/oauth/authorize` (session-gated consent screen, PKCE **S256** required,
+    CSRF-protected), `/api/oauth/token` (authorization_code exchange).
+  - **The access token IS a first-class Vitex API key.** `exchange.ts` mints a fresh
+    API key as the returned bearer token — the whole AS is a **facade over the
+    existing API-key system**. There is **no refresh token**; the user revokes access
+    from the dashboard's "Connections & API Keys" list (the existing
+    `GET`/`DELETE /api/keys`).
+  - New tables: `oauth_clients`, `oauth_codes` (short-lived PKCE codes).
+- **Hosted remote MCP** (`src/app/api/mcp/route.ts`, `src/server/mcp/**`):
+  - `/api/mcp` speaks Streamable HTTP via the **`mcp-handler`** dep (wrapping
+    `@modelcontextprotocol/sdk`), stateless JSON mode (no session store).
+  - `/.well-known/oauth-protected-resource` (RFC 9728) advertises the AS; a 401
+    carries `WWW-Authenticate` pointing at it, so a connector completes the dance.
+  - Auth via `withMcpAuth` → `verifyMcpToken` → the SAME `verifyApiKey` the REST API
+    uses; the userId rides on `AuthInfo.extra`.
+  - The **9 tools** (`registerVitexTools`) call the backend **core directly** — the
+    same functions the v1 routes call (`createJob`, refine, profile store, credit
+    balance) — so **billing, idempotency, concurrency, and owner scoping are
+    identical** to the REST API. Tools: `get_account`, `generate_resume`,
+    `refine_resume`, `get_resume`, `download_pdf`, `list_profiles`, `create_profile`,
+    `publish_profile`, `unpublish_profile`.
+- **Canonical host = `https://www.vitex.org.nz`.** The whole OAuth/MCP surface
+  advertises `www` via `getBaseUrl()` (`src/server/oauth/config.ts`), which reads the
+  `NEXT_PUBLIC_APP_URL` build secret and falls back to the canonical origin — the
+  issuer MUST be a stable absolute https URL.
+- **Connector guides**: `docs/connectors/chatgpt.md`, `docs/connectors/claude.md`.
+
+## The `vitex-cli` package (CLI + stdio MCP)
+
+`cli/` is a **separately published npm package** (`vitex-cli`, bin `vitex`, currently
+v0.2.0) — a thin client over the public v1 API, plus a stdio MCP server.
+- **Not a workspace**: `cli/` has its OWN `package.json`/lockfile and its own CI job.
+  The root `tsconfig` excludes `cli`, and eslint ignores `cli/**` — it builds/tests
+  independently (`tsup` build, `vitest`). Deps: `@modelcontextprotocol/sdk` + `zod`.
+- **Two modes**: the CLI (`vitex <cmd>` — incl. `whoami` → `GET /api/v1/me`) for
+  terminals and coding agents, and `vitex mcp` (`npx -y vitex-cli mcp`), a **stdio MCP
+  server** for Claude Desktop, Claude Code, and Cursor. It exposes the same 9 tools as
+  the hosted `/api/mcp` (incl. `get_account`), but over HTTP to the public API rather
+  than in-process.
+- **Files**: `cli/src/{client,cli,args,format,mcp}.ts` — `client.ts` (v1 HTTP
+  wrapper), `cli.ts` (arg dispatch), `args.ts`, `format.ts`, `mcp.ts` (the stdio
+  MCP server), each with a colocated `*.test.ts`.
+
 ## Environment Variables
 
 See `.env.example` for the full list. Summary:
@@ -645,6 +844,12 @@ STACK_SECRET_SERVER_KEY=
 
 # Database (Neon Postgres) — also used for rate limiting
 DATABASE_URL=
+
+# Canonical app origin — baked at BUILD time (NEXT_PUBLIC_*). Drives the OAuth
+# issuer + all advertised OAuth/MCP/public-profile URLs (getBaseUrl,
+# src/server/oauth/config.ts). Prod = https://www.vitex.org.nz (canonical www);
+# falls back to that origin if unset. Local dev: http://localhost:3000.
+NEXT_PUBLIC_APP_URL=
 
 # AI
 OPENAI_API_KEY=            # required for the generation pipeline
@@ -680,6 +885,10 @@ R2_BUCKET=
 after the free-tier DB was idle-deleted). Note: object storage is now Cloudflare
 **R2** (S3-compatible, via `@aws-sdk/client-s3`), not the old Vercel Blob /
 Cloudinary — see `src/server/storage/`.
+
+**Notable added dependency**: `mcp-handler` (wraps `@modelcontextprotocol/sdk`)
+powers the hosted remote MCP endpoint (`/api/mcp`, Streamable HTTP). The `cli/`
+package pulls `@modelcontextprotocol/sdk` + `zod` on its own (separate lockfile).
 
 ## Migration Context
 
@@ -809,6 +1018,64 @@ This project underwent multiple architectural transformations:
       `parse-background` v2) so a truthful "unknown" no longer fails validation.
     - **Invariant preserved**: charge-once-after-compile holds — the refine
       charge site is a guarded sibling (constant = 0), edits/manual versions are free.
+
+15. **Discoverability + converged editor** (PRs #50–#57):
+    - **Added**: agent-facing discoverability assets — `public/llms.txt` (rewritten),
+      hand-written `public/openapi.yaml` (OpenAPI 3.1), `public/skill.md` (agent curl
+      playbook); `docs/api/v1.md` completed (threads + applications documented; no
+      `/api/v1` aliases). Pre-emptive auth gate (`page.tsx` routes to sign-in before
+      the editor). Converged editor: a single conversational refine box +
+      `src/server/core/refineScope.ts` `inferRefineScope` (deterministic scope
+      inference; `/api/refine` defaults its scope via it); StructuredEditor +
+      edit-agent folded under one "Advanced edit"; persist-before-navigate for "Edit
+      with AI". Export dropdown + Resume/Cover-letter tabs + History disclosure.
+
+16. **Voice profile, design tokens, public career endpoint** (PRs #58–#61):
+    - **Added**: **Voice profile** — `candidate_profiles.voice_sample`, pure
+      `buildCoverLetterPrompt`, cover-letter prompt v2 (profile-only, sanitized at
+      pipeline entry). **Design tokens** — `src/lib/design/tokens.ts` +
+      `selectDesignTokens` (deterministic, no LLM), persisted on `GenerateResult` and
+      threaded through every render path; all 7 templates consume density spacing.
+      **Public career endpoint** — `/p/[slug]` (+`/json`,`/md`),
+      `candidate_profiles.public_slug`/`published_at`, `toPublicProfile` allowlist
+      projection (email/phone/photo/rawBackground/voiceSample NEVER exposed),
+      publish/unpublish store fns + `POST`/`DELETE /api/profiles/[id]/publish`,
+      `src/server/profiles/{publicMarkdown,publicAccess,publicUrl}.ts`.
+
+17. **`vitex-cli` + voice edit UI** (PRs #62–#63):
+    - **Added**: the `cli/` package `vitex-cli` (bin `vitex`), published to npm
+      (v0.2.0) — a thin client over the v1 API + a stdio MCP server (`vitex mcp`).
+      Own package.json/lockfile (NOT a workspace); root tsconfig excludes `cli`,
+      eslint ignores `cli/**`, dedicated CI `cli` job. Voice edit UI (GET/PUT
+      `/api/profiles/[id]` echo `voiceSample` owner-only; `hasVoiceSample` on
+      `ProfileSummary`).
+
+18. **Account probe + refine voice + density landing** (PRs #66–#69):
+    - **Added**: `GET /api/v1/me` → `{ userId, via, credits, tier }`. Refine voice
+      wiring (`src/server/jobs/refineVoice.ts`, owner-scoped re-fetch via parent/root
+      `profileId`, never persisted; `RefineArtifacts.voiceSample`; reviseCoverLetter
+      voice, revise-cover-letter prompt v2). Density landing — all 7 template
+      generators consume density spacing; `lockPalette` became palette-only. CLI
+      0.2.0 — `whoami` → `/api/v1/me`; new `get_account` MCP tool.
+
+19. **OAuth 2.1 AS + hosted remote MCP** (PRs #70–#72):
+    - **Added**: an OAuth 2.1 **Authorization Server** —
+      `/.well-known/oauth-authorization-server` (RFC 8414), `/api/oauth/{register
+      (DCR RFC 7591), authorize (+consent, PKCE S256, CSRF, session-gated), token}`,
+      `src/server/oauth/*`, new `oauth_clients` + `oauth_codes` tables. The access
+      token IS a freshly minted first-class API key (a **facade over API keys**); no
+      refresh token; revoke via dashboard. **Hosted remote MCP** — `/api/mcp`
+      (Streamable HTTP via the `mcp-handler` dep), `/.well-known/oauth-protected-resource`
+      (RFC 9728), `src/server/mcp/{verifyToken,tools}.ts`; 9 in-process tools calling
+      the same core as v1 (billing/idempotency identical); auth via `withMcpAuth` →
+      `verifyApiKey`. Connector guides `docs/connectors/{chatgpt,claude}.md`. Dashboard
+      gained a "Connections & API Keys" list + revoke. **Canonical host =
+      `https://www.vitex.org.nz`** via the `NEXT_PUBLIC_APP_URL` build secret
+      (`getBaseUrl`, `src/server/oauth/config.ts`).
+    - **Public copy** (#73): pages realigned to "Career as Code"; pricing "what
+      credits get you" ledger corrected (1 credit per compiled resume incl. cover
+      letter + ATS; refine/AI-edit/failed-build free); `docs/BRAND_GUIDELINES.md`
+      de-staled (LaTeX→Typst, dropped "data stored locally"/Overleaf).
 
 **Legacy reference**: `A4_RESUME_USAGE.md` documents the original HTML/CSS approach (not currently used)
 
