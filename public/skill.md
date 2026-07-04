@@ -18,8 +18,7 @@ commit-style version chain. You pay only for a successful build.
 > over exactly the endpoints below. Run `npx vitex-cli generate --jd jd.txt
 > --background bg.txt --wait -o resume.pdf`, or add the MCP server with
 > `npx -y vitex-cli mcp` (env `VITEX_API_KEY`) so Claude Desktop / Claude Code /
-> Cursor can drive Vitex directly. If the npm package is not yet published, build
-> it from the repo's `cli/` directory. See
+> Cursor can drive Vitex directly. See
 > [`cli/README.md`](https://github.com/ChanMeng666/easy-resume/blob/master/cli/README.md).
 
 ---
