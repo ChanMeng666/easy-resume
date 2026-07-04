@@ -47,7 +47,9 @@ export const PROMPT_VERSIONS: Record<PromptFunctionId, string> = {
   // v2: optional writing-voice sample injected to voice-match the letter.
   'cover-letter': 'v2',
   'revise-resume': 'v1',
-  'revise-cover-letter': 'v1',
+  // v2: optional writing-voice sample injected so a refine keeps the letter in
+  // the candidate's voice (subordinate to the minimal-diff + no-new-facts rules).
+  'revise-cover-letter': 'v2',
   // v2: added the cover-letter section + the three letter-editing tools.
   // v3: resume embedded as a compact tool-editable projection (not full JSON);
   //     replayed history windowed to the most recent turns.

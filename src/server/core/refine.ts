@@ -82,6 +82,14 @@ export interface RefineArtifacts {
    * returned `GenerateResult.matchAnalysis` (a required field) is always valid.
    */
   matchAnalysis?: MatchSummary;
+  /**
+   * The candidate's writing-voice sample, re-fetched from the originating profile
+   * at the transport (never persisted into the job result — no extra PII copy).
+   * Grounds the cover-letter revision so a refine keeps the letter in the user's
+   * voice, exactly like the original generation did. Absent → the reviser prompt
+   * is byte-identical to the voice-free baseline.
+   */
+  voiceSample?: string;
 }
 
 /** Which artifact(s) the refinement touches. */
@@ -169,6 +177,12 @@ export async function runRefinementPipeline(
   const includesResume = scope === 'resume' || scope === 'both';
   const includesLetter = scope === 'cover_letter' || scope === 'both';
   const feedback = sanitizeForPrompt(parsed.data.feedback);
+  // Voice grounds the cover-letter revision only. Sanitize it at the same
+  // boundary as feedback (it is untrusted user free text from a saved profile);
+  // absent → undefined, so the reviser prompt stays byte-identical to today.
+  const voiceSample = artifacts.voiceSample
+    ? sanitizeForPrompt(artifacts.voiceSample)
+    : undefined;
 
   // Fast-fail before spending LLM calls if charging is on and the caller can't pay.
   if (cost > 0 && !(await deps.meter.hasCredits(caller.userId))) {
@@ -206,7 +220,7 @@ export async function runRefinementPipeline(
       : Promise.resolve<ResumeData>(artifacts.resumeData),
     includesLetter
       ? runStep('revise_cover_letter', () =>
-          deps.agent.reviseCoverLetter(artifacts.coverLetter, artifacts.resumeData, jd, feedback)
+          deps.agent.reviseCoverLetter(artifacts.coverLetter, artifacts.resumeData, jd, feedback, voiceSample)
         )
       : Promise.resolve<string>(artifacts.coverLetter),
   ]);

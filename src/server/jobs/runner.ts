@@ -18,6 +18,7 @@ import { runGenerationPipeline } from '@/server/core/pipeline';
 import { runRefinementPipeline, type RefineScope } from '@/server/core/refine';
 import { defaultDeps, defaultRefineDeps } from '@/server/core/deps';
 import { buildRefineArtifacts } from '@/server/jobs/refineArtifacts';
+import { resolveRefineVoiceSample } from '@/server/jobs/refineVoice';
 import { ConflictError, NotFoundError } from '@/server/errors/AppError';
 import { toErrorEnvelope } from '@/server/errors/envelope';
 import { createLogger } from '@/server/log/logger';
@@ -176,6 +177,7 @@ async function loadRefineContext(input: RefineJobInput, caller: Caller) {
       status: generationJobs.status,
       input: generationJobs.input,
       result: generationJobs.result,
+      rootJobId: generationJobs.rootJobId,
     })
     .from(generationJobs)
     .where(eq(generationJobs.id, input.refineOfJobId))
@@ -189,7 +191,17 @@ async function loadRefineContext(input: RefineJobInput, caller: Caller) {
   const parentInputObj = (parent.input ?? {}) as { jobDescription?: string; background?: string };
   const parentResult = parent.result as Parameters<typeof buildRefineArtifacts>[1];
   // Throws ValidationError when the parent has no resume data.
-  return buildRefineArtifacts(parentInputObj, parentResult);
+  const artifacts = buildRefineArtifacts(parentInputObj, parentResult);
+
+  // Re-fetch the originating profile's voice (owner-scoped, best-effort) so the
+  // cover-letter revision keeps the candidate's voice, matching the web transport.
+  // Never persisted into the result; any failure → undefined (no voice).
+  artifacts.voiceSample = await resolveRefineVoiceSample(
+    caller,
+    parent.input as Parameters<typeof resolveRefineVoiceSample>[1],
+    parent.rootJobId
+  );
+  return artifacts;
 }
 
 /** Execute the refine path for a refine-shaped job. */
