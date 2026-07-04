@@ -8,6 +8,7 @@
  */
 
 import { formatDateRange, cleanURL } from '@/lib/typst/utils';
+import { safePublicUrl } from './publicUrl';
 import type { PublicProfile } from './store';
 
 /** Join non-empty parts with a separator (skips blanks). */
@@ -52,7 +53,8 @@ export function renderPublicProfileMarkdown(profile: PublicProfile): string {
   if (profile.projects.length > 0) {
     lines.push('\n## Projects\n');
     for (const p of profile.projects) {
-      const heading = p.url ? `[${p.name}](${p.url})` : p.name;
+      const safeUrl = p.url ? safePublicUrl(p.url) : null;
+      const heading = safeUrl ? `[${p.name}](${safeUrl})` : p.name;
       lines.push(`### ${heading}`);
       if (p.description) lines.push(p.description);
       for (const h of p.highlights) lines.push(`- ${h}`);
@@ -103,7 +105,10 @@ export function renderPublicProfileMarkdown(profile: PublicProfile): string {
     lines.push('\n## Links\n');
     for (const p of profile.profiles) {
       const label = p.label || p.network;
-      lines.push(`- [${label}](${p.url}) — ${cleanURL(p.url)}`);
+      const safeUrl = safePublicUrl(p.url);
+      // Only emit a link for a safe web URL; otherwise show the label + cleaned
+      // text so a javascript:/data: URL can never become a clickable link.
+      lines.push(safeUrl ? `- [${label}](${safeUrl}) — ${cleanURL(p.url)}` : `- ${label}`);
     }
   }
 

@@ -35,6 +35,7 @@ const {
   getPublicProfileBySlug,
 } = await import('./store');
 const { renderPublicProfileMarkdown } = await import('./publicMarkdown');
+const { safePublicUrl } = await import('./publicUrl');
 
 // Distinctive sentinels that must NEVER appear in a public payload.
 const SENTINELS = {
@@ -267,7 +268,7 @@ describe('renderPublicProfileMarkdown', () => {
     expect(md).toContain('Jan 2022 – Present');
     expect(md).toContain('- Led the payments rewrite');
     expect(md).toContain('## Projects');
-    expect(md).toContain('[OpenGrid](https://opengrid.example)');
+    expect(md).toContain('[OpenGrid](https://opengrid.example/)');
     expect(md).toContain('## Education');
     expect(md).toContain('## Skills');
     expect(md).toContain('**Languages:** TypeScript, Rust');
@@ -291,5 +292,54 @@ describe('renderPublicProfileMarkdown', () => {
     const md = renderPublicProfileMarkdown(toPublicProfile(row));
     expect(md).not.toContain('## Achievements');
     expect(md).not.toContain('## Certifications');
+  });
+});
+
+// --- URL scheme safety (XSS) ---------------------------------------------------
+
+const DANGEROUS_URLS = [
+  'javascript:alert(1)',
+  'data:text/html,<script>alert(1)</script>',
+  'vbscript:msgbox(1)',
+];
+
+describe('safePublicUrl', () => {
+  it('accepts http/https and normalizes', () => {
+    expect(safePublicUrl('https://example.com/x')).toBe('https://example.com/x');
+    expect(safePublicUrl('http://example.com')).toBe('http://example.com/');
+  });
+
+  it('rejects dangerous schemes and garbage', () => {
+    for (const u of DANGEROUS_URLS) expect(safePublicUrl(u)).toBeNull();
+    expect(safePublicUrl('not a url')).toBeNull();
+    expect(safePublicUrl('')).toBeNull();
+  });
+});
+
+describe('markdown never links dangerous URLs', () => {
+  it('renders profile + project links as plain text for unsafe schemes', () => {
+    for (const bad of DANGEROUS_URLS) {
+      const row = sentinelRow();
+      row.data.basics.profiles = [{ network: 'Portfolio', url: bad, label: 'MySite' }];
+      row.data.projects = [
+        { name: 'EvilProj', description: 'x', highlights: [], url: bad },
+      ];
+      const md = renderPublicProfileMarkdown(toPublicProfile(row));
+      // The scheme must never appear inside a markdown link target `](...)`.
+      expect(md).not.toContain(`](${bad})`);
+      expect(md).not.toContain(bad);
+      // But the human-readable labels/names still show as plain text.
+      expect(md).toContain('MySite');
+      expect(md).toContain('EvilProj');
+    }
+  });
+
+  it('still links a normal https URL', () => {
+    const row = sentinelRow();
+    row.data.projects = [
+      { name: 'GoodProj', description: 'x', highlights: [], url: 'https://good.example' },
+    ];
+    const md = renderPublicProfileMarkdown(toPublicProfile(row));
+    expect(md).toContain('[GoodProj](https://good.example/)');
   });
 });

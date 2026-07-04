@@ -7,10 +7,12 @@
  * `/p/{slug}/md`, advertised via <link rel="alternate"> in the metadata.
  */
 
+import { cache } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getPublicProfileBySlug, type PublicProfile } from '@/server/profiles/store';
+import { safePublicUrl } from '@/server/profiles/publicUrl';
 import { formatDateRange } from '@/lib/typst/utils';
 
 export const runtime = 'nodejs';
@@ -19,13 +21,18 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
+// De-dupe the profile lookup within one request: generateMetadata and the page
+// component both resolve the same slug, so React cache() collapses them to a
+// single DB query per render.
+const loadProfile = cache(getPublicProfileBySlug);
+
 /**
  * SEO + agent-discovery metadata. Indexable, with the JSON/Markdown
  * representations advertised as alternates so a crawler or agent can find them.
  */
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const profile = await getPublicProfileBySlug(slug);
+  const profile = await loadProfile(slug);
   if (!profile) {
     return { title: 'Profile not found — Vitex', robots: { index: false, follow: false } };
   }
@@ -59,7 +66,7 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
 
 export default async function PublicProfilePage({ params }: PageProps) {
   const { slug } = await params;
-  const profile: PublicProfile | null = await getPublicProfileBySlug(slug);
+  const profile: PublicProfile | null = await loadProfile(slug);
   if (!profile) notFound();
 
   return (
@@ -76,18 +83,27 @@ export default async function PublicProfilePage({ params }: PageProps) {
           )}
           {profile.profiles.length > 0 && (
             <ul className="mt-4 flex flex-wrap gap-2">
-              {profile.profiles.map((p, i) => (
-                <li key={i}>
-                  <a
-                    href={p.url}
-                    target="_blank"
-                    rel="noopener noreferrer nofollow"
-                    className="inline-block border-2 border-black rounded-lg px-3 py-1 text-sm font-bold bg-[#00D4AA] shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,0.9)] transition-all"
-                  >
-                    {p.label || p.network}
-                  </a>
-                </li>
-              ))}
+              {profile.profiles.map((p, i) => {
+                const href = safePublicUrl(p.url);
+                const chipClass =
+                  "inline-block border-2 border-black rounded-lg px-3 py-1 text-sm font-bold bg-[#00D4AA] shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]";
+                return (
+                  <li key={i}>
+                    {href ? (
+                      <a
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer nofollow"
+                        className={`${chipClass} hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,0.9)] transition-all`}
+                      >
+                        {p.label || p.network}
+                      </a>
+                    ) : (
+                      <span className={chipClass}>{p.label || p.network}</span>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </header>
@@ -139,12 +155,14 @@ export default async function PublicProfilePage({ params }: PageProps) {
           <section className="mb-8">
             <SectionHeading>Projects</SectionHeading>
             <div className="space-y-6">
-              {profile.projects.map((p, i) => (
+              {profile.projects.map((p, i) => {
+                const href = p.url ? safePublicUrl(p.url) : null;
+                return (
                 <div key={i}>
                   <h3 className="font-black text-base">
-                    {p.url ? (
+                    {href ? (
                       <a
-                        href={p.url}
+                        href={href}
                         target="_blank"
                         rel="noopener noreferrer nofollow"
                         className="underline decoration-2 underline-offset-2 hover:text-[#6C3CE9]"
@@ -166,7 +184,8 @@ export default async function PublicProfilePage({ params }: PageProps) {
                     </ul>
                   )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           </section>
         )}
