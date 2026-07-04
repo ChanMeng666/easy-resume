@@ -96,11 +96,13 @@ export const getDefaultTemplate = () => templateRegistry.getById(DEFAULT_TEMPLAT
 /**
  * Render a template with design tokens, honoring `lockPalette`.
  *
- * This is the single render seam where the palette decision is applied: a
- * template that declares `lockPalette` (a signature color identity, e.g.
- * executive/creative) always renders with DEFAULT_TOKENS so the selected palette
- * can never override its brand colors; every other template renders with the
- * given tokens (DEFAULT_TOKENS when none supplied — today's exact look).
+ * This is the single render seam where the palette decision is applied. The
+ * lock is color-identity only: a template that declares `lockPalette` (a
+ * signature color identity, e.g. executive/creative) always keeps the default
+ * palette so the selected palette can never override its brand colors — but it
+ * still honors the selected `density`, so spacing landing applies everywhere.
+ * Every other template renders with the given tokens (DEFAULT_TOKENS when none
+ * supplied — today's exact look).
  *
  * @param template - The resolved template.
  * @param data - The resume data to render.
@@ -112,6 +114,8 @@ export function renderTemplate(
   data: ResumeData,
   tokens: DesignTokens = DEFAULT_TOKENS
 ): string {
-  const effective = template.metadata.lockPalette ? DEFAULT_TOKENS : tokens;
+  const effective: DesignTokens = template.metadata.lockPalette
+    ? { palette: DEFAULT_TOKENS.palette, density: tokens.density }
+    : tokens;
   return template.generator(data, effective);
 }
