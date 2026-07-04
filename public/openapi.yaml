@@ -22,6 +22,8 @@ tags:
     description: Generate, poll, download, and refine resumes (async job model).
   - name: profiles
     description: Reusable candidate backgrounds ("enter once, reuse across JDs").
+  - name: public
+    description: Opt-in public career endpoints (unauthenticated allowlist projection).
 paths:
   /api/v1/resumes:
     post:
@@ -275,6 +277,130 @@ paths:
           $ref: '#/components/responses/Error'
         '500':
           $ref: '#/components/responses/Error'
+  /api/profiles/{id}/publish:
+    post:
+      tags: [profiles]
+      operationId: publishProfile
+      summary: Publish a profile at its public career endpoint
+      description: >-
+        Opt-in. Exposes an allowlist projection of the profile (never
+        email/phone/photo or raw text) at `/p/{slug}`. Reuses an existing slug or
+        mints one; owner-scoped.
+      parameters:
+        - $ref: '#/components/parameters/ProfileId'
+      responses:
+        '200':
+          description: The profile is now public.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [slug, url, publishedAt]
+                properties:
+                  slug:
+                    type: string
+                  url:
+                    type: string
+                    format: uri
+                  publishedAt:
+                    type: string
+                    format: date-time
+                    nullable: true
+        '401':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/Error'
+        '500':
+          $ref: '#/components/responses/Error'
+    delete:
+      tags: [profiles]
+      operationId: unpublishProfile
+      summary: Unpublish a profile (keeps its slug)
+      description: >-
+        Closes the public visibility gate. The slug is preserved, so a later
+        publish restores the same `/p/{slug}` URL.
+      parameters:
+        - $ref: '#/components/parameters/ProfileId'
+      responses:
+        '200':
+          description: The profile is no longer public.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [unpublished]
+                properties:
+                  unpublished:
+                    type: boolean
+                    const: true
+        '401':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/Error'
+        '500':
+          $ref: '#/components/responses/Error'
+  /p/{slug}/json:
+    get:
+      tags: [public]
+      operationId: getPublicProfileJson
+      summary: Public career profile as JSON (unauthenticated)
+      description: >-
+        The allowlist projection of a published profile. No auth. Per-IP rate
+        limited (60/60s). Unknown or unpublished slugs return NOT_FOUND.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Slug'
+      responses:
+        '200':
+          description: The public profile projection.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: 'public, max-age=300, s-maxage=300'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicProfile'
+        '404':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/Error'
+        '500':
+          $ref: '#/components/responses/Error'
+  /p/{slug}/md:
+    get:
+      tags: [public]
+      operationId: getPublicProfileMarkdown
+      summary: Public career profile as Markdown (unauthenticated)
+      description: >-
+        The allowlist projection rendered as clean, agent-readable Markdown. No
+        auth. Per-IP rate limited (60/60s).
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Slug'
+      responses:
+        '200':
+          description: The public profile as Markdown.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: 'public, max-age=300, s-maxage=300'
+          content:
+            text/markdown:
+              schema:
+                type: string
+        '404':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/Error'
+        '500':
+          $ref: '#/components/responses/Error'
 components:
   securitySchemes:
     bearerApiKey:
@@ -301,6 +427,13 @@ components:
       schema:
         type: string
         format: uuid
+    Slug:
+      name: slug
+      in: path
+      required: true
+      description: A published profile's public slug.
+      schema:
+        type: string
     IdempotencyKey:
       name: Idempotency-Key
       in: header
@@ -464,6 +597,13 @@ components:
         updatedAt:
           type: [string, "null"]
           format: date-time
+        publicSlug:
+          type: [string, "null"]
+          description: Public endpoint slug (may exist while unpublished).
+        publishedAt:
+          type: [string, "null"]
+          format: date-time
+          description: Non-null iff the profile is currently public.
     ProfileDetail:
       allOf:
         - $ref: '#/components/schemas/ProfileSummary'
@@ -508,6 +648,69 @@ components:
           type: string
           maxLength: 4000
           description: Optional writing sample; cover-letter generation matches this voice.
+    PublicProfile:
+      type: object
+      description: >-
+        The ALLOWLIST projection served at the public career endpoints. Contains
+        only career facts the owner chose to publish; contact PII
+        (email/phone/photo) and raw background/voice text are never present.
+      required: [slug, label, name, headline, profiles, work, education, projects, skills, achievements, certifications]
+      properties:
+        slug:
+          type: string
+        label:
+          type: string
+        publishedAt:
+          type: [string, "null"]
+          format: date-time
+        updatedAt:
+          type: [string, "null"]
+          format: date-time
+        name:
+          type: string
+        headline:
+          type: string
+        location:
+          type: string
+        summary:
+          type: string
+        profiles:
+          type: array
+          items:
+            type: object
+            required: [network, url]
+            properties:
+              network: { type: string }
+              url: { type: string, format: uri }
+              label: { type: string }
+        work:
+          type: array
+          items:
+            type: object
+        education:
+          type: array
+          items:
+            type: object
+        projects:
+          type: array
+          items:
+            type: object
+        skills:
+          type: array
+          items:
+            type: object
+            required: [name, keywords]
+            properties:
+              name: { type: string }
+              keywords:
+                type: array
+                items: { type: string }
+        achievements:
+          type: array
+          items: { type: string }
+        certifications:
+          type: array
+          items: { type: string }
     Error:
       type: object
       required: [error]

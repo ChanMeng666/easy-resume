@@ -4,17 +4,31 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@stackframe/stack";
 import { motion } from "framer-motion";
-import { AlertCircle, User, Trash2, Sparkles, Pencil, Check, X, Loader2 } from "lucide-react";
+import { AlertCircle, User, Trash2, Sparkles, Pencil, Check, X, Loader2, Globe, Link2, Copy } from "lucide-react";
 import { Navbar } from "@/components/shared/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface ProfileListItem {
   id: string;
   label: string;
   createdAt: string;
   updatedAt: string;
+  // Public-endpoint state. `published` is derived from publishedAt != null; the
+  // slug persists across unpublish so republishing restores the same URL.
+  publicSlug: string | null;
+  publishedAt: string | null;
 }
 
 /** Format an ISO timestamp as a compact, locale-aware date + time. */
@@ -39,6 +53,9 @@ function ProfilesContent() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editLabel, setEditLabel] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
+  const [publishConfirmId, setPublishConfirmId] = useState<string | null>(null);
+  const [publishingId, setPublishingId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user === null) {
@@ -110,6 +127,56 @@ function ProfilesContent() {
     },
     [editLabel]
   );
+
+  /** Publish a profile at its public endpoint (confirmed via dialog). */
+  const handlePublish = useCallback(async (id: string) => {
+    setPublishingId(id);
+    try {
+      const res = await fetch(`/api/profiles/${id}/publish`, { method: "POST" });
+      if (!res.ok) throw new Error(`Publish failed (${res.status})`);
+      const data = await res.json();
+      setItems((cur) =>
+        cur?.map((it) =>
+          it.id === id
+            ? { ...it, publicSlug: data.slug ?? it.publicSlug, publishedAt: data.publishedAt ?? new Date().toISOString() }
+            : it
+        ) ?? cur
+      );
+    } catch (error) {
+      console.error("Failed to publish profile:", error);
+    } finally {
+      setPublishingId(null);
+      setPublishConfirmId(null);
+    }
+  }, []);
+
+  /** Unpublish a profile (keeps the slug so republishing restores the URL). */
+  const handleUnpublish = useCallback(async (id: string) => {
+    setPublishingId(id);
+    try {
+      const res = await fetch(`/api/profiles/${id}/publish`, { method: "DELETE" });
+      if (!res.ok) throw new Error(`Unpublish failed (${res.status})`);
+      setItems((cur) =>
+        cur?.map((it) => (it.id === id ? { ...it, publishedAt: null } : it)) ?? cur
+      );
+    } catch (error) {
+      console.error("Failed to unpublish profile:", error);
+    } finally {
+      setPublishingId(null);
+    }
+  }, []);
+
+  /** Copy the absolute public URL to the clipboard. */
+  const handleCopyLink = useCallback(async (slug: string, id: string) => {
+    try {
+      const url = `${window.location.origin}/p/${slug}`;
+      await navigator.clipboard.writeText(url);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId((cur) => (cur === id ? null : cur)), 2000);
+    } catch (error) {
+      console.error("Failed to copy link:", error);
+    }
+  }, []);
 
   if (user === undefined) {
     return (
@@ -232,6 +299,12 @@ function ProfilesContent() {
                       <p className="font-mono text-xs text-muted-foreground mt-1">
                         Updated {formatDate(item.updatedAt)}
                       </p>
+                      {item.publishedAt && item.publicSlug && (
+                        <span className="inline-flex items-center gap-1 mt-2 border-2 border-black rounded-md px-2 py-0.5 text-[11px] font-black bg-[#00D4AA] shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]">
+                          <Globe className="w-3 h-3" />
+                          Public
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -250,6 +323,61 @@ function ProfilesContent() {
                         Rename
                       </Button>
                     )}
+                    {editingId !== item.id &&
+                      (item.publishedAt && item.publicSlug ? (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-2"
+                            onClick={() => handleCopyLink(item.publicSlug!, item.id)}
+                            aria-label="Copy public link"
+                          >
+                            {copiedId === item.id ? (
+                              <>
+                                <Check className="w-4 h-4" />
+                                Copied
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-4 h-4" />
+                                Copy link
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-2"
+                            onClick={() => handleUnpublish(item.id)}
+                            disabled={publishingId === item.id}
+                            aria-label="Unpublish profile"
+                          >
+                            {publishingId === item.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Globe className="w-4 h-4" />
+                            )}
+                            Unpublish
+                          </Button>
+                        </>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-2"
+                          onClick={() => setPublishConfirmId(item.id)}
+                          disabled={publishingId === item.id}
+                          aria-label="Publish profile"
+                        >
+                          {publishingId === item.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Link2 className="w-4 h-4" />
+                          )}
+                          Publish
+                        </Button>
+                      ))}
                     <div className="ml-auto">
                       {confirmingId === item.id ? (
                         <div className="flex items-center gap-2">
@@ -293,6 +421,33 @@ function ProfilesContent() {
           )}
         </div>
       </main>
+
+      <AlertDialog
+        open={publishConfirmId !== null}
+        onOpenChange={(open) => {
+          if (!open) setPublishConfirmId(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Publish this profile?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This makes your career profile publicly visible to anyone with the link, and it
+              may be indexed by search engines. Your email, phone number, and photo are never
+              included. You can unpublish at any time.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={publishingId !== null}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => publishConfirmId && handlePublish(publishConfirmId)}
+              disabled={publishingId !== null}
+            >
+              {publishingId ? "Publishing…" : "Publish"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

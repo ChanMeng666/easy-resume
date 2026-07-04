@@ -350,10 +350,21 @@ export const candidateProfiles = pgTable("candidate_profiles", {
   // Optional writing sample (raw, unparsed) so cover-letter generation can match
   // the candidate's own voice. Content-quality only — never touches billing.
   voiceSample: text("voice_sample"),
+  // Public career endpoint (opt-in). `publicSlug` is a stable, unguessable URL
+  // token minted on first publish and KEPT on unpublish, so republishing restores
+  // the same `/p/{slug}` URL. Visibility is gated purely on `publishedAt IS NOT
+  // NULL` — unpublishing nulls `publishedAt` but leaves the slug intact.
+  publicSlug: text("public_slug"),
+  publishedAt: timestamp("published_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 }, (table) => ({
   userIdIdx: index("idx_candidate_profiles_user_id").on(table.userId, table.updatedAt.desc()),
+  // Unique per non-null slug so the public read path (WHERE public_slug = $1) is a
+  // single-row lookup and slug minting can rely on a unique-violation retry.
+  publicSlugUk: uniqueIndex("uk_candidate_profiles_public_slug")
+    .on(table.publicSlug)
+    .where(sql`public_slug IS NOT NULL`),
 }));
 
 // Candidate profile types

@@ -349,6 +349,14 @@ async function migrate() {
   // own voice. Stored raw (never parsed); nullable; a content-quality feature
   // that never touches billing.
   await sql`ALTER TABLE candidate_profiles ADD COLUMN IF NOT EXISTS voice_sample TEXT`;
+  // Public career endpoint (opt-in per profile). public_slug is a stable,
+  // unguessable URL token minted on first publish and KEPT on unpublish so
+  // republishing restores the same /p/{slug} URL; published_at IS NOT NULL is the
+  // sole visibility gate. The partial UNIQUE index makes the public read a
+  // single-row lookup and lets slug minting rely on a unique-violation retry.
+  await sql`ALTER TABLE candidate_profiles ADD COLUMN IF NOT EXISTS public_slug TEXT`;
+  await sql`ALTER TABLE candidate_profiles ADD COLUMN IF NOT EXISTS published_at TIMESTAMPTZ`;
+  await sql`CREATE UNIQUE INDEX IF NOT EXISTS uk_candidate_profiles_public_slug ON candidate_profiles(public_slug) WHERE public_slug IS NOT NULL`;
   console.log("Created candidate_profiles table");
 
   console.log("Migration complete!");
