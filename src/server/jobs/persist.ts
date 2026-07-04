@@ -14,7 +14,8 @@ import { and, eq, inArray, lt } from 'drizzle-orm';
 import { generationJobs } from '@/lib/db/schema';
 import { generateTypstCode } from '@/lib/typst/generator';
 import { generateCoverLetterTypst } from '@/lib/typst/cover-letter';
-import { getTemplateById } from '@/templates/registry';
+import { getTemplateById, renderTemplate } from '@/templates/registry';
+import { DEFAULT_TOKENS, type DesignTokens } from '@/lib/design/tokens';
 import { NotFoundError, ValidationError } from '@/server/errors/AppError';
 import type { ResumeData } from '@/lib/validation/schema';
 import type { runGenerationPipeline } from '@/server/core/pipeline';
@@ -40,6 +41,10 @@ export function toWireResult(r: PipelineResult) {
     atsScore: r.atsScore,
     matchAnalysis: r.matchAnalysis,
     templateId: r.templateId,
+    // Persist the design tokens so every re-render path (refine/edit/manual
+    // version/preview) reproduces the exact palette. Old rows lack this → readers
+    // fall back to DEFAULT_TOKENS (today's look).
+    tokens: r.tokens,
     usage: r.usage,
     promptVersions: r.promptVersions,
     parsedJD: r.parsedJD,
@@ -282,9 +287,13 @@ export async function finalizeSucceededJob(args: {
  * persisted manual edit produces the same layout — server-side, so the client's
  * Typst is never trusted (defends against an injected/forged document).
  */
-function renderTypst(data: ResumeData, templateId: string | undefined): string {
+function renderTypst(
+  data: ResumeData,
+  templateId: string | undefined,
+  tokens: DesignTokens = DEFAULT_TOKENS
+): string {
   const template = templateId ? getTemplateById(templateId) : undefined;
-  return template ? template.generator(data) : generateTypstCode(data);
+  return template ? renderTemplate(template, data, tokens) : generateTypstCode(data, tokens);
 }
 
 /**
@@ -344,11 +353,14 @@ export async function createManualVersion(args: {
   const rootJobId = parent.rootJobId ?? parent.id;
   const prev = (parent.result ?? {}) as Partial<WireResult> & { templateId?: string };
   const templateId = args.templateId ?? prev.templateId ?? 'two-column';
+  // Carry the parent's tokens forward (DEFAULT_TOKENS for a pre-tokens parent) so
+  // a manually-saved version keeps the same palette as what it branched from.
+  const tokens = prev.tokens ?? DEFAULT_TOKENS;
   // Re-render server-side in one step so a render failure (resume OR cover
   // letter) surfaces here and aborts the version write, never trusting client
   // Typst. An edited cover letter regenerates its Typst; otherwise the parent's
   // letter + Typst are carried forward exactly as before.
-  const typstCode = renderTypst(resumeData, templateId);
+  const typstCode = renderTypst(resumeData, templateId, tokens);
   const nextCoverLetter = coverLetter ?? prev.coverLetter ?? '';
   const nextCoverLetterTypst = coverLetter
     ? generateCoverLetterTypst(coverLetter, resumeData)
@@ -364,6 +376,7 @@ export async function createManualVersion(args: {
     atsScore: prev.atsScore,
     matchAnalysis: prev.matchAnalysis,
     templateId,
+    tokens,
     usage: { charged: false },
   };
 

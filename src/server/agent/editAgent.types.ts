@@ -9,6 +9,7 @@
 
 import type { LanguageModel } from 'ai';
 import type { ResumeData } from '@/lib/validation/schema';
+import type { DesignTokens } from '@/lib/design/tokens';
 import type { Logger } from '@/server/log/logger';
 
 /** A prior conversation turn replayed to the model (text only). */
@@ -37,8 +38,13 @@ export type EditEventSink = (event: EditEvent) => void;
 export interface EditAgentDeps {
   /** The language model driving the tool loop (default: reasonModel). */
   model: LanguageModel;
-  /** Deterministic ResumeData → Typst renderer (default: template/base generator). */
-  render: (data: ResumeData, templateId: string) => string;
+  /**
+   * Deterministic ResumeData → Typst renderer (default: template/base generator).
+   * `tokens` carries the resume's palette so an edit re-renders in the same colors
+   * it was generated with; optional so resume-only callers/tests can omit it
+   * (falls back to DEFAULT_TOKENS = today's look).
+   */
+  render: (data: ResumeData, templateId: string, tokens?: DesignTokens) => string;
   /**
    * Deterministic cover-letter → Typst renderer (default: generateCoverLetterTypst).
    * Optional so existing resume-only callers/tests need not supply it; the letter
@@ -58,6 +64,12 @@ export interface RunEditTurnArgs {
   baseResume: ResumeData;
   /** The template the resume renders with. */
   templateId: string;
+  /**
+   * The design tokens the resume was rendered with (palette + density). Threaded
+   * so every re-render in the turn reproduces the original palette; optional for
+   * backward compatibility (falls back to DEFAULT_TOKENS).
+   */
+  tokens?: DesignTokens;
   /**
    * The current working cover letter body ('' when the anchored resume has no
    * cover letter). Seeds the letter tools so an edit turn can build on prior

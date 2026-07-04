@@ -10,4 +10,6 @@ export const executiveMetadata: TemplateMetadata = {
   previewImage: '/template/executive-resum-preview.pdf',
   author: 'Vitex Team',
   createdAt: '2025-10-05',
+  // Signature deep-blue + gold identity — never overridden by the selected palette.
+  lockPalette: true,
 };

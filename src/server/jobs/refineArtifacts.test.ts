@@ -39,6 +39,7 @@ describe('buildRefineArtifacts', () => {
       parsedJD,
       coverLetter: 'Dear Hiring Manager,',
       templateId: 'engineering',
+      tokens: { palette: 'indigo', density: 'comfortable' },
       matchAnalysis: { overallScore: 80, matchedSkills: ['Rust'], missingSkills: ['Go'] },
     };
     expect(buildRefineArtifacts(input, result)).toEqual({
@@ -46,9 +47,15 @@ describe('buildRefineArtifacts', () => {
       parsedJD,
       coverLetter: 'Dear Hiring Manager,',
       templateId: 'engineering',
+      tokens: { palette: 'indigo', density: 'comfortable' },
       jobDescription: input.jobDescription,
       matchAnalysis: { overallScore: 80, matchedSkills: ['Rust'], missingSkills: ['Go'] },
     });
+  });
+
+  it('defaults tokens to DEFAULT_TOKENS for a parent stored before tokens shipped', () => {
+    const artifacts = buildRefineArtifacts(input, { resumeData, templateId: 'two-column' });
+    expect(artifacts.tokens).toEqual({ palette: 'slate', density: 'comfortable' });
   });
 
   it('leaves parsedJD undefined for jobs stored before parsedJD persistence', () => {

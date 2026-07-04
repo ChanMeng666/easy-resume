@@ -14,6 +14,7 @@
 
 import 'server-only';
 import { ValidationError } from '@/server/errors/AppError';
+import { DEFAULT_TOKENS, type DesignTokens } from '@/lib/design/tokens';
 import type { RefineArtifacts } from '@/server/core/refine';
 import type { ResumeData } from '@/lib/validation/schema';
 import type { ParsedJD } from '@/lib/agent/jd-parser';
@@ -36,6 +37,7 @@ export interface ParentJobResult {
   parsedJD?: ParsedJD;
   coverLetter?: string;
   templateId?: string;
+  tokens?: DesignTokens;
   matchAnalysis?: MatchSummary;
 }
 
@@ -61,6 +63,9 @@ export function buildRefineArtifacts(
     parsedJD: parentResult.parsedJD,
     coverLetter: parentResult.coverLetter ?? '',
     templateId: parentResult.templateId ?? DEFAULT_TEMPLATE_ID,
+    // A pre-tokens parent refines with today's default look; the refined version
+    // then persists tokens so subsequent refines reproduce it exactly.
+    tokens: parentResult.tokens ?? DEFAULT_TOKENS,
     jobDescription: parentInput.jobDescription ?? '',
     // Carried through unchanged when present; the core synthesizes one from the
     // ATS re-score when absent.

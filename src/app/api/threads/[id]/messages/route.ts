@@ -19,6 +19,7 @@ import { loadHistory, latestResumeSnapshot, threadMaxSequence, appendTurn, tailH
 import { runEditTurn, defaultEditAgentDeps } from '@/server/agent/editAgent';
 import type { HistoryMessage } from '@/server/agent/editAgent.types';
 import { threadMessageSchema, type ResumeData } from '@/lib/validation/schema';
+import { DEFAULT_TOKENS, type DesignTokens } from '@/lib/design/tokens';
 import { NotFoundError, UnauthenticatedError, ValidationError } from '@/server/errors/AppError';
 import { toErrorEnvelope, errorResponse } from '@/server/errors/envelope';
 import { createLogger } from '@/server/log/logger';
@@ -93,6 +94,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   // Resolve the thread + its working resume up front (owner-scoped → NotFound for
   // non-owners) so an error surfaces cleanly before the stream opens.
   let templateId: string;
+  let tokens: DesignTokens = DEFAULT_TOKENS;
   let history: HistoryMessage[];
   let baseResume: ResumeData;
   // The thread's current working cover letter ('' when the anchored resume has
@@ -115,6 +117,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const snapshot = await latestResumeSnapshot(caller.userId, threadId);
     baseResume = snapshot.resumeData;
     templateId = snapshot.templateId;
+    tokens = snapshot.tokens ?? DEFAULT_TOKENS;
     baseCoverLetter = snapshot.coverLetter ?? '';
     baseCoverLetterTypst = snapshot.coverLetterTypst ?? '';
     const prior = await loadHistory(caller.userId, threadId);
@@ -147,7 +150,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
       try {
         const result = await runEditTurn(
-          { baseResume, templateId, baseCoverLetter, baseCoverLetterTypst, history, userMessage, signal: request.signal },
+          { baseResume, templateId, tokens, baseCoverLetter, baseCoverLetterTypst, history, userMessage, signal: request.signal },
           defaultEditAgentDeps({ onEvent: (e) => safeSend(e), logger: log })
         );
 
@@ -169,6 +172,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
                 resumeData: result.resumeData,
                 typstCode: result.typstCode,
                 templateId,
+                // Persist the palette so a reopened thread re-renders in the same
+                // colors the resume was generated with.
+                tokens,
                 // Include the letter fields only when a letter exists, so a
                 // resume-only thread keeps writing the pre-letter snapshot shape.
                 ...(result.coverLetter

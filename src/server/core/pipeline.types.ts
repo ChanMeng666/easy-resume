@@ -8,6 +8,7 @@
 
 import type { ResumeData } from '@/lib/validation/schema';
 import type { ParsedJD } from '@/lib/agent/jd-parser';
+import type { DesignTokens } from '@/lib/design/tokens';
 import type { PipelineStep } from '@/server/errors/AppError';
 import type { Logger } from '@/server/log/logger';
 import type { BillingMeter } from '@/server/billing/meter';
@@ -72,6 +73,13 @@ export interface GenerateResult {
   atsScore: number;
   matchAnalysis: MatchSummary;
   templateId: string;
+  /**
+   * The design tokens (palette + density) that drove rendering. Persisted so
+   * every re-render path (refine, edit, manual version, client preview)
+   * reproduces the exact same look, and so the PDF is a deterministic build
+   * artifact. Old jobs without this field default to DEFAULT_TOKENS.
+   */
+  tokens: DesignTokens;
   pdf: Uint8Array;
   usage: UsageResult;
   /**
@@ -101,6 +109,7 @@ export interface PipelineDeps {
     scoreATS: typeof import('@/lib/agent/ats-scorer').scoreATSDeterministic;
     generateCoverLetter: typeof import('@/lib/agent/cover-letter').generateCoverLetter;
     selectTemplate: typeof import('@/lib/agent/template-selector').selectTemplate;
+    selectDesignTokens: typeof import('@/lib/agent/template-selector').selectDesignTokens;
   };
   render: {
     getTemplateById: typeof import('@/templates/registry').getTemplateById;

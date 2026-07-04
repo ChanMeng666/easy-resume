@@ -14,7 +14,7 @@ import { reviseResume } from '@/lib/agent/resume-reviser';
 import { reviseCoverLetter } from '@/lib/agent/cover-letter-reviser';
 import { scoreATSDeterministic } from '@/lib/agent/ats-scorer';
 import { generateCoverLetter } from '@/lib/agent/cover-letter';
-import { selectTemplate } from '@/lib/agent/template-selector';
+import { selectTemplate, selectDesignTokens } from '@/lib/agent/template-selector';
 import { getTemplateById } from '@/templates/registry';
 import { generateTypstCode } from '@/lib/typst/generator';
 import { generateCoverLetterTypst } from '@/lib/typst/cover-letter';
@@ -44,6 +44,7 @@ export function defaultDeps(opts?: {
       scoreATS: scoreATSDeterministic,
       generateCoverLetter,
       selectTemplate,
+      selectDesignTokens,
     },
     render: { getTemplateById, generateTypstCode, generateCoverLetterTypst },
     compile: async (typstCode) => (await compileTypstToPdf(typstCode)).pdf,
