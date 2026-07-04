@@ -87,6 +87,19 @@ describe('VitexClient auth + idempotency headers', () => {
   });
 });
 
+describe('VitexClient.me', () => {
+  it('GETs /api/v1/me with the Bearer key and no Idempotency-Key, returning the payload', async () => {
+    const payload = { userId: 'usr_1', via: 'api_key', credits: 3, tier: 'free' };
+    const { fetchImpl, calls } = makeFetch([jsonResponse(200, payload)]);
+    const me = await client(fetchImpl).me();
+    expect(me).toEqual(payload);
+    expect(calls[0]!.url).toBe('https://api.test/api/v1/me');
+    expect(calls[0]!.init.method ?? 'GET').toBe('GET');
+    expect(headerOf(calls[0]!.init, 'authorization')).toBe('Bearer vitex_p_secret');
+    expect(headerOf(calls[0]!.init, 'idempotency-key')).toBeNull();
+  });
+});
+
 describe('VitexClient error envelope mapping', () => {
   it('maps a standard envelope into a typed ApiError', async () => {
     const envelope = {

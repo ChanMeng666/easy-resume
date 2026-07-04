@@ -137,20 +137,50 @@ describe('run — API interactions (stubbed fetch)', () => {
     expect(cap.out()).toContain('failed (PIPELINE_STEP_FAILED');
   });
 
-  it('whoami on a valid key exits 0', async () => {
+  it('whoami --json prints the raw /api/v1/me payload and exits 0', async () => {
+    let calledUrl = '';
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => new Response(JSON.stringify({ items: [] }), { status: 200, headers: { 'content-type': 'application/json' } })),
+      vi.fn(async (url: string | URL | Request) => {
+        calledUrl = String(url);
+        return new Response(JSON.stringify({ userId: 'usr_1', via: 'api_key', credits: 3, tier: 'free' }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      }),
     );
     const code = await run(['whoami', '--json']);
     expect(code).toBe(0);
-    expect(cap.out()).toContain('"ok": true');
+    // whoami now hits the dedicated identity endpoint, not the profiles probe.
+    expect(calledUrl).toContain('/api/v1/me');
+    const parsed = JSON.parse(cap.out());
+    expect(parsed).toEqual({ userId: 'usr_1', via: 'api_key', credits: 3, tier: 'free' });
+  });
+
+  it('whoami human output is a single line with balance + tier', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        new Response(JSON.stringify({ userId: 'usr_1', via: 'api_key', credits: 3, tier: 'free' }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
+      ),
+    );
+    const code = await run(['whoami']);
+    expect(code).toBe(0);
+    expect(cap.out().trim()).toBe('ok — user usr_1 · 3 credits · free (via api_key)');
   });
 
   it('never echoes the API key in output', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => new Response(JSON.stringify({ items: [] }), { status: 200, headers: { 'content-type': 'application/json' } })),
+      vi.fn(async () =>
+        new Response(JSON.stringify({ userId: 'usr_1', via: 'api_key', credits: 3, tier: 'free' }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
+      ),
     );
     await run(['whoami']);
     expect(cap.out()).not.toContain('vitex_p_secret');
