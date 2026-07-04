@@ -33,9 +33,9 @@ const loadProfile = cache(getPublicProfileBySlug);
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const profile = await loadProfile(slug);
-  if (!profile) {
-    return { title: 'Profile not found — Vitex', robots: { index: false, follow: false } };
-  }
+  // notFound() here (before streaming starts) makes the response a real HTTP
+  // 404; thrown only from the page body it would stream a soft 404 with a 200.
+  if (!profile) notFound();
   const title = profile.headline ? `${profile.name} — ${profile.headline}` : profile.name;
   const description =
     profile.summary?.slice(0, 200) ||
