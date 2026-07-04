@@ -37,7 +37,7 @@ Vitex combines the Latin word "Vita" (meaning life/CV) with "TeX" (the professio
 
 ### 1.3 Brand Mission
 
-To empower everyone to create professional-grade resumes using industry-standard typesetting tools, without the complexity of learning LaTeX syntax.
+To empower everyone to create professional-grade resumes using industry-standard typesetting tools, without the complexity of learning Typst syntax. Career as Code: your career facts are source code, and every resume is a build artifact compiled on demand.
 
 ### 1.4 Brand Vision
 
@@ -47,17 +47,17 @@ To become the preferred professional resume tool for global tech talent.
 
 | Value | Description |
 |-------|-------------|
-| **Professional** | LaTeX-level typographic quality |
+| **Professional** | Typst-level typographic quality |
 | **Simple** | Zero learning curve |
-| **Private** | All data stored locally |
+| **Portable** | Zero lock-in — export editable `.typ` source anytime |
 | **Open** | Open source and transparent |
 | **Bold** | Distinctive, memorable design |
 
 ### 1.6 Brand Taglines
 
 - **Primary**: "Your Career, Perfectly Composed"
-- **Secondary**: "Professional LaTeX Resumes, Zero Learning Curve"
-- **Technical**: "LaTeX Quality, Zero Complexity"
+- **Secondary**: "Career as Code — Professional Typst Resumes, Zero Learning Curve"
+- **Technical**: "Typst Quality, Zero Complexity"
 
 ---
 
@@ -751,7 +751,7 @@ Use framer-motion for:
 |---------|------|
 | Primary CTA | "Build My Resume" or "Get Started" |
 | Secondary CTA | "View Templates" |
-| Export | "Open in Overleaf" |
+| Export | "Download .typ source" |
 | Empty State | "No resumes yet" |
 | Success | "Your resume is ready!" |
 | Error | "Something went wrong. Please try again." |

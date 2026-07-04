@@ -32,7 +32,7 @@ const plans = [
     name: 'Pro',
     price: '$29',
     period: '/month',
-    description: '20 credits/month for active job seekers',
+    description: '20 builds a month for an active search',
     icon: Zap,
     color: 'bg-purple-100',
     popular: true,
@@ -43,6 +43,8 @@ const plans = [
       'ATS optimization reports',
       'Cover letter generation',
       'Application tracking',
+      'Full API + CLI access',
+      'MCP connector for ChatGPT & Claude',
       'Priority AI responses',
     ],
     cta: 'Start Pro',
@@ -62,6 +64,8 @@ const plans = [
       'Unlimited tailoring',
       'Unlimited cover letters',
       'Unlimited ATS reports',
+      'Full API + CLI access',
+      'MCP connector for ChatGPT & Claude',
       'Bulk application support',
       'Priority support',
     ],
@@ -145,7 +149,10 @@ function PricingContent() {
             Sell results, not tools.
           </h1>
           <p className="text-lg text-muted-foreground font-medium">
-            Free to build. You&apos;re only charged when a real PDF is composed.
+            Free to build. You&apos;re only charged when a real PDF is composed —
+            failed builds are free, and every resume downloads as editable{' '}
+            <span className="font-mono">.typ</span> source, so there&apos;s zero
+            lock-in.
           </p>
         </motion.div>
 
@@ -286,10 +293,13 @@ function PricingContent() {
 
           {(() => {
             const rows = [
-              { action: 'Resume tailoring to job description', credits: '1' },
-              { action: 'Cover letter generation', credits: '1' },
-              { action: 'ATS optimization report', credits: '1' },
-              { action: 'Basic resume editing (AI chat)', credits: 'Free' },
+              {
+                action: 'Compile a tailored resume PDF (includes cover letter + ATS score)',
+                credits: '1',
+              },
+              { action: 'Refine an existing resume', credits: 'Free' },
+              { action: 'AI chat editing', credits: 'Free' },
+              { action: 'Failed build', credits: 'Free' },
             ];
 
             return (
