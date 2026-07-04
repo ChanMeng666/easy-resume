@@ -2,6 +2,10 @@
 
 # dependencies
 /node_modules
+
+# in-repo vitex-cli package (its own isolated toolchain; lockfile IS committed)
+/cli/node_modules
+/cli/dist
 /.pnp
 .pnp.*
 .yarn/*

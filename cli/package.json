@@ -1,0 +1,48 @@
+{
+  "name": "vitex-cli",
+  "version": "0.1.0",
+  "description": "Thin client for the Vitex hosted resume API — a token-cheap CLI for terminals and coding agents, plus a stdio MCP server for Claude Desktop, Claude Code, and Cursor.",
+  "type": "module",
+  "bin": {
+    "vitex": "./dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "vitex",
+    "resume",
+    "cv",
+    "cli",
+    "mcp",
+    "ai",
+    "agent",
+    "ats"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ChanMeng666/easy-resume.git",
+    "directory": "cli"
+  },
+  "homepage": "https://www.vitex.org.nz",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "zod": "^3.25.0 || ^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.5.0",
+    "vitest": "^3.2.0"
+  }
+}
