@@ -41,6 +41,17 @@ export VITEX_KEY="vitex_xxx_yyy"        # the raw token from step 3
 
 New accounts start with **3 free credits**.
 
+Verify the key works (and check your balance) with the cheap read-only identity
+probe — it never spends credits:
+
+```bash
+curl -sS "$VITEX_BASE/api/v1/me" -H "Authorization: Bearer $VITEX_KEY"
+# -> 200 { "userId": "...", "via": "api_key", "credits": 3, "tier": "free" }
+```
+
+A `401` means the key is missing or invalid. `tier` is one of `free | pro |
+unlimited`.
+
 ---
 
 ## 1. (Optional) Save a reusable background — "enter once, reuse across JDs"
@@ -207,6 +218,7 @@ Always trust the `retriable` flag over the HTTP code for retry decisions.
 
 | Endpoint | Limit |
 | --- | --- |
+| `GET /api/v1/me` | 60 / 60s |
 | `POST /api/v1/resumes` | 30 / 60s |
 | `POST /api/v1/resumes/{id}/refine` | 10 / 60s |
 | `POST /api/profiles`, `PUT /api/profiles/{id}` | 20 / 60s |

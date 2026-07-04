@@ -18,6 +18,8 @@ servers:
 security:
   - bearerApiKey: []
 tags:
+  - name: identity
+    description: Cheap read-only identity/balance probe.
   - name: resumes
     description: Generate, poll, download, and refine resumes (async job model).
   - name: profiles
@@ -25,6 +27,28 @@ tags:
   - name: public
     description: Opt-in public career endpoints (unauthenticated allowlist projection).
 paths:
+  /api/v1/me:
+    get:
+      tags: [identity]
+      operationId: getMe
+      summary: Identity & balance probe
+      description: >-
+        A cheap, read-only "who am I" check: validate the API key (or cookie
+        session), and return the caller's user id, how they authenticated, and
+        their current credit balance/tier. Never creates a job or spends credits.
+      responses:
+        '200':
+          description: The authenticated caller's identity and balance.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+        '401':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/Error'
+        '500':
+          $ref: '#/components/responses/Error'
   /api/v1/resumes:
     post:
       tags: [resumes]
@@ -454,6 +478,24 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
   schemas:
+    Me:
+      type: object
+      required: [userId, via, credits, tier]
+      properties:
+        userId:
+          type: string
+          description: The authenticated caller's user id.
+        via:
+          type: string
+          enum: [api_key, session]
+          description: Which credential resolved the caller (Bearer key or web cookie).
+        credits:
+          type: integer
+          description: Current prepaid credit balance.
+        tier:
+          type: string
+          enum: [free, pro, unlimited]
+          description: Subscription tier.
     GenerateRequest:
       type: object
       required: [jobDescription]
