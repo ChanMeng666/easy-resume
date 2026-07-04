@@ -449,8 +449,9 @@ The UI follows a **Neobrutalism** design aesthetic with these key characteristic
 
 ### Preview Components
 - **LivePdfPreview** (`src/components/preview/LivePdfPreview.tsx`): Compiles Typst and displays PDF in iframe
-- **LatexPreview** (`src/components/preview/LatexPreview.tsx`): Displays Typst source code with monospace formatting
 - **ExportButtons** (`src/components/preview/ExportButtons.tsx`): Download .typ and Copy Code actions
+- **PdfViewer** (`src/components/preview/PdfViewer.tsx`): PDF rendering helper used by the preview
+- **LatexPreview** (`src/components/preview/LatexPreview.tsx`): unused legacy component (stale "Latex" name — no importer in `src/`; kept for reference only)
 
 ### UI Library
 - **shadcn/ui**: Pre-built components in `src/components/ui/` customized for Neobrutalism
