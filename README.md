@@ -60,6 +60,8 @@ Built with Next.js 15, React 19, TypeScript, and Vercel AI SDK.
 
 Vitex is an AI-powered resume generation platform that transforms a job description and your professional background into a polished, ATS-optimized resume PDF and cover letter. An 8-step AI pipeline handles everything from JD parsing and skill matching to server-side PDF compilation, with Typst compiling PDFs locally in under 100ms. It is **agent-ready**: every capability is reachable over an authenticated HTTP API (the web UI and the public v1 API share one pipeline core), and billing is **outcome-based** — you are charged only when a resume is successfully produced. The UI follows a bold Neobrutalism design system with hard shadows, thick borders, and high contrast.
 
+Vitex is built for **a person plus their AI assistant** on a **"one core, N thin adapters"** design — "The API is the UI". Everything the web app does, an agent can do over the public v1 HTTP API, the published [`vitex-cli`](cli/README.md), or the hosted MCP connector. The guiding framing is **Career as Code**: your career facts are the source, each tailored PDF is a reproducible build artifact, the refinement chain is a series of commits, outcome billing means you pay per successful build, and the exported `.typ` source means zero lock-in. See [ADR 0003](docs/decisions/0003-adapter-strategy-and-hosted-mcp.md).
+
 ## Key Features
 
 - **AI Resume Generation** -- Paste a job description + describe your background, get a tailored resume PDF
@@ -73,9 +75,10 @@ Vitex is an AI-powered resume generation platform that transforms a job descript
 - **Cover Letter Generation** -- Automatically generated alongside the resume
 - **Typst-Powered PDF** -- Local compilation in <100ms, no external APIs required
 - **Natural Language Refinement** -- Describe changes in plain English; AI applies a targeted, free refinement (resume and/or cover letter) — not a full regeneration
+- **Voice Profile** -- Save a writing sample on a candidate profile so generated cover letters match your voice
+- **Public Career Endpoint** -- Publish a profile to a stable, agent-readable page at `/p/<slug>` (HTML, `/json`, and `/md`); contact PII and raw text are never exposed
 - **Credit System** -- Stripe-powered subscription plans for usage management
-- **Resume Sharing** -- Public share links with unique tokens
-- **Cloud Storage** -- Persistent resume management with user accounts
+- **Cloud Storage** -- Persistent resume management with user accounts (My Resumes history, search, and re-open)
 
 ## How It Works
 
@@ -137,6 +140,9 @@ STRIPE_PRICE_CREDITS_5=...
 STRIPE_PRICE_PRO_MONTHLY=...
 STRIPE_PRICE_UNLIMITED_MONTHLY=...
 
+# Canonical app origin (drives the OAuth issuer + advertised OAuth/MCP/public URLs)
+NEXT_PUBLIC_APP_URL=http://localhost:3000   # prod: https://www.vitex.org.nz
+
 # Optional: model tiering + observability
 AI_MODEL_EXTRACT=gpt-4o-mini
 AI_MODEL_REASON=gpt-4o
@@ -181,13 +187,19 @@ Monolith Next.js App (Docker Container on VPS)
 |-- Pages
 |   |-- /                    Landing page: JD + background input
 |   |-- /editor              Result review: PDF preview, ATS score, cover letter, refinement
-|   |-- /dashboard           Resume management + credits
+|   |-- /resumes             My Resumes history (search, open, download, delete)
+|   |-- /profiles            Candidate profiles (background + voice sample) + publish
+|   |-- /applications        Application tracker
+|   |-- /dashboard           Credits, billing + Connections & API Keys
 |   |-- /pricing             Subscription plans
-|   |-- /share/[token]       Public resume sharing
+|   |-- /p/[slug]            Public career endpoint (HTML, +/json, +/md)
 |
-|-- Transports (thin adapters over one shared core)
+|-- Transports (thin adapters over one shared core -- "the API is the UI")
 |   |-- POST /api/generate     SSE stream for the web UI
-|   |-- /api/v1/resumes        Public agent API (API key, job-based) -- "the API is the UI"
+|   |-- /api/v1/resumes        Public agent REST API (API key, job-based) + /api/v1/me
+|   |-- /api/mcp               Hosted remote MCP (Streamable HTTP, OAuth-protected)
+|   |-- /api/oauth/*           OAuth 2.1 Authorization Server (facade minting API keys)
+|   |-- vitex-cli              Published npm package: CLI + stdio MCP server
 |
 |-- Backend Core (src/server/, transport-agnostic)
 |   |-- 8-Step Pipeline: JD parse || background parse -> match -> tailor
