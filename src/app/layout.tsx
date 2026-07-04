@@ -26,16 +26,16 @@ const titanOne = Titan_One({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.vitex.org.nz"),
-  title: "Vitex | AI Career Agent",
-  description: "Your AI Career Agent - Job-targeted resumes, ATS optimization, and cover letters powered by AI. Transform your job search with intelligent resume tailoring.",
+  title: "Vitex — Career as Code",
+  description: "Compile a job-ready resume PDF from a job description and your background — from the web, a CLI, or your AI assistant (ChatGPT / Claude via MCP). Pay only when a real PDF is built; refines and edits are free.",
   icons: {
     icon: '/logo/vitex-logo-white-with-bg.svg',
     shortcut: '/logo/vitex-logo-white-with-bg.svg',
     apple: '/logo/vitex-logo-white-with-bg.svg',
   },
   openGraph: {
-    title: "Vitex | AI Career Agent",
-    description: "Job-targeted resumes, ATS scoring, and cover letters — powered by AI.",
+    title: "Vitex — Career as Code",
+    description: "Your career is source code. Vitex compiles a tailored, ATS-scored resume PDF on demand — from the web or straight from your AI assistant.",
     type: "website",
     siteName: "Vitex",
     url: "https://www.vitex.org.nz",
@@ -44,14 +44,14 @@ export const metadata: Metadata = {
         url: "/og-cover.png",
         width: 1200,
         height: 630,
-        alt: "Vitex — AI Career Agent",
+        alt: "Vitex — Career as Code",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Vitex | AI Career Agent",
-    description: "Job-targeted resumes, ATS scoring, and cover letters — powered by AI.",
+    title: "Vitex — Career as Code",
+    description: "Your career is source code. Vitex compiles a tailored, ATS-scored resume PDF on demand — from the web or straight from your AI assistant.",
     images: ["/og-cover.png"],
   },
 };

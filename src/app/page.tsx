@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@stackframe/stack';
 import { motion } from 'framer-motion';
-import { Sparkles, Target, Bot, Download, User } from 'lucide-react';
+import { Sparkles, Target, Bot, Download, User, Terminal, Plug } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -254,7 +254,7 @@ export default function HomePage() {
               transition={{ duration: 0.4 }}
               className="proof-label mb-4"
             >
-              § Vitex — AI Resume Composer
+              § Vitex — Career as Code
             </motion.p>
 
             <div className="vitex-grid">
@@ -276,8 +276,10 @@ export default function HomePage() {
                   transition={{ duration: 0.5, delay: 0.1 }}
                   className="text-base sm:text-lg text-muted-foreground font-medium max-w-xl mb-6"
                 >
-                  Paste a job description and your background. Vitex tailors,
-                  scores, and typesets a job-ready PDF in about 30 seconds.
+                  Your career facts are source code. Paste a job description and
+                  your background — Vitex tailors, ATS-scores, and compiles a
+                  job-ready PDF in about 30 seconds. You&apos;re charged only when
+                  the PDF builds; refines are free.
                 </motion.p>
 
                 <motion.div
@@ -452,6 +454,102 @@ export default function HomePage() {
                     </CropFrame>
                   </motion.div>
                 ))}
+              </div>
+
+              {/* Or skip the browser — same pipeline, from the terminal or an AI assistant. */}
+              <motion.p
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.2 }}
+                className="motion-reveal mt-8 text-center text-sm font-medium text-muted-foreground"
+              >
+                Or skip the browser —{' '}
+                <span className="font-mono font-bold text-foreground">npx vitex-cli</span>{' '}
+                or the MCP connector. Same pipeline, same PDF.
+              </motion.p>
+            </div>
+          </section>
+
+          {/* Agent access — "the API is the UI": drive the same pipeline from a
+              terminal or an AI assistant. */}
+          <section className="section-y">
+            <div className="container mx-auto px-4 max-w-6xl">
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.2 }}
+                className="motion-reveal mb-8 sm:mb-10"
+              >
+                <p className="proof-label mb-2">§ The API is the UI</p>
+                <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
+                  Prefer your terminal — or your AI assistant?
+                </h2>
+                <p className="mt-4 max-w-2xl text-base sm:text-lg text-muted-foreground font-medium">
+                  Drive the exact same pipeline from the{' '}
+                  <span className="font-mono font-bold text-foreground">vitex</span>{' '}
+                  CLI, or connect Vitex to ChatGPT or Claude over MCP. LinkedIn is
+                  for humans; a Vitex endpoint is for AIs.
+                </p>
+              </motion.div>
+
+              <div className="grid md:grid-cols-2 gap-6 sm:gap-8">
+                <motion.a
+                  href="https://www.npmjs.com/package/vitex-cli"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.2 }}
+                  className="motion-reveal block rounded-xl border-2 border-black bg-white p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] transition-all duration-200 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px]"
+                >
+                  <div className="mb-4 flex items-center justify-between">
+                    <span className="proof-label">CLI</span>
+                    <div className="flex h-11 w-11 items-center justify-center rounded-lg border-2 border-black bg-primary">
+                      <Terminal className="h-5 w-5 text-white" />
+                    </div>
+                  </div>
+                  <h3 className="text-xl font-black mb-2">Run it from your terminal</h3>
+                  <p className="text-muted-foreground font-medium mb-3">
+                    Compile a tailored resume without leaving your shell.
+                  </p>
+                  <code className="inline-block rounded-lg border-2 border-black bg-gray-50 px-3 py-1.5 font-mono text-sm font-bold">
+                    npx vitex-cli
+                  </code>
+                </motion.a>
+
+                <motion.a
+                  href="https://github.com/ChanMeng666/easy-resume/blob/master/docs/connectors/claude.md"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.2 }}
+                  transition={{ delay: 0.1 }}
+                  className="motion-reveal block rounded-xl border-2 border-black bg-white p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] transition-all duration-200 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px]"
+                >
+                  <div className="mb-4 flex items-center justify-between">
+                    <span className="proof-label">MCP Connector</span>
+                    <div className="flex h-11 w-11 items-center justify-center rounded-lg border-2 border-black bg-primary">
+                      <Plug className="h-5 w-5 text-white" />
+                    </div>
+                  </div>
+                  <h3 className="text-xl font-black mb-2">Connect your AI assistant</h3>
+                  <p className="text-muted-foreground font-medium mb-3">
+                    Wire Vitex into{' '}
+                    <a
+                      href="https://github.com/ChanMeng666/easy-resume/blob/master/docs/connectors/chatgpt.md"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-bold text-primary underline-offset-2 hover:underline"
+                    >
+                      ChatGPT
+                    </a>{' '}
+                    or Claude over MCP and let it build for you.
+                  </p>
+                  <span className="inline-block rounded-lg border-2 border-black bg-cyan-100 px-3 py-1.5 font-mono text-sm font-bold">
+                    ChatGPT &amp; Claude
+                  </span>
+                </motion.a>
               </div>
             </div>
           </section>

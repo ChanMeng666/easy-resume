@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { Mail, Github, Sparkles, Briefcase, MessageSquare, LayoutDashboard, CreditCard } from 'lucide-react';
+import { Github, Sparkles, Terminal, Plug, Code2, LayoutDashboard, CreditCard } from 'lucide-react';
 
 /**
  * Site footer — "typeset proof" treatment: monospace section labels, a single
@@ -58,11 +58,57 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Developer */}
+          {/* Developers — the API is the UI: agent surfaces over HTTP */}
           <div className="p-6 bg-gray-50 rounded-xl border-2 border-black">
             <h3 className="proof-label mb-4 flex items-center gap-2 !text-foreground">
-              <Briefcase className="h-3.5 w-3.5 text-primary" />
-              §02 — Developer
+              <Terminal className="h-3.5 w-3.5 text-primary" />
+              §02 — Developers
+            </h3>
+            <ul className="space-y-3">
+              <li>
+                <a
+                  href="https://www.npmjs.com/package/vitex-cli"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-all hover:text-foreground hover:translate-x-1"
+                >
+                  <Terminal className="h-4 w-4" />
+                  CLI (vitex-cli)
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://github.com/ChanMeng666/easy-resume/blob/master/docs/api/v1.md"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-all hover:text-foreground hover:translate-x-1"
+                >
+                  <Code2 className="h-4 w-4" />
+                  API Reference
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://github.com/ChanMeng666/easy-resume/blob/master/docs/connectors/claude.md"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-all hover:text-foreground hover:translate-x-1"
+                >
+                  <Plug className="h-4 w-4" />
+                  MCP Connector
+                </a>
+              </li>
+            </ul>
+            <p className="mt-4 proof-label !text-muted-foreground">
+              Career as Code — the API is the UI.
+            </p>
+          </div>
+
+          {/* Built By — a modest maker credit, no freelance solicitation */}
+          <div className="p-6 bg-gray-50 rounded-xl border-2 border-black">
+            <h3 className="proof-label mb-4 flex items-center gap-2 !text-foreground">
+              <Github className="h-3.5 w-3.5 text-primary" />
+              §03 — Built By
             </h3>
             <div className="space-y-4">
               <div className="flex items-center gap-3">
@@ -87,27 +133,7 @@ export function Footer() {
                 className="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-all hover:text-foreground hover:translate-x-1"
               >
                 <Github className="h-4 w-4" />
-                Portfolio & Projects
-              </a>
-            </div>
-          </div>
-
-          {/* Contact */}
-          <div className="p-6 bg-gray-50 rounded-xl border-2 border-black">
-            <h3 className="proof-label mb-4 flex items-center gap-2 !text-foreground">
-              <MessageSquare className="h-3.5 w-3.5 text-primary" />
-              §03 — Contact
-            </h3>
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground font-medium leading-relaxed">
-                Open to collaboration and freelance opportunities.
-              </p>
-              <a
-                href="mailto:chanmeng.dev@gmail.com"
-                className="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-all hover:text-foreground hover:translate-x-1"
-              >
-                <Mail className="h-4 w-4" />
-                chanmeng.dev@gmail.com
+                GitHub
               </a>
             </div>
           </div>
