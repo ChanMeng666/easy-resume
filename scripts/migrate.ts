@@ -359,6 +359,36 @@ async function migrate() {
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS uk_candidate_profiles_public_slug ON candidate_profiles(public_slug) WHERE public_slug IS NOT NULL`;
   console.log("Created candidate_profiles table");
 
+  // OAuth 2.1 Authorization Server (the "facade over API keys"). Two tables:
+  // dynamically-registered clients (open DCR, public/PKCE-only) and single-use,
+  // hashed, short-lived authorization codes. The access token minted at the token
+  // endpoint IS a first-class api_keys row — no new token store here.
+  await sql`
+    CREATE TABLE IF NOT EXISTS oauth_clients (
+      client_id TEXT PRIMARY KEY,
+      client_name TEXT,
+      redirect_uris JSONB NOT NULL,
+      token_endpoint_auth_method TEXT NOT NULL DEFAULT 'none',
+      grant_types JSONB NOT NULL DEFAULT '["authorization_code"]',
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS oauth_codes (
+      code_hash TEXT PRIMARY KEY,
+      client_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      redirect_uri TEXT NOT NULL,
+      code_challenge TEXT NOT NULL,
+      scope TEXT,
+      consumed_at TIMESTAMPTZ,
+      expires_at TIMESTAMPTZ NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_oauth_codes_expires ON oauth_codes(expires_at)`;
+  console.log("Created oauth_clients / oauth_codes tables");
+
   console.log("Migration complete!");
 }
 

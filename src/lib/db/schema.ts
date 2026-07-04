@@ -371,6 +371,54 @@ export const candidateProfiles = pgTable("candidate_profiles", {
 export type CandidateProfile = typeof candidateProfiles.$inferSelect;
 export type NewCandidateProfile = typeof candidateProfiles.$inferInsert;
 
+/**
+ * OAuth 2.1 dynamically-registered clients (RFC 7591).
+ *
+ * Backs the minimal Authorization Server that fronts API keys ("the facade over
+ * API keys"): ChatGPT/Claude MCP connectors self-register here via open DCR, then
+ * drive the authorize → token flow. Public clients only — `tokenEndpointAuthMethod`
+ * is always `none` (PKCE is the sole client proof). `redirectUris` is an exact
+ * allowlist; the authorize/token endpoints only ever accept an exact string match.
+ */
+export const oauthClients = pgTable("oauth_clients", {
+  clientId: text("client_id").primaryKey(), // dcr_<24 hex>; opaque, non-secret
+  clientName: text("client_name"),
+  redirectUris: jsonb("redirect_uris").$type<string[]>().notNull(),
+  tokenEndpointAuthMethod: text("token_endpoint_auth_method").notNull().default("none"),
+  grantTypes: jsonb("grant_types").$type<string[]>().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+/**
+ * OAuth 2.1 authorization codes (single-use, PKCE-bound, short-lived).
+ *
+ * Only the SHA-256 hex of the raw code is stored (`codeHash` PK) — the raw code
+ * is returned to the client once, in the authorize redirect, and never persisted,
+ * mirroring how api_keys stores only the secret hash. `consumedAt` enforces
+ * single use via an atomic conditional UPDATE at the token endpoint; `expiresAt`
+ * bounds the code to ~60s. `codeChallenge` is the PKCE S256 challenge verified at
+ * exchange time.
+ */
+export const oauthCodes = pgTable("oauth_codes", {
+  codeHash: text("code_hash").primaryKey(), // sha256(rawCode) hex; raw never stored
+  clientId: text("client_id").notNull(),
+  userId: text("user_id").notNull(),
+  redirectUri: text("redirect_uri").notNull(),
+  codeChallenge: text("code_challenge").notNull(), // PKCE S256 challenge
+  scope: text("scope"),
+  consumedAt: timestamp("consumed_at", { withTimezone: true }), // set once, atomically, at exchange
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+}, (table) => ({
+  expiresIdx: index("idx_oauth_codes_expires").on(table.expiresAt),
+}));
+
+// OAuth types
+export type OAuthClient = typeof oauthClients.$inferSelect;
+export type NewOAuthClient = typeof oauthClients.$inferInsert;
+export type OAuthCode = typeof oauthCodes.$inferSelect;
+export type NewOAuthCode = typeof oauthCodes.$inferInsert;
+
 // API key types
 export type ApiKey = typeof apiKeys.$inferSelect;
 export type NewApiKey = typeof apiKeys.$inferInsert;
