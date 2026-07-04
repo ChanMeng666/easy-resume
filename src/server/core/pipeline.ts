@@ -16,6 +16,7 @@
 import 'server-only';
 import { z } from 'zod';
 import { resumeDataSchema } from '@/lib/validation/schema';
+import { renderTemplate } from '@/templates/registry';
 import { checkFaithfulness } from '@/lib/agent/faithfulness-check';
 import { PROMPT_VERSIONS } from '@/lib/agent/prompt-registry';
 import { sanitizeForPrompt, sanitizeDeep } from './sanitize';
@@ -157,11 +158,16 @@ export async function runGenerationPipeline(
 
   progress('render', 7, 'Generating resume document...');
   const templateId = input.templateId ?? deps.agent.selectTemplate(parsedJD);
+  // Deterministic per-candidate style: seed = email → name → '' (see
+  // selectDesignTokens). Reproducible from the persisted `tokens` on every
+  // re-render path. renderTemplate honors a template's lockPalette.
+  const seed = tailoredResume.basics?.email || tailoredResume.basics?.name || '';
+  const tokens = deps.agent.selectDesignTokens(parsedJD, seed);
   const { typstCode, coverLetterTypst } = await runStep('render', async () => {
     const template = deps.render.getTemplateById(templateId);
     const code = template
-      ? template.generator(tailoredResume)
-      : deps.render.generateTypstCode(tailoredResume);
+      ? renderTemplate(template, tailoredResume, tokens)
+      : deps.render.generateTypstCode(tailoredResume, tokens);
     const letterCode = deps.render.generateCoverLetterTypst(coverLetter, tailoredResume);
     return { typstCode: code, coverLetterTypst: letterCode };
   });
@@ -209,6 +215,7 @@ export async function runGenerationPipeline(
       missingSkills: matchAnalysis.skillMatch.missing,
     },
     templateId,
+    tokens,
     pdf,
     usage,
     parsedJD,

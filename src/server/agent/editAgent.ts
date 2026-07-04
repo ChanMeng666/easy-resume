@@ -20,7 +20,8 @@ import { aiTelemetry } from '@/lib/agent/telemetry';
 import { PROMPT_VERSIONS } from '@/lib/agent/prompt-registry';
 import { generateTypstCode } from '@/lib/typst/generator';
 import { generateCoverLetterTypst } from '@/lib/typst/cover-letter';
-import { getTemplateById } from '@/templates/registry';
+import { getTemplateById, renderTemplate } from '@/templates/registry';
+import { DEFAULT_TOKENS, type DesignTokens } from '@/lib/design/tokens';
 import { sanitizeForPrompt } from '@/server/core/sanitize';
 import type { ResumeData } from '@/lib/validation/schema';
 import { buildEditTools, type EditContext } from './editTools';
@@ -44,10 +45,16 @@ function resolveMaxSteps(requested: number | undefined): number {
   return Math.min(requested, MAX_STEPS_CEILING);
 }
 
-/** Deterministic ResumeData → Typst renderer (template generator, or base). */
-export function defaultEditRender(data: ResumeData, templateId: string): string {
+/** Deterministic ResumeData → Typst renderer (template generator, or base). The
+ * palette comes from the resume's tokens (DEFAULT_TOKENS when absent); lockPalette
+ * templates keep their own colors via renderTemplate. */
+export function defaultEditRender(
+  data: ResumeData,
+  templateId: string,
+  tokens: DesignTokens = DEFAULT_TOKENS
+): string {
   const template = getTemplateById(templateId);
-  return template ? template.generator(data) : generateTypstCode(data);
+  return template ? renderTemplate(template, data, tokens) : generateTypstCode(data, tokens);
 }
 
 /** Default DI for production: real model + deterministic renderers. */
@@ -63,11 +70,13 @@ export function defaultEditAgentDeps(overrides?: Partial<EditAgentDeps>): EditAg
 export async function runEditTurn(args: RunEditTurnArgs, deps: EditAgentDeps): Promise<RunEditTurnResult> {
   const { baseResume, templateId, history, userMessage, signal } = args;
   const baseCoverLetter = args.baseCoverLetter ?? '';
+  const tokens = args.tokens ?? DEFAULT_TOKENS;
 
   const ctx: EditContext = {
     resume: baseResume,
     templateId,
-    typstCode: deps.render(baseResume, templateId),
+    tokens,
+    typstCode: deps.render(baseResume, templateId, tokens),
     changed: false,
     version: 0,
     coverLetter: baseCoverLetter,

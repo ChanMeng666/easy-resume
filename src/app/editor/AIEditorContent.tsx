@@ -26,7 +26,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { compilePdf, downloadTypFile, copyToClipboard } from '@/lib/typst/compiler';
 import { generateTypstCode } from '@/lib/typst/generator';
-import { getTemplateById } from '@/templates/registry';
+import { getTemplateById, renderTemplate } from '@/templates/registry';
+import { DEFAULT_TOKENS, type DesignTokens } from '@/lib/design/tokens';
 import { ResumeData } from '@/lib/validation/schema';
 import { StructuredEditor } from './StructuredEditor';
 import {
@@ -61,9 +62,13 @@ import {
  * the generation chose. Mirrors the pipeline's render step so a free
  * structured edit produces the same layout — just without the LLM/billing.
  */
-function renderTypstFromResume(data: ResumeData, templateId: string): string {
+function renderTypstFromResume(
+  data: ResumeData,
+  templateId: string,
+  tokens: DesignTokens = DEFAULT_TOKENS
+): string {
   const template = getTemplateById(templateId);
-  return template ? template.generator(data) : generateTypstCode(data);
+  return template ? renderTemplate(template, data, tokens) : generateTypstCode(data, tokens);
 }
 
 /** One version in a refine chain, from GET /api/resumes/[id]/versions. */
@@ -127,6 +132,9 @@ interface GenerateResult {
   coverLetter: string;
   coverLetterTypst: string;
   templateId: string;
+  /** The design tokens the resume was rendered with (palette + density). Optional
+   * for backward compatibility with pre-tokens results (falls back to DEFAULT_TOKENS). */
+  tokens?: DesignTokens;
 }
 
 interface AIEditorContentProps {
@@ -820,7 +828,7 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
   const handleApplyEdit = useCallback(
     (next: ResumeData) => {
       if (!result) return;
-      const newTypst = renderTypstFromResume(next, result.templateId);
+      const newTypst = renderTypstFromResume(next, result.templateId, result.tokens ?? DEFAULT_TOKENS);
       setResult({ ...result, resumeData: next, typstCode: newTypst });
       setEditMode(false);
       // Local edit applied in-memory only — it now diverges from the persisted

@@ -53,6 +53,7 @@ function makeDeps(overrides: Partial<PipelineDeps['agent']> & { compile?: Pipeli
       .mockReturnValue({ overallScore: 90, keywords: { found: [], missing: [], score: 90 } }),
     generateCoverLetter: vi.fn().mockResolvedValue('Dear Hiring Manager, ...'),
     selectTemplate: vi.fn().mockReturnValue('two-column'),
+    selectDesignTokens: vi.fn().mockReturnValue({ palette: 'slate', density: 'comfortable' }),
     ...overrides,
   };
 
@@ -101,6 +102,27 @@ describe('runGenerationPipeline billing gating', () => {
     expect(result.parsedJD).toEqual({ title: 'Engineer', requiredSkills: [] });
     // The result records which prompt versions produced it (registry snapshot).
     expect(result.promptVersions['parse-jd']).toMatch(/^v\d+$/);
+    // The selected design tokens flow onto the result (for reproducible re-render).
+    expect(result.tokens).toEqual({ palette: 'slate', density: 'comfortable' });
+  });
+
+  it('selects design tokens from the parsed JD + candidate seed and returns them', async () => {
+    const selectDesignTokens = vi.fn().mockReturnValue({ palette: 'indigo', density: 'compact' });
+    // parseBackground supplies the tailored resume basics; the seed is email→name→''.
+    const parseBackground = vi
+      .fn()
+      .mockResolvedValue({ basics: { name: 'Jane', email: 'jane@x.com' } });
+    const tailorResume = vi
+      .fn()
+      .mockResolvedValue({ basics: { name: 'Jane', email: 'jane@x.com' } });
+    const { deps } = makeDeps({ selectDesignTokens, parseBackground, tailorResume });
+
+    const result = await runGenerationPipeline(input, caller, deps, opts);
+
+    expect(selectDesignTokens).toHaveBeenCalledTimes(1);
+    // Seed is the tailored resume's email.
+    expect(selectDesignTokens.mock.calls[0][1]).toBe('jane@x.com');
+    expect(result.tokens).toEqual({ palette: 'indigo', density: 'compact' });
   });
 
   it('emits progress for all 8 steps', async () => {

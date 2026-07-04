@@ -20,6 +20,8 @@ import 'server-only';
 import { z } from 'zod';
 import { checkFaithfulness } from '@/lib/agent/faithfulness-check';
 import { PROMPT_VERSIONS } from '@/lib/agent/prompt-registry';
+import { renderTemplate } from '@/templates/registry';
+import { DEFAULT_TOKENS, type DesignTokens } from '@/lib/design/tokens';
 import type { ParsedJD } from '@/lib/agent/jd-parser';
 import type { ResumeData } from '@/lib/validation/schema';
 import { sanitizeForPrompt, sanitizeDeep } from './sanitize';
@@ -65,6 +67,13 @@ export interface RefineArtifacts {
   parsedJD?: ParsedJD;
   coverLetter: string;
   templateId: string;
+  /**
+   * The design tokens the parent was rendered with. Absent on jobs stored before
+   * tokens persistence — `buildRefineArtifacts` fills DEFAULT_TOKENS there, so a
+   * pre-tokens parent refines with today's default look and the refined version
+   * carries tokens forward from then on.
+   */
+  tokens?: DesignTokens;
   /** Raw JD text, used only for the parse fallback when `parsedJD` is absent. */
   jobDescription: string;
   /**
@@ -240,12 +249,15 @@ export async function runRefinementPipeline(
   };
 
   // ── Step 3: render ─────────────────────────────────────────────────────────
+  // Carry the parent's tokens forward unchanged (DEFAULT_TOKENS for a pre-tokens
+  // parent) so a refine reproduces the original palette exactly.
   progress('render', 3, 'Regenerating your document...');
+  const tokens = artifacts.tokens ?? DEFAULT_TOKENS;
   const { typstCode, coverLetterTypst } = await runStep('render', async () => {
     const template = deps.render.getTemplateById(artifacts.templateId);
     const code = template
-      ? template.generator(finalResume)
-      : deps.render.generateTypstCode(finalResume);
+      ? renderTemplate(template, finalResume, tokens)
+      : deps.render.generateTypstCode(finalResume, tokens);
     const letterCode = deps.render.generateCoverLetterTypst(finalLetter, finalResume);
     return { typstCode: code, coverLetterTypst: letterCode };
   });
@@ -291,6 +303,7 @@ export async function runRefinementPipeline(
     atsScore: atsReport.overallScore,
     matchAnalysis,
     templateId: artifacts.templateId,
+    tokens,
     pdf,
     usage,
     // A refine-of-refine reuses this without re-parsing the JD again.

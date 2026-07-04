@@ -10,4 +10,6 @@ export const creativeMetadata: TemplateMetadata = {
   previewImage: '/template/creative-portfolio-preview.pdf',
   author: 'Vitex Team',
   createdAt: '2025-10-05',
+  // Signature purple + pink banner identity — never overridden by the selected palette.
+  lockPalette: true,
 };

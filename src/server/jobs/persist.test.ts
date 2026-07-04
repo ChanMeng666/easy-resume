@@ -19,6 +19,7 @@ function makeResult(over: Partial<GenerateResult> = {}): GenerateResult {
     atsScore: 91,
     matchAnalysis: { overallScore: 82, matchedSkills: ['Rust'], missingSkills: [] },
     templateId: 'two-column',
+    tokens: { palette: 'slate', density: 'comfortable' },
     pdf: new Uint8Array([37, 80, 68, 70]),
     usage: { charged: true, credits: 1, transactionId: 'tx_1' },
     promptVersions: { 'parse-jd': 'v1' },
@@ -63,10 +64,16 @@ describe('toWireResult', () => {
       atsScore: r.atsScore,
       matchAnalysis: r.matchAnalysis,
       templateId: r.templateId,
+      tokens: r.tokens,
       usage: r.usage,
       promptVersions: r.promptVersions,
       parsedJD: r.parsedJD,
     });
+  });
+
+  it('persists the design tokens', () => {
+    const wire = toWireResult(makeResult({ tokens: { palette: 'crimson', density: 'compact' } }));
+    expect(wire.tokens).toEqual({ palette: 'crimson', density: 'compact' });
   });
 });
 

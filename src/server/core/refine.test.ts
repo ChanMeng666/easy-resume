@@ -163,6 +163,19 @@ describe('runRefinementPipeline scope routing', () => {
     expect(agent.reviseCoverLetter).not.toHaveBeenCalled();
   });
 
+  it('carries the parent tokens forward onto the refined result', async () => {
+    const { deps } = makeDeps();
+    const artifacts = makeArtifacts({ tokens: { palette: 'emerald', density: 'compact' } });
+    const result = await runRefinementPipeline(artifacts, { feedback: 'x', scope: 'resume' }, caller, deps, opts);
+    expect(result.tokens).toEqual({ palette: 'emerald', density: 'compact' });
+  });
+
+  it('defaults to DEFAULT_TOKENS when the parent had none (pre-tokens job)', async () => {
+    const { deps } = makeDeps();
+    const result = await runRefinementPipeline(makeArtifacts({ tokens: undefined }), { feedback: 'x' }, caller, deps, opts);
+    expect(result.tokens).toEqual({ palette: 'slate', density: 'comfortable' });
+  });
+
   it("scope='both' runs both revisions in ONE parallel wave", async () => {
     const dR = deferred<ResumeData>();
     const dL = deferred<string>();

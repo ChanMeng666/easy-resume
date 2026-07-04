@@ -19,12 +19,16 @@ import { z } from 'zod';
 import { manualVersionCreateSchema, type ResumeData } from '@/lib/validation/schema';
 import { generateCoverLetterTypst } from '@/lib/typst/cover-letter';
 import { sanitizeDeep } from '@/server/core/sanitize';
+import type { DesignTokens } from '@/lib/design/tokens';
 import type { EditAgentDeps } from './editAgent.types';
 
 /** Mutable working state threaded through every tool in a turn. */
 export interface EditContext {
   resume: ResumeData;
   templateId: string;
+  /** The resume's design tokens (palette + density), passed to every re-render so
+   * an edit stays in the same colors the resume was generated with. */
+  tokens: DesignTokens;
   typstCode: string;
   changed: boolean;
   /** Bumped on every successful edit so the agent can detect per-step changes
@@ -99,7 +103,7 @@ function applyEdit(
   // (no partially-applied edit / stale typstCode). Commit atomically only on success.
   let typstCode: string;
   try {
-    typstCode = deps.render(next, ctx.templateId);
+    typstCode = deps.render(next, ctx.templateId, ctx.tokens);
   } catch (err) {
     return `Error: could not render that change (${err instanceof Error ? err.message : 'render error'}); no change applied.`;
   }

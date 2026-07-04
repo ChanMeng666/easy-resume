@@ -19,12 +19,16 @@ import { db } from '@/lib/db/client';
 import { agentThreads, agentMessages, generationJobs } from '@/lib/db/schema';
 import { ConflictError, NotFoundError, ValidationError } from '@/server/errors/AppError';
 import { manualVersionCreateSchema, resumeDataSchema, type ResumeData } from '@/lib/validation/schema';
+import { DEFAULT_TOKENS, designTokensSchema, type DesignTokens } from '@/lib/design/tokens';
 
 /** A working snapshot of the resume being edited in a thread. */
 export interface ResumeSnapshot {
   resumeData: ResumeData;
   typstCode: string;
   templateId: string;
+  /** The design tokens the resume renders with. Optional so old snapshots (written
+   * before tokens) still validate; readers fall back to DEFAULT_TOKENS. */
+  tokens?: DesignTokens;
   /** The working cover letter body ('' / omitted when the resume has no letter).
    * Optional so old snapshots written before the letter tools still validate. */
   coverLetter?: string;
@@ -78,6 +82,7 @@ type JobResult = {
   resumeData?: ResumeData;
   typstCode?: string;
   templateId?: string;
+  tokens?: DesignTokens;
   coverLetter?: string;
   coverLetterTypst?: string;
 };
@@ -116,7 +121,7 @@ const MAX_COVER_LETTER_SNAPSHOT = 10_000;
 // ~220KB over the resume-only cap to cover the letter fields. Caps the entire
 // toolResult so the snapshot branch can't be a hole for unbounded JSON.
 const MAX_SNAPSHOT_JSON_BYTES = 500_000;
-const SNAPSHOT_KEYS = new Set(['resumeData', 'typstCode', 'templateId', 'coverLetter', 'coverLetterTypst']);
+const SNAPSHOT_KEYS = new Set(['resumeData', 'typstCode', 'templateId', 'tokens', 'coverLetter', 'coverLetterTypst']);
 
 /** UTF-8 byte length of a value's JSON (not its UTF-16 char count, which would
  * let multi-byte text — e.g. CJK — slip past a byte cap). Non-serializable values
@@ -233,12 +238,17 @@ export function pickLatestSnapshot(
       const coverLetter = typeof snap.coverLetter === 'string' ? snap.coverLetter : fallback.coverLetter;
       const coverLetterTypst =
         typeof snap.coverLetterTypst === 'string' ? snap.coverLetterTypst : fallback.coverLetterTypst;
+      // Re-validate stored tokens (don't trust stored JSON); fall back to the
+      // anchor's tokens when absent/invalid so a pre-tokens snapshot inherits them.
+      const parsedTokens = designTokensSchema.safeParse(snap.tokens);
+      const tokens = parsedTokens.success ? parsedTokens.data : fallback.tokens;
       best = {
         seq: m.sequenceNum,
         snap: {
           resumeData: parsed.data,
           typstCode: snap.typstCode,
           templateId: typeof snap.templateId === 'string' ? snap.templateId : fallback.templateId,
+          tokens,
           coverLetter,
           coverLetterTypst,
         },
@@ -448,10 +458,14 @@ export async function latestResumeSnapshot(userId: string, threadId: string): Pr
   if (!parsedBaseline.success || typeof result.typstCode !== 'string') {
     throw new ValidationError('This resume is not ready to edit yet.');
   }
+  // The anchor job's tokens seed the baseline palette; DEFAULT_TOKENS for a
+  // pre-tokens job (today's look). Snapshots without tokens inherit this.
+  const parsedBaselineTokens = designTokensSchema.safeParse(result.tokens);
   const fallback: ResumeSnapshot = {
     resumeData: parsedBaseline.data,
     typstCode: result.typstCode,
     templateId: typeof result.templateId === 'string' ? result.templateId : 'two-column',
+    tokens: parsedBaselineTokens.success ? parsedBaselineTokens.data : DEFAULT_TOKENS,
     // The anchor job's cover letter (from its pipeline result) seeds the baseline;
     // '' when the resume was generated without one. Snapshots that don't carry a
     // letter fall back to this in pickLatestSnapshot.

@@ -426,6 +426,19 @@ components:
           additionalProperties: true
         templateId:
           type: string
+        tokens:
+          type: object
+          description: >-
+            The deterministic design tokens (palette + density) the resume was
+            rendered with (provenance, like templateId). Reproducible from the
+            same inputs; omitted on results generated before design tokens shipped.
+          properties:
+            palette:
+              type: string
+              enum: [slate, indigo, emerald, crimson, amber, graphite]
+            density:
+              type: string
+              enum: [comfortable, compact]
         usage:
           type: object
           properties:

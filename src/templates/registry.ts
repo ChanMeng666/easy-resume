@@ -1,4 +1,6 @@
 import { Template, TemplateCategory, TemplateRegistry } from './types';
+import type { ResumeData } from '@/lib/validation/schema';
+import { DEFAULT_TOKENS, type DesignTokens } from '@/lib/design/tokens';
 import twoColumnTemplate from './two-column';
 import modernCvTemplate from './modern-cv';
 import executiveTemplate from './executive';
@@ -90,3 +92,26 @@ export const getTemplateCategories = () => templateRegistry.getCategories();
 // Default template
 export const DEFAULT_TEMPLATE_ID = 'two-column';
 export const getDefaultTemplate = () => templateRegistry.getById(DEFAULT_TEMPLATE_ID);
+
+/**
+ * Render a template with design tokens, honoring `lockPalette`.
+ *
+ * This is the single render seam where the palette decision is applied: a
+ * template that declares `lockPalette` (a signature color identity, e.g.
+ * executive/creative) always renders with DEFAULT_TOKENS so the selected palette
+ * can never override its brand colors; every other template renders with the
+ * given tokens (DEFAULT_TOKENS when none supplied — today's exact look).
+ *
+ * @param template - The resolved template.
+ * @param data - The resume data to render.
+ * @param tokens - The selected design tokens (defaults to DEFAULT_TOKENS).
+ * @returns The generated Typst source.
+ */
+export function renderTemplate(
+  template: Template,
+  data: ResumeData,
+  tokens: DesignTokens = DEFAULT_TOKENS
+): string {
+  const effective = template.metadata.lockPalette ? DEFAULT_TOKENS : tokens;
+  return template.generator(data, effective);
+}
