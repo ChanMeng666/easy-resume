@@ -604,6 +604,12 @@ components:
           type: [string, "null"]
           format: date-time
           description: Non-null iff the profile is currently public.
+        hasVoiceSample:
+          type: boolean
+          description: >-
+            Whether the owner saved a voice-writing sample. A derived boolean only;
+            the raw text is echoed solely on the owner-scoped detail GET and never
+            on any public surface.
     ProfileDetail:
       allOf:
         - $ref: '#/components/schemas/ProfileSummary'
@@ -611,6 +617,12 @@ components:
           properties:
             rawBackground:
               type: string
+            voiceSample:
+              type: [string, "null"]
+              description: >-
+                Owner-only raw writing sample (max 4000 chars) used to match the
+                candidate's voice in cover letters. Never present on the public
+                /p/{slug} surface.
             data:
               type: object
               additionalProperties: true

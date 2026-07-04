@@ -4,10 +4,11 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@stackframe/stack";
 import { motion } from "framer-motion";
-import { AlertCircle, User, Trash2, Sparkles, Pencil, Check, X, Loader2, Globe, Link2, Copy } from "lucide-react";
+import { AlertCircle, User, Trash2, Sparkles, Pencil, Check, X, Loader2, Globe, Link2, Copy, Mic } from "lucide-react";
 import { Navbar } from "@/components/shared/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
@@ -19,6 +20,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+/** Max length of a voice-writing sample (mirrors the server-side zod cap). */
+const VOICE_SAMPLE_MAX = 4000;
 
 interface ProfileListItem {
   id: string;
@@ -29,6 +41,9 @@ interface ProfileListItem {
   // slug persists across unpublish so republishing restores the same URL.
   publicSlug: string | null;
   publishedAt: string | null;
+  // Whether the owner saved a voice-writing sample (derived boolean; the raw
+  // text is fetched on demand via the owner-scoped detail GET).
+  hasVoiceSample: boolean;
 }
 
 /** Format an ISO timestamp as a compact, locale-aware date + time. */
@@ -56,6 +71,12 @@ function ProfilesContent() {
   const [publishConfirmId, setPublishConfirmId] = useState<string | null>(null);
   const [publishingId, setPublishingId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  // Voice-sample editor dialog state (loaded lazily from the detail GET).
+  const [voiceProfileId, setVoiceProfileId] = useState<string | null>(null);
+  const [voiceText, setVoiceText] = useState("");
+  const [voiceLoading, setVoiceLoading] = useState(false);
+  const [voiceLoadError, setVoiceLoadError] = useState(false);
+  const [voiceSaving, setVoiceSaving] = useState(false);
 
   useEffect(() => {
     if (user === null) {
@@ -178,6 +199,51 @@ function ProfilesContent() {
     }
   }, []);
 
+  /** Open the voice-sample dialog for a profile, loading its current text. */
+  const openVoiceDialog = useCallback(async (id: string) => {
+    setVoiceProfileId(id);
+    setVoiceText("");
+    setVoiceLoadError(false);
+    setVoiceLoading(true);
+    try {
+      const res = await fetch(`/api/profiles/${id}`);
+      if (!res.ok) throw new Error(`Load failed (${res.status})`);
+      const data = await res.json();
+      setVoiceText(typeof data.voiceSample === "string" ? data.voiceSample : "");
+    } catch (error) {
+      console.error("Failed to load voice sample:", error);
+      setVoiceLoadError(true);
+    } finally {
+      setVoiceLoading(false);
+    }
+  }, []);
+
+  /**
+   * Persist the voice sample (owner-scoped PUT). An empty string clears it —
+   * the store normalizes blank/whitespace to null. Updates the row's badge.
+   */
+  const handleSaveVoice = useCallback(
+    async (id: string, sample: string) => {
+      setVoiceSaving(true);
+      try {
+        const res = await fetch(`/api/profiles/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ voiceSample: sample }),
+        });
+        if (!res.ok) throw new Error(`Save failed (${res.status})`);
+        const hasVoiceSample = sample.trim().length > 0;
+        setItems((cur) => cur?.map((it) => (it.id === id ? { ...it, hasVoiceSample } : it)) ?? cur);
+        setVoiceProfileId(null);
+      } catch (error) {
+        console.error("Failed to save voice sample:", error);
+      } finally {
+        setVoiceSaving(false);
+      }
+    },
+    []
+  );
+
   if (user === undefined) {
     return (
       <div className="min-h-screen baseline-grid bg-[#f0f0f0]">
@@ -299,12 +365,22 @@ function ProfilesContent() {
                       <p className="font-mono text-xs text-muted-foreground mt-1">
                         Updated {formatDate(item.updatedAt)}
                       </p>
-                      {item.publishedAt && item.publicSlug && (
-                        <span className="inline-flex items-center gap-1 mt-2 border-2 border-black rounded-md px-2 py-0.5 text-[11px] font-black bg-[#00D4AA] shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]">
-                          <Globe className="w-3 h-3" />
-                          Public
+                      <div className="flex flex-wrap items-center gap-2 mt-2">
+                        {item.publishedAt && item.publicSlug && (
+                          <span className="inline-flex items-center gap-1 border-2 border-black rounded-md px-2 py-0.5 text-[11px] font-black bg-[#00D4AA] shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]">
+                            <Globe className="w-3 h-3" />
+                            Public
+                          </span>
+                        )}
+                        <span
+                          className={`inline-flex items-center gap-1 border-2 border-black rounded-md px-2 py-0.5 text-[11px] font-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)] ${
+                            item.hasVoiceSample ? "bg-[#6C3CE9] text-white" : "bg-white text-muted-foreground"
+                          }`}
+                        >
+                          <Mic className="w-3 h-3" />
+                          {item.hasVoiceSample ? "Voice sample" : "No voice sample"}
                         </span>
-                      )}
+                      </div>
                     </div>
                   </div>
 
@@ -321,6 +397,18 @@ function ProfilesContent() {
                       >
                         <Pencil className="w-4 h-4" />
                         Rename
+                      </Button>
+                    )}
+                    {editingId !== item.id && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-2"
+                        onClick={() => openVoiceDialog(item.id)}
+                        aria-label="Edit voice sample"
+                      >
+                        <Mic className="w-4 h-4" />
+                        Voice
                       </Button>
                     )}
                     {editingId !== item.id &&
@@ -448,6 +536,69 @@ function ProfilesContent() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog
+        open={voiceProfileId !== null}
+        onOpenChange={(open) => {
+          if (!open && !voiceSaving) setVoiceProfileId(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Voice sample</DialogTitle>
+            <DialogDescription>
+              Paste a short piece of your own writing. Cover-letter generation uses it to match
+              your voice. It stays private — never shown on your public profile.
+            </DialogDescription>
+          </DialogHeader>
+
+          {voiceLoading ? (
+            <div className="flex items-center gap-2 py-8 justify-center text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span className="font-mono text-sm">Loading…</span>
+            </div>
+          ) : voiceLoadError ? (
+            <div className="flex items-center gap-2 py-6 text-red-700">
+              <AlertCircle className="w-4 h-4" />
+              <span className="text-sm font-medium">Couldn&apos;t load this voice sample.</span>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Textarea
+                value={voiceText}
+                onChange={(e) => setVoiceText(e.target.value.slice(0, VOICE_SAMPLE_MAX))}
+                placeholder="e.g. a paragraph from a past cover letter, blog post, or email you wrote…"
+                rows={8}
+                aria-label="Voice sample"
+                disabled={voiceSaving}
+              />
+              <p className="font-mono text-[11px] text-muted-foreground text-right">
+                {voiceText.length} / {VOICE_SAMPLE_MAX}
+              </p>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => voiceProfileId && handleSaveVoice(voiceProfileId, "")}
+              disabled={voiceSaving || voiceLoading || voiceLoadError || voiceText.trim().length === 0}
+              className="gap-2 border-red-400 text-red-700 hover:bg-red-50"
+            >
+              <Trash2 className="w-4 h-4" />
+              Clear
+            </Button>
+            <Button
+              onClick={() => voiceProfileId && handleSaveVoice(voiceProfileId, voiceText)}
+              disabled={voiceSaving || voiceLoading || voiceLoadError}
+              className="gap-2"
+            >
+              {voiceSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
