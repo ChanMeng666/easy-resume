@@ -4,7 +4,7 @@
   "description": "Thin client for the Vitex hosted resume API — a token-cheap CLI for terminals and coding agents, plus a stdio MCP server for Claude Desktop, Claude Code, and Cursor.",
   "type": "module",
   "bin": {
-    "vitex": "./dist/cli.js"
+    "vitex": "dist/cli.js"
   },
   "files": [
     "dist"
@@ -31,7 +31,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ChanMeng666/easy-resume.git",
+    "url": "git+https://github.com/ChanMeng666/easy-resume.git",
     "directory": "cli"
   },
   "homepage": "https://www.vitex.org.nz",
