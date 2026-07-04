@@ -66,6 +66,17 @@ export interface JobRecord {
   updatedAt?: string;
 }
 
+/** Identity + balance returned by GET /api/v1/me (never charges). */
+export interface Me {
+  userId: string;
+  /** Which credential resolved the caller. */
+  via: 'api_key' | 'session';
+  /** Current prepaid credit balance. */
+  credits: number;
+  /** Subscription tier. */
+  tier: 'free' | 'pro' | 'unlimited';
+}
+
 export type RefineScope = 'resume' | 'cover_letter' | 'both';
 
 export interface CreateResumeInput {
@@ -153,6 +164,13 @@ export class VitexClient {
     // Some endpoints (e.g. DELETE) may return an empty body; tolerate it.
     const text = await res.text();
     return (text ? JSON.parse(text) : {}) as T;
+  }
+
+  // ---- Identity -----------------------------------------------------------
+
+  /** GET /api/v1/me — identity + credit balance; read-only, never charges. */
+  me(): Promise<Me> {
+    return this.request<Me>({ path: '/api/v1/me' });
   }
 
   // ---- Generation ---------------------------------------------------------

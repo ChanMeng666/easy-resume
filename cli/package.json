@@ -1,6 +1,6 @@
 {
   "name": "vitex-cli",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Thin client for the Vitex hosted resume API — a token-cheap CLI for terminals and coding agents, plus a stdio MCP server for Claude Desktop, Claude Code, and Cursor.",
   "type": "module",
   "bin": {

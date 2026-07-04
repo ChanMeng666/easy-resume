@@ -59,7 +59,7 @@ pass `--wait` to let the CLI poll for you.
 | `vitex profiles delete <id>` | Delete a profile |
 | `vitex profiles publish <id>` | Publish a public `/p/<slug>` career endpoint |
 | `vitex profiles unpublish <id>` | Close a published profile |
-| `vitex whoami` | Verify your key authenticates |
+| `vitex whoami` | Verify your key and show your credit balance + tier (`GET /api/v1/me`; never spends credits) |
 | `vitex mcp` | Run the stdio MCP server |
 
 ### Global flags
@@ -129,6 +129,7 @@ final result in one call. Every tool reads `VITEX_API_KEY` from the environment.
 
 | Tool | Purpose |
 | --- | --- |
+| `get_account` | Return your identity + credit balance + tier (read-only; check credits before generating) |
 | `generate_resume` | Compile a tailored resume from `jobDescription` + `background` or `profile_id` (returns the final job incl. `atsScore`) |
 | `refine_resume` | Refine a succeeded resume with `feedback` (+ optional `scope`) |
 | `get_resume` | Fetch a job by id |
@@ -142,6 +143,13 @@ final result in one call. Every tool reads `VITEX_API_KEY` from the environment.
 - Full v1 API: <https://github.com/ChanMeng666/easy-resume/blob/master/docs/api/v1.md>
 - OpenAPI spec: <https://www.vitex.org.nz/openapi.yaml>
 - Agent playbook: <https://www.vitex.org.nz/skill.md>
+
+## Changelog
+
+- **0.2.0** — `whoami` now uses the dedicated `GET /api/v1/me` endpoint (shows your
+  credit balance + tier, not just a key check); new `get_account` MCP tool so
+  agents can check credits before generating.
+- **0.1.0** — Initial release.
 
 ## License
 

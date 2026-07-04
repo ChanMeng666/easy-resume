@@ -15,7 +15,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { VitexClient, ApiError, type JobRecord } from './client.js';
 
-const VERSION = '0.1.0';
+const VERSION = '0.2.0';
 
 interface McpConfig {
   baseUrl: string;
@@ -44,10 +44,27 @@ function fail(err: unknown): ToolResult {
 const BILLING_NOTE =
   'Billing: 1 credit only on a successfully compiled PDF; failures and refinements are free.';
 
-/** Build, register tools on, and start the MCP server over stdio. */
-export async function runMcpServer(config: McpConfig): Promise<void> {
+/** Build an McpServer with every Vitex tool registered (no transport attached). */
+export function createServer(config: McpConfig): McpServer {
   const client = new VitexClient(config);
   const server = new McpServer({ name: 'vitex-cli', version: VERSION });
+
+  server.registerTool(
+    'get_account',
+    {
+      title: 'Get account identity & credit balance',
+      description:
+        `Return the authenticated account: userId, credit balance, and tier. Read-only — never spends credits. Check credits before generating: a successfully compiled PDF costs 1 credit (refinements and failures are free).`,
+      inputSchema: {},
+    },
+    async (): Promise<ToolResult> => {
+      try {
+        return ok(await client.me());
+      } catch (err) {
+        return fail(err);
+      }
+    },
+  );
 
   server.registerTool(
     'generate_resume',
@@ -208,6 +225,12 @@ export async function runMcpServer(config: McpConfig): Promise<void> {
     },
   );
 
+  return server;
+}
+
+/** Build the server and serve it over stdio (the `vitex mcp` entrypoint). */
+export async function runMcpServer(config: McpConfig): Promise<void> {
+  const server = createServer(config);
   const transport = new StdioServerTransport();
   await server.connect(transport);
 

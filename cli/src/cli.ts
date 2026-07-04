@@ -14,7 +14,7 @@ import { VitexClient, type JobRecord, type RefineScope } from './client.js';
 import { readInput, readFeedback, UsageError } from './args.js';
 import { emit, humanJobHandle, humanJobRecord, reportError } from './format.js';
 
-const VERSION = '0.1.0';
+const VERSION = '0.2.0';
 const DEFAULT_API_URL = 'https://www.vitex.org.nz';
 
 // Union of every flag across all commands. parseArgs (strict) rejects any flag
@@ -264,13 +264,16 @@ async function cmdProfiles(values: Values, rest: string[]): Promise<number> {
 }
 
 async function cmdWhoami(values: Values): Promise<number> {
-  const config = resolveConfig(values);
-  const client = new VitexClient(config);
-  // No dedicated identity endpoint yet; probe an owner-scoped read. Success means
-  // the key authenticates; a failure surfaces the standard envelope via reportError.
-  const res = await client.listProfiles();
-  emit(!!values.json, { ok: true, apiUrl: config.baseUrl, profiles: res.items.length },
-    `ok — authenticated against ${config.baseUrl} (${res.items.length} profile(s))`);
+  const client = makeClient(values);
+  // Cheap read-only identity probe; validates the key and reports balance/tier
+  // without creating a job or spending credits. A failure surfaces the standard
+  // envelope via reportError.
+  const me = await client.me();
+  emit(
+    !!values.json,
+    me,
+    `ok — user ${me.userId} · ${me.credits} credits · ${me.tier} (via ${me.via})`,
+  );
   return 0;
 }
 
@@ -317,8 +320,8 @@ COMMANDS
   refine     Refine a succeeded resume with natural-language feedback (free)
   profiles   Manage reusable candidate backgrounds (list/get/create/update/
              delete/publish/unpublish)
-  whoami     Verify your API key authenticates (probes GET /api/profiles; a
-             dedicated identity endpoint is a future addition)
+  whoami     Verify your API key and show your credit balance + tier
+             (GET /api/v1/me; read-only, never spends credits)
   mcp        Run a stdio MCP server for Claude Desktop / Claude Code / Cursor
 
 GLOBAL OPTIONS
