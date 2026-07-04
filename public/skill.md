@@ -56,6 +56,8 @@ curl -sS -X POST "$VITEX_BASE/api/profiles" \
 Save the `id` as `PROFILE_ID`. List profiles anytime with
 `GET $VITEX_BASE/api/profiles`.
 
+A profile can also be **published** (`POST /api/profiles/{id}/publish` → `{ slug, url }`) to a public, agent-readable endpoint at `$VITEX_BASE/p/{slug}` (with `/json` and `/md` twins) that serves an allowlist projection — never email/phone/photo.
+
 ---
 
 ## 2. Create a generation job

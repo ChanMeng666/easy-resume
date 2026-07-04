@@ -59,6 +59,20 @@ Async job model: create a job, poll it, fetch the PDF.
 - `PUT /api/profiles/{id}` — update label / raw background (re-parses on change).
 - `DELETE /api/profiles/{id}` — delete.
 
+## Public career endpoints (LinkedIn is for humans; a Vitex endpoint is for AIs)
+
+A profile can be opt-in **published** to a stable public URL that serves an
+allowlist projection of the candidate's parsed background — never their email,
+phone, or photo. The same career facts are available as a human page and as
+machine JSON/Markdown, so an AI agent can read a candidate's career directly.
+
+- `POST /api/profiles/{id}/publish` — publish (owner only) → `{ slug, url, publishedAt }`.
+- `DELETE /api/profiles/{id}/publish` — unpublish; the slug is kept so republishing
+  restores the same URL.
+- `GET /p/{slug}` — human-readable HTML profile page (indexable).
+- `GET /p/{slug}/json` — the projection as JSON (unauthenticated, cached 5 min).
+- `GET /p/{slug}/md` — the projection as `text/markdown` (unauthenticated, cached 5 min).
+
 ## Additional agent-usable surfaces
 
 Both accept the same Bearer API key. They live under `/api/*` rather than

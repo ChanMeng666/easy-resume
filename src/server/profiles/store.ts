@@ -14,12 +14,13 @@
  */
 
 import 'server-only';
-import { and, desc, eq } from 'drizzle-orm';
+import { randomBytes } from 'node:crypto';
+import { and, desc, eq, isNotNull } from 'drizzle-orm';
 import { db } from '@/lib/db/client';
 import { candidateProfiles, type CandidateProfile } from '@/lib/db/schema';
 import { parseBackground } from '@/lib/agent/background-parser';
 import { NotFoundError } from '@/server/errors/AppError';
-import type { ResumeData } from '@/lib/validation/schema';
+import type { ResumeData, Profile, Work, Education, Project, Skill } from '@/lib/validation/schema';
 
 const DEFAULT_LABEL = 'My Background';
 
@@ -29,6 +30,41 @@ export interface ProfileSummary {
   label: string;
   createdAt: Date | null;
   updatedAt: Date | null;
+  // Public-endpoint state (opt-in). `publicSlug` may be present while
+  // `publishedAt` is null — an unpublished profile keeps its minted slug so
+  // republishing restores the same URL. The UI treats "published" as
+  // publishedAt != null, NOT slug presence.
+  publicSlug: string | null;
+  publishedAt: Date | null;
+}
+
+/**
+ * The PUBLIC projection of a candidate profile — the ONLY shape ever served on
+ * the unauthenticated `/p/{slug}` surface.
+ *
+ * ALLOWLIST INVARIANT: `toPublicProfile` builds this from an explicit object
+ * literal, copying ONLY the fields named here. Nothing else on the row may ever
+ * appear in a public payload. In particular the following are NEVER projected:
+ * `email`, `phone`, `photo` (contact PII), `rawBackground`, `voiceSample` (raw
+ * free text the candidate never chose to publish), `userId`, and the row `id`.
+ * The sentinel test (`publicProfile.test.ts`) enforces this by construction.
+ */
+export interface PublicProfile {
+  slug: string;
+  label: string;
+  publishedAt: Date | null;
+  updatedAt: Date | null;
+  name: string;
+  headline: string;
+  location?: string;
+  summary?: string;
+  profiles: Profile[];
+  work: Work[];
+  education: Education[];
+  projects: Project[];
+  skills: Skill[];
+  achievements: string[];
+  certifications: string[];
 }
 
 /**
@@ -48,6 +84,8 @@ export async function listProfiles(userId: string): Promise<ProfileSummary[]> {
       label: candidateProfiles.label,
       createdAt: candidateProfiles.createdAt,
       updatedAt: candidateProfiles.updatedAt,
+      publicSlug: candidateProfiles.publicSlug,
+      publishedAt: candidateProfiles.publishedAt,
     })
     .from(candidateProfiles)
     .where(eq(candidateProfiles.userId, userId))
@@ -130,4 +168,155 @@ export async function deleteProfile(userId: string, id: string): Promise<void> {
     .where(and(eq(candidateProfiles.id, id), eq(candidateProfiles.userId, userId)))
     .returning({ id: candidateProfiles.id });
   if (deleted.length === 0) throw new NotFoundError('Profile not found');
+}
+
+// ---------------------------------------------------------------------------
+// Public career endpoint (opt-in publishing of an allowlist projection)
+// ---------------------------------------------------------------------------
+
+/**
+ * Project a full profile row down to its PUBLIC allowlist. PURE + testable.
+ *
+ * This is the ONLY function that produces a public payload, and it does so as an
+ * explicit object literal: every field reaching the public surface is named
+ * here. Contact PII (`email`/`phone`/`photo`), raw free text
+ * (`rawBackground`/`voiceSample`), and internal identifiers (`userId`, row `id`)
+ * are deliberately absent and must NEVER be added — see the PublicProfile
+ * ALLOWLIST INVARIANT and the sentinel test.
+ */
+export function toPublicProfile(row: CandidateProfile): PublicProfile {
+  const data: ResumeData = row.data;
+  const basics = data.basics;
+  return {
+    slug: row.publicSlug ?? '',
+    label: row.label,
+    publishedAt: row.publishedAt,
+    updatedAt: row.updatedAt,
+    name: basics.name,
+    headline: basics.label,
+    // `location` stays in the projection (owner decision); contact PII does not.
+    ...(basics.location ? { location: basics.location } : {}),
+    ...(basics.summary ? { summary: basics.summary } : {}),
+    profiles: (basics.profiles ?? []).map((p) => ({
+      network: p.network,
+      url: p.url,
+      ...(p.label ? { label: p.label } : {}),
+    })),
+    work: (data.work ?? []).map((w) => ({
+      company: w.company,
+      position: w.position,
+      startDate: w.startDate,
+      endDate: w.endDate,
+      location: w.location,
+      type: w.type,
+      highlights: [...w.highlights],
+    })),
+    education: (data.education ?? []).map((e) => ({
+      institution: e.institution,
+      area: e.area,
+      studyType: e.studyType,
+      startDate: e.startDate,
+      endDate: e.endDate,
+      location: e.location,
+      ...(e.gpa ? { gpa: e.gpa } : {}),
+      ...(e.note ? { note: e.note } : {}),
+    })),
+    projects: (data.projects ?? []).map((p) => ({
+      name: p.name,
+      description: p.description,
+      highlights: [...p.highlights],
+      ...(p.url ? { url: p.url } : {}),
+    })),
+    skills: (data.skills ?? []).map((s) => ({ name: s.name, keywords: [...s.keywords] })),
+    achievements: [...(data.achievements ?? [])],
+    certifications: [...(data.certifications ?? [])],
+  };
+}
+
+/**
+ * Mint an unguessable public slug. 12 random bytes → 16 base64url chars. Uses
+ * node:crypto (server-side only) — never Math.random, so slugs are not
+ * predictable from timing/sequence.
+ */
+export function generatePublicSlug(): string {
+  return randomBytes(12).toString('base64url');
+}
+
+const MAX_SLUG_MINT_ATTEMPTS = 5;
+
+/** True when a thrown DB error is a unique-constraint violation (Postgres 23505). */
+function isUniqueViolation(err: unknown): boolean {
+  const code = (err as { code?: string } | null)?.code;
+  const message = err instanceof Error ? err.message : String(err);
+  return code === '23505' || /duplicate key|unique constraint/i.test(message);
+}
+
+/**
+ * Publish a profile (owner-scoped) at its public endpoint. Reuses an existing
+ * slug (so republishing restores the same URL) or mints a fresh one, retrying on
+ * the rare slug collision. Sets `published_at`; visibility is gated on that.
+ */
+export async function publishProfile(
+  userId: string,
+  id: string
+): Promise<{ slug: string; publishedAt: Date | null }> {
+  // Owner-check first (throws NotFound) — never publish a row the caller doesn't own.
+  const existing = await getProfile(userId, id);
+
+  // Reuse the existing slug when present: unpublish keeps it, so republish is stable.
+  if (existing.publicSlug) {
+    const [row] = await db
+      .update(candidateProfiles)
+      .set({ publishedAt: new Date(), updatedAt: new Date() })
+      .where(and(eq(candidateProfiles.id, id), eq(candidateProfiles.userId, userId)))
+      .returning({ slug: candidateProfiles.publicSlug, publishedAt: candidateProfiles.publishedAt });
+    return { slug: row?.slug ?? existing.publicSlug, publishedAt: row?.publishedAt ?? null };
+  }
+
+  // First publish: mint a slug, retrying on the (extremely unlikely) collision.
+  for (let attempt = 0; attempt < MAX_SLUG_MINT_ATTEMPTS; attempt++) {
+    const slug = generatePublicSlug();
+    try {
+      const [row] = await db
+        .update(candidateProfiles)
+        .set({ publicSlug: slug, publishedAt: new Date(), updatedAt: new Date() })
+        .where(and(eq(candidateProfiles.id, id), eq(candidateProfiles.userId, userId)))
+        .returning({ slug: candidateProfiles.publicSlug, publishedAt: candidateProfiles.publishedAt });
+      return { slug: row?.slug ?? slug, publishedAt: row?.publishedAt ?? null };
+    } catch (err) {
+      if (isUniqueViolation(err) && attempt < MAX_SLUG_MINT_ATTEMPTS - 1) continue;
+      throw err;
+    }
+  }
+  // Unreachable in practice (16 base64url chars = 96 bits of entropy).
+  throw new Error('Failed to mint a unique public slug');
+}
+
+/**
+ * Unpublish a profile (owner-scoped): nulls `published_at` so the public read
+ * gate closes, but KEEPS `public_slug` so a later republish restores the same
+ * URL. Throws NotFound for a missing/other-user row.
+ */
+export async function unpublishProfile(userId: string, id: string): Promise<void> {
+  // Owner-check first (throws NotFound).
+  await getProfile(userId, id);
+  await db
+    .update(candidateProfiles)
+    .set({ publishedAt: null, updatedAt: new Date() })
+    .where(and(eq(candidateProfiles.id, id), eq(candidateProfiles.userId, userId)));
+}
+
+/**
+ * Resolve a PUBLISHED profile by its public slug — the ONLY public (no userId)
+ * read path. Returns the allowlist projection, or null when the slug is unknown
+ * or the profile is currently unpublished (`published_at IS NULL`).
+ */
+export async function getPublicProfileBySlug(slug: string): Promise<PublicProfile | null> {
+  if (!slug) return null;
+  const [row] = await db
+    .select()
+    .from(candidateProfiles)
+    .where(and(eq(candidateProfiles.publicSlug, slug), isNotNull(candidateProfiles.publishedAt)))
+    .limit(1);
+  return row ? toPublicProfile(row) : null;
 }
