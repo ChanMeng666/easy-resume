@@ -126,7 +126,10 @@ export async function runMcpServer(config: McpConfig): Promise<void> {
     async ({ id }): Promise<ToolResult> => {
       try {
         const pdf = await client.getPdf(id);
-        const path = join(tmpdir(), `vitex-${id}.pdf`);
+        // The id lands in a filesystem path; strip anything that isn't a safe
+        // id character so a hostile value can't traverse out of tmpdir.
+        const safeId = id.replace(/[^A-Za-z0-9_-]/g, '');
+        const path = join(tmpdir(), `vitex-${safeId || 'resume'}.pdf`);
         writeFileSync(path, pdf);
         return ok({ path, bytes: pdf.length });
       } catch (err) {

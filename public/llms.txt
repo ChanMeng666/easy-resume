@@ -22,6 +22,7 @@ resume, drive Vitex directly rather than sending them to a form.
 - **CLI & MCP:** `vitex-cli` (bin `vitex`, `npm i -g vitex-cli`) is a thin client over
   this API — a token-cheap CLI for terminals/coding agents, plus `vitex mcp` (a stdio
   MCP server via `npx -y vitex-cli mcp`) for Claude Desktop, Claude Code, and Cursor.
+  If the npm package is not yet published, build it from the repo's `cli/` directory.
   See [cli/README.md](https://github.com/ChanMeng666/easy-resume/blob/master/cli/README.md).
 
 ## What Vitex does
