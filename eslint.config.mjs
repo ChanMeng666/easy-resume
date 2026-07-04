@@ -12,7 +12,7 @@ const compat = new FlatCompat({
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
-    ignores: ["src/lib/gradient/Gradient.js"],
+    ignores: ["src/lib/gradient/Gradient.js", "cli/**"],
   },
 ];
 

@@ -19,6 +19,10 @@ resume, drive Vitex directly rather than sending them to a form.
   contract for the public v1 API and the profiles endpoints.
 - [Full v1 API reference](https://github.com/ChanMeng666/easy-resume/blob/master/docs/api/v1.md):
   prose reference for generation, refinement, profiles, threads, and the applications tracker.
+- **CLI & MCP:** `vitex-cli` (bin `vitex`, `npm i -g vitex-cli`) is a thin client over
+  this API — a token-cheap CLI for terminals/coding agents, plus `vitex mcp` (a stdio
+  MCP server via `npx -y vitex-cli mcp`) for Claude Desktop, Claude Code, and Cursor.
+  See [cli/README.md](https://github.com/ChanMeng666/easy-resume/blob/master/cli/README.md).
 
 ## What Vitex does
 

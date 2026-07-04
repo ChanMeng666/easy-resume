@@ -14,6 +14,13 @@ commit-style version chain. You pay only for a successful build.
 - Full reference: `https://www.vitex.org.nz/openapi.yaml` and
   [`docs/api/v1.md`](https://github.com/ChanMeng666/easy-resume/blob/master/docs/api/v1.md)
 
+> **Prefer a CLI or MCP over raw curl?** `vitex-cli` (bin `vitex`) is a thin client
+> over exactly the endpoints below. Run `npx vitex-cli generate --jd jd.txt
+> --background bg.txt --wait -o resume.pdf`, or add the MCP server with
+> `npx -y vitex-cli mcp` (env `VITEX_API_KEY`) so Claude Desktop / Claude Code /
+> Cursor can drive Vitex directly. See
+> [`cli/README.md`](https://github.com/ChanMeng666/easy-resume/blob/master/cli/README.md).
+
 ---
 
 ## 0. Prerequisite (one-time, human-in-the-loop)
