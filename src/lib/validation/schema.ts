@@ -93,6 +93,9 @@ export const resumeDataSchema = z.object({
 export const candidateProfileInputSchema = z.object({
   label: z.string().trim().min(1).max(255).optional(),
   rawBackground: z.string().trim().min(1, 'Background is required').max(50_000),
+  // Optional writing sample: cover-letter generation matches this voice. Stored
+  // raw; a content-quality feature that never touches billing.
+  voiceSample: z.string().trim().max(4000).optional(),
 });
 export type CandidateProfileInput = z.infer<typeof candidateProfileInputSchema>;
 
@@ -102,6 +105,7 @@ export type CandidateProfileInput = z.infer<typeof candidateProfileInputSchema>;
 export const candidateProfileUpdateSchema = z.object({
   label: z.string().trim().min(1).max(255).optional(),
   rawBackground: z.string().trim().min(1).max(50_000).optional(),
+  voiceSample: z.string().trim().max(4000).optional(),
 });
 export type CandidateProfileUpdate = z.infer<typeof candidateProfileUpdateSchema>;
 

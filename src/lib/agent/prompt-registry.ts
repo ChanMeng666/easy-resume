@@ -44,7 +44,8 @@ export const PROMPT_VERSIONS: Record<PromptFunctionId, string> = {
   'parse-background': 'v2',
   'analyze-match': 'v1',
   'tailor-resume': 'v1',
-  'cover-letter': 'v1',
+  // v2: optional writing-voice sample injected to voice-match the letter.
+  'cover-letter': 'v2',
   'revise-resume': 'v1',
   'revise-cover-letter': 'v1',
   // v2: added the cover-letter section + the three letter-editing tools.

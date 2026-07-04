@@ -75,7 +75,11 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         issues: parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
       });
     }
-    if (parsed.data.label === undefined && parsed.data.rawBackground === undefined) {
+    if (
+      parsed.data.label === undefined &&
+      parsed.data.rawBackground === undefined &&
+      parsed.data.voiceSample === undefined
+    ) {
       throw new ValidationError('No fields to update');
     }
 

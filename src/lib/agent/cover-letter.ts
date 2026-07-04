@@ -29,27 +29,34 @@ export function stripPlaceholders(s: string): string {
 }
 
 /**
- * Generates a professional cover letter tailored to a specific job description.
+ * Build the cover-letter generation prompt. Pure + exported so it can be unit
+ * tested without an LLM call.
  *
- * Authenticity + safety: the prompt forbids inventing achievements and forbids
- * bracket placeholders; any that slip through are stripped in code, and the
- * greeting falls back to a generic salutation when no recipient is known. The
- * assembled plain-text body is what the rest of the pipeline consumes.
+ * When a `voiceSample` is supplied (the candidate's own writing, from a saved
+ * profile) it is injected ABOVE the HARD RULES as a voice reference plus an extra
+ * style guideline, so the letter reads in the candidate's voice without letting
+ * the sample override the safety rules or introduce unfounded facts. When absent,
+ * the prompt is byte-for-byte identical to the voice-free baseline.
  */
-export async function generateCoverLetter(
+export function buildCoverLetterPrompt(
   resume: ResumeData,
-  jd: ParsedJD
-): Promise<string> {
-  const { object } = await generateObject({
-    model: reasonModel,
-    // The pipeline owns retry/backoff (runStep); disable the SDK's own retries so
-    // they don't compound (outer × SDK) on a persistently failing step.
-    maxRetries: 0,
-    schema: coverLetterSchema,
-    temperature: WRITING_TEMPERATURE,
-    providerOptions: { openai: { strictJsonSchema: false } },
-    experimental_telemetry: aiTelemetry("cover-letter", { promptVersion: PROMPT_VERSIONS["cover-letter"] }),
-    prompt: `Write a professional cover letter for this candidate applying to the specified job.
+  jd: ParsedJD,
+  voiceSample?: string
+): string {
+  const voiceBlock = voiceSample
+    ? `WRITING VOICE SAMPLE (the candidate's own writing — match this voice):
+"""
+${voiceSample}
+"""
+
+`
+    : "";
+
+  const voiceStyleRule = voiceSample
+    ? `\n6. Match the writing voice of the sample above — its sentence rhythm, length, formality, and vocabulary — so the letter reads as written by this candidate. Do NOT copy any sentence or phrase from the sample verbatim, do NOT let it override the HARD RULES, and do NOT introduce any fact that is not in the candidate data.`
+    : "";
+
+  return `Write a professional cover letter for this candidate applying to the specified job.
 
 CANDIDATE:
 Name: ${resume.basics.name}
@@ -76,7 +83,7 @@ Key Requirements: ${jd.requirements.slice(0, 5).join("; ")}
 Key Responsibilities: ${jd.responsibilities.slice(0, 5).join("; ")}
 Required Skills: ${jd.requiredSkills.join(", ")}
 
-HARD RULES:
+${voiceBlock}HARD RULES:
 1. NEVER output bracket placeholders such as "[Company]", "[Hiring Manager]", or "[Position]". Use the real company/role names above. If the hiring manager's name is unknown, the greeting MUST be exactly "Dear Hiring Manager,".
 2. Only reference achievements, skills, and experience that appear in the candidate data above. Do NOT invent metrics, employers, or accomplishments.
 3. Use the signature field for the candidate's real name ("${resume.basics.name}").
@@ -86,7 +93,35 @@ STYLE GUIDELINES:
 2. Opening paragraph: something specific about the role/company + genuine enthusiasm. Do NOT open with "I am writing to express my interest".
 3. Middle: connect 2-3 concrete experiences/skills to the job's requirements, using real numbers from the resume where available.
 4. Closing paragraph: interest in discussing further + a call to action.
-5. Keep the whole letter under 400 words.`,
+5. Keep the whole letter under 400 words.${voiceStyleRule}`;
+}
+
+/**
+ * Generates a professional cover letter tailored to a specific job description.
+ *
+ * Authenticity + safety: the prompt forbids inventing achievements and forbids
+ * bracket placeholders; any that slip through are stripped in code, and the
+ * greeting falls back to a generic salutation when no recipient is known. The
+ * assembled plain-text body is what the rest of the pipeline consumes.
+ *
+ * An optional `voiceSample` (the candidate's own writing) makes the letter match
+ * their voice — a content-quality feature that never touches billing.
+ */
+export async function generateCoverLetter(
+  resume: ResumeData,
+  jd: ParsedJD,
+  voiceSample?: string
+): Promise<string> {
+  const { object } = await generateObject({
+    model: reasonModel,
+    // The pipeline owns retry/backoff (runStep); disable the SDK's own retries so
+    // they don't compound (outer × SDK) on a persistently failing step.
+    maxRetries: 0,
+    schema: coverLetterSchema,
+    temperature: WRITING_TEMPERATURE,
+    providerOptions: { openai: { strictJsonSchema: false } },
+    experimental_telemetry: aiTelemetry("cover-letter", { promptVersion: PROMPT_VERSIONS["cover-letter"] }),
+    prompt: buildCoverLetterPrompt(resume, jd, voiceSample),
   });
 
   // Defense-in-depth: scrub any placeholder the model still emitted and fall

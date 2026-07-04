@@ -34,6 +34,11 @@ export interface GenerateInput {
   baseResume?: ResumeData;
   /** The saved candidate_profile id that seeded this generation, if any. */
   profileId?: string;
+  /**
+   * Optional writing sample (from a saved profile) so cover-letter generation
+   * matches the candidate's voice. Content-quality only — never touches billing.
+   */
+  voiceSample?: string;
 }
 
 /** Progress event emitted before each step runs. */

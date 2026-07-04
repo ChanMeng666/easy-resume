@@ -345,6 +345,10 @@ async function migrate() {
     )
   `;
   await sql`CREATE INDEX IF NOT EXISTS idx_candidate_profiles_user_id ON candidate_profiles(user_id, updated_at DESC)`;
+  // Optional writing sample so cover-letter generation can match the candidate's
+  // own voice. Stored raw (never parsed); nullable; a content-quality feature
+  // that never touches billing.
+  await sql`ALTER TABLE candidate_profiles ADD COLUMN IF NOT EXISTS voice_sample TEXT`;
   console.log("Created candidate_profiles table");
 
   console.log("Migration complete!");

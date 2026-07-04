@@ -77,13 +77,16 @@ export async function getProfile(userId: string, id: string): Promise<CandidateP
  */
 export async function createProfile(
   userId: string,
-  input: { label?: string; rawBackground: string }
+  input: { label?: string; rawBackground: string; voiceSample?: string }
 ): Promise<CandidateProfile> {
   const data = await parseBackground(input.rawBackground);
   const label = deriveProfileLabel(input.label, data);
+  // Store the writing sample RAW (never parsed); normalize empty/whitespace to
+  // null so an absent voice reads the same as a blank one.
+  const voiceSample = input.voiceSample?.trim() || null;
   const [row] = await db
     .insert(candidateProfiles)
-    .values({ userId, label, data, rawBackground: input.rawBackground })
+    .values({ userId, label, data, rawBackground: input.rawBackground, voiceSample })
     .returning();
   return row;
 }
@@ -96,7 +99,7 @@ export async function createProfile(
 export async function updateProfile(
   userId: string,
   id: string,
-  patch: { label?: string; rawBackground?: string }
+  patch: { label?: string; rawBackground?: string; voiceSample?: string }
 ): Promise<CandidateProfile> {
   // Owner-check first (throws NotFound) so we never re-parse or write for a
   // profile the caller doesn't own.
@@ -108,6 +111,8 @@ export async function updateProfile(
     set.rawBackground = patch.rawBackground;
     set.data = await parseBackground(patch.rawBackground);
   }
+  // Store raw; normalize empty/whitespace to null (same as createProfile).
+  if (patch.voiceSample !== undefined) set.voiceSample = patch.voiceSample.trim() || null;
 
   const [row] = await db
     .update(candidateProfiles)

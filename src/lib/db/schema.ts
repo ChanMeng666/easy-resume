@@ -347,6 +347,9 @@ export const candidateProfiles = pgTable("candidate_profiles", {
   label: varchar("label", { length: 255 }).notNull().default("My Background"),
   data: jsonb("data").$type<ResumeData>().notNull(),
   rawBackground: text("raw_background").notNull(),
+  // Optional writing sample (raw, unparsed) so cover-letter generation can match
+  // the candidate's own voice. Content-quality only — never touches billing.
+  voiceSample: text("voice_sample"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 }, (table) => ({
