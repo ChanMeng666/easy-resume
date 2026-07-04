@@ -63,3 +63,37 @@ export const designTokensSchema = z.object({
 export function resolvePalette(tokens: DesignTokens): { primary: string; accent: string } {
   return ACCENT_PAIRS[tokens.palette] ?? ACCENT_PAIRS.slate;
 }
+
+/**
+ * Resolved vertical-spacing scale for a token set. `scale` multiplies the
+ * inter-block `v(...em)` rhythm only — micro header gaps, page margins,
+ * paragraph leading, tag insets, and column gutters stay fixed.
+ */
+export interface Spacing {
+  scale: number;
+}
+
+/**
+ * Resolve a token set's density to a single vertical-spacing scale factor:
+ * comfortable = 1.0 (today's look), compact = 0.8 (tighter block rhythm).
+ *
+ * @param tokens - The design tokens to resolve.
+ * @returns The `{ scale }` factor to apply to inter-block em gaps.
+ */
+export function resolveSpacing(tokens: DesignTokens): Spacing {
+  return { scale: tokens.density === 'compact' ? 0.8 : 1 };
+}
+
+/**
+ * Format a scaled em gap for Typst. At scale === 1 (comfortable) the base value
+ * is emitted verbatim — the byte-compatibility guarantee that comfortable output
+ * reproduces today's literals exactly. Otherwise the value is scaled and rounded
+ * to two decimals.
+ *
+ * @param baseEm - The comfortable-density gap in em.
+ * @param s - The resolved spacing scale.
+ * @returns A Typst length string such as `"0.8em"` or `"0.64em"`.
+ */
+export function emGap(baseEm: number, s: Spacing): string {
+  return s.scale === 1 ? `${baseEm}em` : `${Math.round(baseEm * s.scale * 100) / 100}em`;
+}

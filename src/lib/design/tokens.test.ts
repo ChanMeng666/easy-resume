@@ -4,6 +4,8 @@ import {
   DEFAULT_TOKENS,
   designTokensSchema,
   resolvePalette,
+  resolveSpacing,
+  emGap,
   type DesignTokens,
 } from './tokens';
 
@@ -47,5 +49,37 @@ describe('design tokens', () => {
       expect(pair.primary).toMatch(/^#[0-9A-Fa-f]{6}$/);
       expect(pair.accent).toMatch(/^#[0-9A-Fa-f]{6}$/);
     }
+  });
+});
+
+describe('spacing resolver', () => {
+  it('resolveSpacing maps comfortable → 1 and compact → 0.8', () => {
+    expect(resolveSpacing({ palette: 'slate', density: 'comfortable' })).toEqual({ scale: 1 });
+    expect(resolveSpacing({ palette: 'slate', density: 'compact' })).toEqual({ scale: 0.8 });
+  });
+
+  it('emGap emits the base literal verbatim at comfortable (byte-compat)', () => {
+    const sp = resolveSpacing(DEFAULT_TOKENS);
+    expect(emGap(0.8, sp)).toBe('0.8em');
+    expect(emGap(0.4, sp)).toBe('0.4em');
+    expect(emGap(1, sp)).toBe('1em');
+    expect(emGap(0.15, sp)).toBe('0.15em');
+  });
+
+  it('emGap scales and rounds to two decimals at compact', () => {
+    const sp: ReturnType<typeof resolveSpacing> = { scale: 0.8 };
+    expect(emGap(0.8, sp)).toBe('0.64em'); // 0.8 * 0.8 = 0.64
+    expect(emGap(0.5, sp)).toBe('0.4em'); //  0.5 * 0.8 = 0.40 → 0.4
+    expect(emGap(0.3, sp)).toBe('0.24em');
+    expect(emGap(0.15, sp)).toBe('0.12em');
+    expect(emGap(1, sp)).toBe('0.8em');
+    expect(emGap(0.6, sp)).toBe('0.48em');
+  });
+
+  it('emGap rounds a repeating product to two decimals', () => {
+    // 0.55 * 0.8 = 0.44 exactly; use a value that would otherwise trail digits.
+    expect(emGap(0.35, { scale: 0.8 })).toBe('0.28em');
+    // 0.8 factor keeps two-decimal results, but guard the rounding contract:
+    expect(emGap(0.125, { scale: 0.8 })).toBe('0.1em'); // 0.1 exactly
   });
 });
