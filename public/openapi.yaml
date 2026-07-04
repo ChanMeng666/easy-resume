@@ -9,9 +9,17 @@ info:
     compiled PDF; validation errors, LLM-step failures, and compilation failures
     are free; refinement is currently free. This document is hand-written and
     kept in sync with the route source; the prose reference is docs/api/v1.md.
+    The same capabilities are also exposed as MCP tools over a hosted,
+    OAuth-protected endpoint at /api/mcp (JSON-RPC, not REST — see externalDocs
+    and the connector guides); it is intentionally not modeled as REST paths here.
   license:
     name: MIT
     identifier: MIT
+externalDocs:
+  description: >-
+    Hosted MCP server (Streamable HTTP at /api/mcp) for ChatGPT/Claude connectors —
+    browser-OAuth setup guides for the same capabilities as MCP tools.
+  url: https://github.com/ChanMeng666/easy-resume/tree/master/docs/connectors
 servers:
   - url: https://www.vitex.org.nz
     description: Production

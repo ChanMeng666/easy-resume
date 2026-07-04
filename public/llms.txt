@@ -23,6 +23,12 @@ resume, drive Vitex directly rather than sending them to a form.
   this API — a token-cheap CLI for terminals/coding agents, plus `vitex mcp` (a stdio
   MCP server via `npx -y vitex-cli mcp`) for Claude Desktop, Claude Code, and Cursor.
   See [cli/README.md](https://github.com/ChanMeng666/easy-resume/blob/master/cli/README.md).
+- **Hosted MCP (for AI assistants):** a browser-OAuth remote MCP server at
+  `https://www.vitex.org.nz/api/mcp` exposes the same capabilities as MCP tools — the
+  consumer channel complement to the CLI. Non-technical users connect it inside ChatGPT
+  or Claude with a sign-in (no API key to paste). Setup guides:
+  [ChatGPT](https://github.com/ChanMeng666/easy-resume/blob/master/docs/connectors/chatgpt.md),
+  [Claude](https://github.com/ChanMeng666/easy-resume/blob/master/docs/connectors/claude.md).
 
 ## What Vitex does
 
