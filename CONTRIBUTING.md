@@ -50,6 +50,20 @@ npm run build
 npm run lint
 ```
 
+### Secret scanning (recommended)
+
+This is a public repository, so please enable the local secret-scan hook once to
+catch credentials before they are committed:
+
+```bash
+pip install pre-commit   # if you don't have it
+pre-commit install       # installs the gitleaks pre-commit hook
+```
+
+The hook (config in `.pre-commit-config.yaml` + `.gitleaks.toml`) blocks a commit
+that contains a secret. CI runs the same gitleaks scan as a non-bypassable gate,
+so even without the local hook a leaked credential will fail the build.
+
 ## Code of Conduct
 
 By participating, you agree to abide by our [Code of Conduct](CODE_OF_CONDUCT.md). For questions or
