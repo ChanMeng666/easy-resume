@@ -74,6 +74,9 @@ jobs:
       - name: Scan for secrets
         uses: gitleaks/gitleaks-action@v2
         env:
+          # Required by gitleaks-action to enumerate PR commits on pull_request
+          # events (the auto-provisioned token; no PAT needed).
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_CONFIG: .gitleaks.toml
           # No GITLEAKS_LICENSE needed: it is only required for GitHub
           # Organization accounts, not personal public repositories.
