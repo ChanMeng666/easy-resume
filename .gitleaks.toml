@@ -26,6 +26,11 @@ paths = [
   '''\.github/workflows/ci\.yml''',
   '''\.github/workflows/deploy\.yml''',
   '''\.env\.example''',
+  # gitleaks' own config files necessarily contain secret-shaped strings
+  # (placeholder regexes, finding fingerprints, false-positive examples in
+  # comments). Don't scan the scanner's own config.
+  '''\.gitleaks\.toml''',
+  '''\.gitleaksignore''',
 ]
 
 # Placeholder strings the CI workflows set so `next build` can construct clients
