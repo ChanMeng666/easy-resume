@@ -1,0 +1,19 @@
+# Local pre-commit hooks for the Vitex (easy-resume) repository.
+#
+# Currently a single defense-in-depth hook: gitleaks scans staged changes for
+# secrets BEFORE a commit lands, so a real credential is caught locally instead
+# of reaching this public repo. It reads the shared .gitleaks.toml at the repo
+# root (same rules + allowlist as the CI `secret-scan` gate).
+#
+# One-time setup for contributors:
+#   pip install pre-commit && pre-commit install
+#
+# This is a LOCAL soft gate (bypassable with `git commit --no-verify`); the CI
+# `secret-scan` job is the non-bypassable enforcement. The pre-commit framework
+# manages the gitleaks binary itself, so no separate gitleaks install is needed.
+
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks

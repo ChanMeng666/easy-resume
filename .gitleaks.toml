@@ -1,0 +1,39 @@
+# Gitleaks configuration for the Vitex (easy-resume) public repository.
+#
+# Shared by BOTH the CI `secret-scan` job (.github/workflows/ci.yml) and the
+# local pre-commit hook (.pre-commit-config.yaml) so scan rules never drift
+# between the two. Gitleaks auto-discovers this file when it sits at the repo
+# root; CI also points at it explicitly via GITLEAKS_CONFIG.
+#
+# This is defense-in-depth for a long-lived PUBLIC repo — it stops a real
+# secret from ever being committed. As of this writing no real secret has ever
+# been committed (verified across full git history); the only secret-shaped
+# strings in the repo are the CI placeholders allowlisted below.
+
+title = "Vitex gitleaks config"
+
+# Inherit the full set of gitleaks default detection rules, then extend with the
+# allowlist below.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Known non-secret CI placeholders and the annotated env template"
+
+# Files that legitimately contain placeholder-shaped or example values. These are
+# matched as regexes against the file path.
+paths = [
+  '''\.github/workflows/ci\.yml''',
+  '''\.github/workflows/deploy\.yml''',
+  '''\.env\.example''',
+]
+
+# Placeholder strings the CI workflows set so `next build` can construct clients
+# at module scope. They are deliberately fake and connect to nothing.
+regexes = [
+  '''sk_test_ci_placeholder''',
+  '''sk-ci-placeholder''',
+  '''whsec_ci_placeholder''',
+  '''ci-placeholder''',
+  '''postgresql://ci:ci@localhost''',
+]

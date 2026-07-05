@@ -1,0 +1,28 @@
+# Gitleaks fingerprints to ignore — specific, known, one-off historical findings.
+#
+# gitleaks auto-reads this file (repo root) in both the CI `secret-scan` job and
+# the local pre-commit hook. Each line is a finding fingerprint from
+# `gitleaks ... --report-format json`, format: <commit>:<file>:<rule>:<startline>.
+#
+# This ignores three EXACT historical findings (below) without loosening any
+# detection rule. Ongoing placeholder patterns live in .gitleaks.toml instead.
+
+# A) Railway API token committed 2026-02-03 in a since-untracked Claude Code
+# settings file (Bash permission entry). Railway was the pre-VPS deploy platform
+# (since abandoned: Railway -> Cloudflare -> DigitalOcean VPS). CONFIRMED DEAD
+# (2026-07-05): the maintainer checked railway.com/account/tokens and no tokens
+# exist — this token was deleted when the Railway account/project was abandoned,
+# so the immutable-history copy is inert. The file was removed from tracking in
+# a79c07a and is now .gitignore'd. Ignored here so the defunct value cannot fail CI.
+ca450b1a472f2b7fa4e2021e00a5842e57503a4b:.claude/settings.local.json:generic-api-key:44
+
+# B) NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY in the removed wrangler.jsonc. A
+# Stack Auth *publishable* client key (pck_ prefix): a NEXT_PUBLIC_ value that
+# ships to the browser by design and is visible in the live site's client bundle.
+# Not a secret — the file itself labeled it "Non-secret environment variables".
+cac3ca2ffda1b5e43f72a3cda971aa6968a72513:wrangler.jsonc:generic-api-key:14
+
+# C) False positive: documentation prose in CLAUDE.md
+# ("DesignTokens, resolvePalette/Spacing/emGap") tripped the generic-api-key
+# high-entropy heuristic. Not a credential.
+0d8eb0e272c4cebf82cfdbae018c5d0e9cedc0db:CLAUDE.md:generic-api-key:536

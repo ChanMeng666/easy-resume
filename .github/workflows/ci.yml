@@ -55,6 +55,29 @@ jobs:
       - name: Build
         run: npm run build
 
+  # Secret scan (gitleaks) — a non-bypassable gate for this public repo. Runs
+  # independently of `checks`/`cli` so it can execute in parallel. Reads the
+  # shared .gitleaks.toml (which allowlists the known CI placeholders above), so
+  # a real committed credential fails CI while the placeholders do not.
+  secret-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          # Full history so pushes scan the whole commit range, not just the tip.
+          fetch-depth: 0
+
+      - name: Scan for secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITLEAKS_CONFIG: .gitleaks.toml
+          # No GITLEAKS_LICENSE needed: it is only required for GitHub
+          # Organization accounts, not personal public repositories.
+
   # Isolated job for the in-repo `vitex-cli` package (cli/). It has its own
   # standalone toolchain and lockfile with clean peer deps, so it installs with a
   # plain `npm ci` (no --legacy-peer-deps) and never touches the root app.
