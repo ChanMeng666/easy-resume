@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { FadeIn } from '@/components/shared/FadeIn';
 import { LivePdfPreview } from '@/components/preview/LivePdfPreview';
-import { CropFrame } from '@/components/shared/CropFrame';
 import {
   Dialog,
   DialogContent,
@@ -15,6 +16,12 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from '@/components/ui/accordion';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   DropdownMenu,
@@ -489,13 +496,9 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
   // Non-blocking error surfaced in the Advanced-edit disclosure (e.g. a
   // persist-before-navigate save failed) so we can stay on the page.
   const [advancedEditError, setAdvancedEditError] = useState<string | null>(null);
-  // Secondary "Advanced edit" disclosure — folds the two power-user edit
-  // surfaces (structured field editor + conversational AI editor) so the
-  // conversational Refine box stays the calm, primary edit surface.
-  const [advancedEditOpen, setAdvancedEditOpen] = useState(false);
-  // Collapsed "History (n)" disclosure for the version chain (Compare/rename live
-  // inside it) — the chain is context, not a primary control.
-  const [historyOpen, setHistoryOpen] = useState(false);
+  // The version chain and the two power-user edit surfaces (structured field
+  // editor + conversational AI editor) live inside a bottom Accordion; the
+  // Accordion manages its own open/close state.
   // Which artifact the preview tab shows: the resume or the cover letter. Both
   // render through LivePdfPreview.
   const [previewTab, setPreviewTab] = useState<'resume' | 'cover_letter'>('resume');
@@ -1006,14 +1009,12 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
     startGeneration(effJd, effBg, true);
   }, [jobId, loadJob, effJd, effBg, startGeneration]);
 
-  /** ATS score text tone. */
-  const scoreTone = (score: number) =>
-    score >= 80 ? 'text-green-600' : score >= 60 ? 'text-yellow-600' : 'text-red-600';
-  /** ATS score meter-bar fill. */
-  const scoreBar = (score: number) =>
-    score >= 80 ? 'bg-green-500' : score >= 60 ? 'bg-yellow-400' : 'bg-red-500';
-  /** Two-digit zero padding for typeset line/step numbers. */
-  const pad2 = (n: number) => String(n).padStart(2, '0');
+  /** ATS score → Phantom Badge variant (tonal tier label). */
+  const scoreBadge = (score: number): 'success' | 'warning' | 'destructive' =>
+    score >= 80 ? 'success' : score >= 60 ? 'warning' : 'destructive';
+  /** ATS score → short tier label shown in the badge. */
+  const scoreLabel = (score: number) =>
+    score >= 80 ? 'Strong match' : score >= 60 ? 'Good match' : 'Needs work';
 
   // --- Error State ---
   if (error && !isGenerating && !result) {
@@ -1025,87 +1026,54 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
       auth: 'Sign in to continue',
       other: 'Generation failed',
     }[error.kind];
-    const errCode = {
-      timeout: 'ERR·TIMEOUT',
-      server: 'ERR·5XX',
-      network: 'ERR·NET',
-      credits: 'ERR·402',
-      auth: 'ERR·401',
-      other: 'ERR·GEN',
-    }[error.kind];
 
     return (
-      <main className="container mx-auto max-w-2xl px-4 pt-12 md:pt-16 pb-16">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="overflow-hidden rounded-xl border-2 border-black bg-white shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)]"
-        >
-          {/* Proof error header */}
-          <div className="flex items-center justify-between border-b-2 border-black bg-red-50 px-4 py-3">
-            <span className="proof-label !text-red-700">compile.error</span>
-            <span className="proof-label !text-red-700">{errCode}</span>
+      <main className="mx-auto max-w-2xl px-4 sm:px-6 pt-12 md:pt-16 pb-16">
+        <div className="rounded-3xl border border-ash bg-white p-8 sm:p-10">
+          <div className="mb-4 flex items-center gap-3">
+            <AlertCircle className="h-6 w-6 flex-shrink-0 text-rose-ink" />
+            <h2 className="text-lg sm:text-xl tracking-tight text-aubergine">{headline}</h2>
           </div>
-          <div className="p-6 sm:p-8">
-          <div className="flex items-center gap-3 mb-3 sm:mb-4">
-            <AlertCircle className="h-6 w-6 flex-shrink-0 text-red-600" />
-            <h2 className="text-lg sm:text-xl font-black text-foreground">{headline}</h2>
-          </div>
-          <p className="text-sm sm:text-base text-muted-foreground font-medium mb-4">{error.message}</p>
+          <p className="mb-4 text-sm sm:text-base text-muted-foreground">{error.message}</p>
           {error.kind === 'credits' && (
-            <p className="text-xs sm:text-sm text-muted-foreground mb-4">
+            <p className="mb-4 text-xs sm:text-sm text-muted-foreground">
               Each generation costs 1 credit. Top up to keep going.
             </p>
           )}
           {wasHiddenDuringGeneration && (
-            <p className="text-xs sm:text-sm text-muted-foreground mb-4 italic">
+            <p className="mb-4 text-xs sm:text-sm italic text-muted-foreground">
               Tip: switching tabs or locking your phone during generation can drop the
               connection. Keep this page in the foreground until it finishes.
             </p>
           )}
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
             {error.kind === 'credits' ? (
-              <Button
-                onClick={() => (window.location.href = '/pricing')}
-                size="lg"
-                className="border-2 border-black font-bold gap-2 w-full sm:w-auto"
-              >
+              <Button onClick={() => (window.location.href = '/pricing')} size="lg" className="w-full sm:w-auto">
                 <CreditCard className="h-4 w-4" />
                 Buy Credits
               </Button>
             ) : error.kind === 'auth' ? (
               <Button
                 onClick={() =>
-                  (window.location.href =
-                    '/handler/sign-in?after_auth_return_to=/editor')
+                  (window.location.href = '/handler/sign-in?after_auth_return_to=/editor')
                 }
                 size="lg"
-                className="border-2 border-black font-bold gap-2 w-full sm:w-auto"
+                className="w-full sm:w-auto"
               >
                 <UserCheck className="h-4 w-4" />
                 Sign in
               </Button>
             ) : (
-              <Button
-                onClick={handleRetry}
-                size="lg"
-                className="border-2 border-black font-bold gap-2 w-full sm:w-auto"
-              >
+              <Button onClick={handleRetry} size="lg" className="w-full sm:w-auto">
                 <RefreshCw className="h-4 w-4" />
                 Try again
               </Button>
             )}
-            <Button
-              onClick={() => window.history.back()}
-              variant="outline"
-              size="lg"
-              className="border-2 border-black font-bold w-full sm:w-auto"
-            >
+            <Button onClick={() => window.history.back()} variant="outline" size="lg" className="w-full sm:w-auto">
               Go back
             </Button>
           </div>
-          </div>
-        </motion.div>
+        </div>
       </main>
     );
   }
@@ -1115,77 +1083,67 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
     // The backend streams a 1-based step index/total per event; the active mode's
     // array determines the labels/icons and the total shown.
     const activeSteps = progressMode === 'refine' ? REFINE_PROGRESS_STEPS : PROGRESS_STEPS;
-    const logTitle = progressMode === 'refine' ? 'refining resume' : 'composing resume';
+    const logTitle = progressMode === 'refine' ? 'Refining your resume' : 'Composing your resume';
     const shownStep = Math.min(Math.max(currentStep, 1), activeSteps.length);
     return (
-      <main className="container mx-auto max-w-2xl px-4 pt-12 md:pt-16 pb-16">
-        <CropFrame>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="overflow-hidden rounded-xl border-2 border-black bg-white shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)]"
-        >
-          {/* Log header */}
-          <div className="flex items-center justify-between border-b-2 border-black bg-gray-50 px-4 py-3">
-            <span className="proof-label">compile.log — {logTitle}</span>
-            <span className="proof-label !text-primary">STEP {pad2(shownStep)} / {pad2(activeSteps.length)}</span>
-          </div>
+      <main className="mx-auto max-w-2xl px-4 sm:px-6 pt-12 md:pt-16 pb-16">
+        <FadeIn>
+          <div className="rounded-3xl bg-bone p-6 sm:p-8">
+            {/* Header */}
+            <div className="mb-6 flex items-center justify-between gap-3">
+              <h2 className="text-lg font-medium tracking-tight text-aubergine">{logTitle}</h2>
+              <span className="text-caption text-muted-foreground">
+                Step {shownStep} / {activeSteps.length}
+              </span>
+            </div>
 
-          {/* Line-numbered galley */}
-          <div className="px-2 sm:px-4 py-3 font-mono">
-            {activeSteps.map((step, index) => {
-              const StepIcon = step.icon;
-              const stepNum = index + 1;
-              const isActive = stepNum === currentStep;
-              const isCompleted = stepNum < currentStep;
+            {/* Step gallery */}
+            <div className="space-y-1">
+              {activeSteps.map((step, index) => {
+                const StepIcon = step.icon;
+                const stepNum = index + 1;
+                const isActive = stepNum === currentStep;
+                const isCompleted = stepNum < currentStep;
 
-              return (
-                <motion.div
-                  key={step.label}
-                  initial={{ opacity: 0, x: -12 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.08 }}
-                  className={`flex items-center gap-3 rounded-md px-2 sm:px-3 py-2 transition-colors duration-300 ${
-                    isActive ? 'bg-primary/10' : ''
-                  }`}
-                >
-                  <span className="w-6 flex-shrink-0 text-right text-xs text-gray-400 select-none">
-                    {pad2(stepNum)}
-                  </span>
-                  <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center">
-                    {isCompleted ? (
-                      <CheckCircle2 className="h-4 w-4 text-green-600" />
-                    ) : isActive ? (
-                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                    ) : (
-                      <StepIcon className="h-4 w-4 text-gray-300" />
-                    )}
-                  </div>
-                  <span
-                    className={`text-xs sm:text-sm leading-snug ${
-                      isActive
-                        ? 'font-semibold text-foreground'
-                        : isCompleted
-                          ? 'text-muted-foreground'
-                          : 'text-gray-400'
+                return (
+                  <div
+                    key={step.label}
+                    className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 transition-colors duration-300 ${
+                      isActive ? 'bg-white' : ''
                     }`}
                   >
-                    {step.label}
-                  </span>
-                </motion.div>
-              );
-            })}
-          </div>
+                    <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center">
+                      {isCompleted ? (
+                        <CheckCircle2 className="h-4 w-4 text-mint" />
+                      ) : isActive ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-periwinkle" />
+                      ) : (
+                        <StepIcon className="h-4 w-4 text-fog" />
+                      )}
+                    </div>
+                    <span
+                      className={`text-sm leading-snug ${
+                        isActive
+                          ? 'font-medium text-aubergine'
+                          : isCompleted
+                            ? 'text-muted-foreground'
+                            : 'text-fog-deep'
+                      }`}
+                    >
+                      {step.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
 
-          {/* Footer advisory */}
-          <div className="border-t-2 border-black bg-gray-50 px-4 py-3">
-            <p className="text-xs text-muted-foreground font-medium">
+            {/* Footer advisory */}
+            <p className="mt-6 text-xs text-muted-foreground">
               Keep this page open until generation completes — closing or backgrounding
               the tab on mobile can interrupt the stream.
             </p>
           </div>
-        </motion.div>
-        </CropFrame>
+        </FadeIn>
       </main>
     );
   }
@@ -1194,131 +1152,22 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
 
   // --- Result State ---
   return (
-    <main className="container mx-auto max-w-6xl px-4 pt-10 md:pt-14 pb-16">
+    <main className="mx-auto max-w-content px-4 sm:px-6 pt-10 md:pt-14 pb-16">
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-6"
-      >
-        <p className="proof-label mb-2">§ Composed · {result.templateId}</p>
-        <h1 className="font-brand text-2xl sm:text-3xl">Your resume is ready.</h1>
-      </motion.div>
-
-      {/* History — the refine chain, collapsed into a small disclosure (free).
-          Compare/rename live inside; the chain is context, not a primary control. */}
-      {versions.length > 1 && (
-        <div className="mb-6 rounded-xl border-2 border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
-          <button
-            type="button"
-            onClick={() => setHistoryOpen((v) => !v)}
-            aria-expanded={historyOpen}
-            className="flex w-full items-center justify-between rounded-xl px-3 py-2 font-mono text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground transition-colors hover:text-foreground"
-          >
-            <span className="inline-flex items-center gap-2">
-              <History className="h-3.5 w-3.5" />
-              History ({versions.length})
-            </span>
-            <ChevronDown
-              className={`h-4 w-4 transition-transform duration-200 ${historyOpen ? 'rotate-180' : ''}`}
-            />
-          </button>
-          {historyOpen && (
-          <div className="flex flex-wrap items-center gap-2 border-t-2 border-black p-3">
-          {versions.map((v) => {
-            const labelText = v.versionLabel || `v${v.version}`;
-            const ats = typeof v.atsScore === 'number' ? ` · ATS ${v.atsScore}` : '';
-            if (v.isCurrent) {
-              // Current version: editable label (rename) — free, no re-render.
-              if (renaming) {
-                return (
-                  <span key={v.id} className="inline-flex items-center gap-1">
-                    <Input
-                      value={renameValue}
-                      onChange={(e) => setRenameValue(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleRenameVersion();
-                        if (e.key === 'Escape') setRenaming(false);
-                      }}
-                      maxLength={120}
-                      placeholder={`v${v.version}`}
-                      aria-label="Version name"
-                      className="h-8 w-44 font-mono text-xs"
-                      autoFocus
-                    />
-                    <Button size="sm" variant="outline" className="h-8 px-2" onClick={handleRenameVersion} aria-label="Save name">
-                      <Check className="h-4 w-4" />
-                    </Button>
-                    <Button size="sm" variant="outline" className="h-8 px-2" onClick={() => setRenaming(false)} aria-label="Cancel rename">
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </span>
-                );
-              }
-              return (
-                <button
-                  key={v.id}
-                  onClick={() => {
-                    setRenameValue(v.versionLabel ?? '');
-                    setRenaming(true);
-                  }}
-                  className="inline-flex items-center gap-1 rounded-lg border-2 border-black bg-primary px-2.5 py-1 font-mono text-xs font-bold text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]"
-                  title="Rename this version"
-                >
-                  {labelText}
-                  {ats} · current
-                  <Pencil className="ml-1 h-3 w-3" />
-                </button>
-              );
-            }
-            return (
-              <a
-                key={v.id}
-                href={`/editor?job=${v.id}`}
-                className="rounded-lg border-2 border-black bg-white px-2.5 py-1 font-mono text-xs font-bold transition-all duration-200 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-1px] hover:translate-y-[-1px]"
-                title={v.title}
-              >
-                {labelText}
-                {ats}
-              </a>
-            );
-          })}
-          {/* Compare the current version against the previous one (read-only). */}
-          <Button
-            size="sm"
-            variant="outline"
-            className="ml-auto h-8 gap-2"
-            onClick={() => {
-              const others = versions.filter((v) => !v.isCurrent);
-              if (others.length > 0) openCompare(others[others.length - 1].id);
-            }}
-          >
-            <Columns2 className="h-4 w-4" />
-            Compare
-          </Button>
-          </div>
-          )}
-        </div>
-      )}
-
-      {/* Free structured-edit panel (no LLM, no charge). */}
-      {editMode && (
-        <div className="mb-6">
-          <StructuredEditor
-            resume={result.resumeData}
-            onApply={handleApplyEdit}
-            onCancel={() => setEditMode(false)}
-            onSaveAsVersion={currentJobId ? handleSaveAsVersion : undefined}
-            saving={savingVersion}
-          />
-        </div>
-      )}
+      <div className="mb-8">
+        <p className="mb-2 text-caption uppercase tracking-wider text-fog-deep">
+          Composed · {result.templateId}
+        </p>
+        <h1 className="text-2xl sm:text-3xl tracking-tight text-aubergine">
+          Your resume is ready.
+        </h1>
+      </div>
 
       {/* Version compare dialog (read-only, free). */}
       <Dialog open={compareOpen} onOpenChange={setCompareOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="font-brand inline-flex items-center gap-2">
+            <DialogTitle className="inline-flex items-center gap-2">
               <Columns2 className="h-5 w-5" />
               Compare versions
             </DialogTitle>
@@ -1330,11 +1179,11 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
           {/* Pick which other version to compare the current one against. */}
           {versions.length > 1 && (
             <div className="flex items-center gap-2">
-              <label className="proof-label !text-muted-foreground">Against</label>
+              <Label className="text-muted-foreground">Against</Label>
               <select
                 value={compareAgainst}
                 onChange={(e) => openCompare(e.target.value)}
-                className="rounded-lg border-2 border-black bg-white px-2 py-1 font-mono text-xs font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)] focus:outline-none"
+                className="rounded-2xl border border-ash bg-white px-3 py-2 text-sm transition-colors duration-200 focus:border-periwinkle focus:outline-none focus:ring-2 focus:ring-periwinkle/40"
               >
                 {versions
                   .filter((v) => !v.isCurrent)
@@ -1349,60 +1198,54 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
 
           {compareLoading ? (
             <div className="flex items-center justify-center py-10">
-              <Loader2 className="h-5 w-5 animate-spin" />
+              <Loader2 className="h-5 w-5 animate-spin text-periwinkle" />
             </div>
           ) : compareData ? (
             <div className="grid grid-cols-2 gap-4">
               {[compareData.b, compareData.a].map((d, idx) => (
-                <div
-                  key={d.id}
-                  className="rounded-xl border-2 border-black bg-white p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
-                >
-                  <p className="proof-label !text-muted-foreground mb-1">
+                <div key={d.id} className="rounded-2xl bg-bone p-4">
+                  <p className="mb-1 text-caption text-muted-foreground">
                     {idx === 1 ? 'Current' : 'Compared'}
                   </p>
-                  <p className="font-mono text-xs font-bold truncate" title={d.title}>
+                  <p className="truncate text-sm font-medium text-aubergine" title={d.title}>
                     {d.versionLabel || d.title}
                   </p>
-                  <p className="mt-3 font-brand text-3xl">
+                  <p className="mt-3 text-3xl font-light tracking-tight text-aubergine">
                     {typeof d.atsScore === 'number' ? d.atsScore : '—'}
                     <span className="ml-1 text-xs text-muted-foreground">ATS</span>
                   </p>
-                  <p className="mt-3 font-mono text-[11px] font-bold uppercase tracking-[0.1em] text-green-700">
+                  <p className="mt-3 text-xs font-medium text-mint-ink">
                     Matched ({d.matchedSkills.length})
                   </p>
-                  <p className="text-xs text-muted-foreground break-words">
+                  <p className="break-words text-xs text-muted-foreground">
                     {d.matchedSkills.join(', ') || '—'}
                   </p>
-                  <p className="mt-2 font-mono text-[11px] font-bold uppercase tracking-[0.1em] text-red-700">
+                  <p className="mt-2 text-xs font-medium text-rose-ink">
                     Missing ({d.missingSkills.length})
                   </p>
-                  <p className="text-xs text-muted-foreground break-words">
+                  <p className="break-words text-xs text-muted-foreground">
                     {d.missingSkills.join(', ') || '—'}
                   </p>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="py-6 text-center text-sm text-muted-foreground font-medium">
+            <p className="py-6 text-center text-sm text-muted-foreground">
               Could not load the comparison.
             </p>
           )}
         </DialogContent>
       </Dialog>
 
-      <div className="vitex-grid">
-        {/* Left (60%): PDF proof — Resume | Cover letter tabs, both rendering
-            through the same LivePdfPreview (replaces the old show/hide toggle). */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
+      <div className="grid gap-8 lg:grid-cols-[7fr_5fr]">
+        {/* Left: the PDF preview as the hero artifact — sticky on lg, minimal
+            chrome (LivePdfPreview already carries its own frame). */}
+        <FadeIn className="self-start lg:sticky lg:top-24">
           <Tabs
             value={previewTab}
             onValueChange={(v) => setPreviewTab(v as 'resume' | 'cover_letter')}
           >
-            <TabsList className="mb-1">
+            <TabsList className="mb-4">
               <TabsTrigger value="resume">
                 <FileText className="mr-2 h-4 w-4" />
                 Resume
@@ -1416,276 +1259,404 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
             </TabsList>
 
             <TabsContent value="resume">
-              <CropFrame className="rounded-xl border-2 border-black bg-white p-3 sm:p-4 shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)]">
-                <LivePdfPreview typstCode={typstCode} filename={filename} />
-              </CropFrame>
+              <LivePdfPreview typstCode={typstCode} filename={filename} />
             </TabsContent>
 
             {result.coverLetter && (
               <TabsContent value="cover_letter">
-                <CropFrame className="rounded-xl border-2 border-black bg-white p-3 sm:p-4 shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)]">
-                  {result.coverLetterTypst ? (
-                    <LivePdfPreview
-                      typstCode={result.coverLetterTypst}
-                      filename={`${filename}_cover_letter`}
-                    />
-                  ) : (
-                    <div className="whitespace-pre-wrap rounded-lg border-2 border-gray-200 bg-gray-50 p-3 sm:p-4 text-sm leading-relaxed text-gray-700">
-                      {result.coverLetter}
-                    </div>
-                  )}
-                </CropFrame>
+                {result.coverLetterTypst ? (
+                  <LivePdfPreview
+                    typstCode={result.coverLetterTypst}
+                    filename={`${filename}_cover_letter`}
+                  />
+                ) : (
+                  <div className="whitespace-pre-wrap rounded-3xl border border-ash bg-bone p-6 text-sm leading-relaxed text-foreground">
+                    {result.coverLetter}
+                  </div>
+                )}
               </TabsContent>
             )}
           </Tabs>
-        </motion.div>
+        </FadeIn>
 
-        {/* Right (40%): score, skills, actions */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="space-y-4 md:sticky md:top-24 md:self-start"
-        >
-          {/* ATS proof stamp */}
-          <div className="rounded-xl border-2 border-black bg-white p-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
-            <p className="proof-label mb-2">ATS Match Score</p>
-            <div className="flex items-baseline gap-1.5">
-              <span className={`font-mono text-5xl font-bold ${scoreTone(result.atsScore)}`}>
-                {pad2(result.atsScore)}
-              </span>
-              <span className="font-mono text-lg text-muted-foreground">/100</span>
-            </div>
-            <div className="mt-3 h-2.5 w-full overflow-hidden rounded border-2 border-black bg-gray-100">
-              <div
-                className={`h-full ${scoreBar(result.atsScore)}`}
-                style={{ width: `${Math.max(0, Math.min(100, result.atsScore))}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Parsed-data confirmation — a quick at-a-glance check that the AI
-              read the background correctly, nudging the free Edit fields path. */}
-          {(() => {
-            const r = result.resumeData;
-            const skillCount = (r.skills ?? []).reduce(
-              (n, s) => n + (s.keywords?.length ?? 0),
-              0
-            );
-            const stats = [
-              { label: 'Experience', value: (r.work ?? []).length },
-              { label: 'Education', value: (r.education ?? []).length },
-              { label: 'Projects', value: (r.projects ?? []).length },
-              { label: 'Skills', value: skillCount },
-            ];
-            return (
-              <div className="rounded-xl border-2 border-black bg-white p-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
-                <p className="proof-label mb-3">Parsed from your background</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {stats.map((s) => (
-                    <div
-                      key={s.label}
-                      className="rounded-lg border-2 border-black bg-gray-50 px-3 py-2"
-                    >
-                      <p className="font-mono text-2xl font-bold leading-none">{s.value}</p>
-                      <p className="proof-label !text-muted-foreground mt-1">{s.label}</p>
-                    </div>
-                  ))}
-                </div>
-                <p className="mt-3 text-xs text-muted-foreground font-medium">
-                  Something missing or off? Use{' '}
-                  <span className="font-semibold text-foreground">Edit fields</span> below to fix
-                  it — free, no credit.
-                </p>
+        {/* Right: one card, its sections separated by quiet Ash dividers, ordered
+            by importance (status/score → actions → refine → collapsed history/edit). */}
+        <FadeIn delay={0.06}>
+          <div className="rounded-3xl border border-ash bg-white">
+            {/* ATS score */}
+            <div className="p-6 sm:p-8">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-medium text-muted-foreground">ATS match score</p>
+                <Badge variant={scoreBadge(result.atsScore)}>{scoreLabel(result.atsScore)}</Badge>
               </div>
-            );
-          })()}
-
-          {/* Matched skills */}
-          {result.matchAnalysis.matchedSkills.length > 0 && (
-            <div className="rounded-xl border-2 border-black bg-white p-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
-              <p className="proof-label mb-3">Matched Skills</p>
-              <div className="flex flex-wrap gap-1.5">
-                {result.matchAnalysis.matchedSkills.slice(0, 8).map((skill) => (
-                  <span
-                    key={skill}
-                    className="rounded border-2 border-black bg-cyan-100 px-2 py-0.5 font-mono text-xs font-medium"
-                  >
-                    {skill}
-                  </span>
-                ))}
-                {result.matchAnalysis.matchedSkills.length > 8 && (
-                  <span className="rounded border-2 border-dashed border-gray-300 px-2 py-0.5 font-mono text-xs text-gray-500">
-                    +{result.matchAnalysis.matchedSkills.length - 8} more
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Actions */}
-          <div className="grid grid-cols-1 gap-2">
-            <Button
-              size="lg"
-              className="w-full border-2 border-black bg-purple-600 font-bold text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:bg-purple-700 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
-              onClick={handleDownloadPdf}
-            >
-              <Download className="mr-2 h-4 w-4" />
-              Download PDF
-            </Button>
-
-            {/* Secondary exports — the resume .typ/code and every cover-letter
-                export are consolidated into one Export menu so Download PDF stays
-                the single primary action. */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full border-2 border-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  Export
-                  <ChevronDown className="ml-2 h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Resume</DropdownMenuLabel>
-                <DropdownMenuItem onClick={handleDownloadTyp}>
-                  <FileCode className="mr-2 h-4 w-4" />
-                  Download .typ
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleCopy}>
-                  {copySuccess ? (
-                    <Check className="mr-2 h-4 w-4 text-green-600" />
-                  ) : (
-                    <Copy className="mr-2 h-4 w-4" />
-                  )}
-                  {copySuccess ? 'Copied!' : 'Copy code'}
-                </DropdownMenuItem>
-
-                {result.coverLetter && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuLabel>Cover letter</DropdownMenuLabel>
-                    <DropdownMenuItem
-                      onClick={handleDownloadCoverLetterPdf}
-                      disabled={!result.coverLetterTypst}
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      Download PDF
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={handleDownloadCoverLetterTyp}
-                      disabled={!result.coverLetterTypst}
-                    >
-                      <FileCode className="mr-2 h-4 w-4" />
-                      Download .typ
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={handleCopyCoverLetterCode}
-                      disabled={!result.coverLetterTypst}
-                    >
-                      {coverLetterCodeCopied ? (
-                        <Check className="mr-2 h-4 w-4 text-green-600" />
-                      ) : (
-                        <Copy className="mr-2 h-4 w-4" />
-                      )}
-                      {coverLetterCodeCopied ? 'Copied!' : 'Copy code'}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleCopyCoverLetter}>
-                      {coverLetterCopied ? (
-                        <Check className="mr-2 h-4 w-4 text-green-600" />
-                      ) : (
-                        <Copy className="mr-2 h-4 w-4" />
-                      )}
-                      {coverLetterCopied ? 'Copied!' : 'Copy text'}
-                    </DropdownMenuItem>
-                  </>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {/* Advanced edit — a demoted, unobtrusive disclosure. The primary edit
-                surface is the conversational Refine box below; these two power-user
-                surfaces (manual field editor + conversational AI editor) live here
-                so they stay available without competing for attention. Both are
-                free — no LLM billing. */}
-            <div className="rounded-lg border-2 border-black bg-white">
-              <button
-                type="button"
-                onClick={() => setAdvancedEditOpen((v) => !v)}
-                aria-expanded={advancedEditOpen}
-                className="flex w-full items-center justify-between rounded-lg px-3 py-2 font-mono text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground transition-colors hover:text-foreground"
-              >
-                <span className="inline-flex items-center gap-2">
-                  <SlidersHorizontal className="h-3.5 w-3.5" />
-                  Advanced edit
+              <div className="mt-3 flex items-baseline gap-1.5">
+                <span className="text-5xl font-light tracking-tight text-aubergine">
+                  {result.atsScore}
                 </span>
-                <ChevronDown
-                  className={`h-4 w-4 transition-transform duration-200 ${advancedEditOpen ? 'rotate-180' : ''}`}
+                <span className="text-lg text-muted-foreground">/100</span>
+              </div>
+              <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-bone">
+                <div
+                  className="h-full rounded-full bg-periwinkle"
+                  style={{ width: `${Math.max(0, Math.min(100, result.atsScore))}%` }}
                 />
-              </button>
+              </div>
+            </div>
 
-              {advancedEditOpen && (
-                <div className="grid grid-cols-1 gap-2 border-t-2 border-black p-2">
-                  {/* Free, client-side structured field editing — no LLM, no credit. */}
-                  <Button
-                    variant="outline"
-                    className="w-full border-2 border-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
-                    onClick={() => setEditMode((v) => !v)}
-                  >
-                    <Pencil className="mr-2 h-4 w-4" />
-                    {editMode ? 'Hide field editor' : 'Edit fields'}
-                    <span className="ml-2 rounded border border-black bg-green-100 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase">
-                      Free
-                    </span>
-                  </Button>
+            {/* Parsed-data confirmation — a quick at-a-glance check that the AI
+                read the background correctly, nudging the free Edit fields path. */}
+            {(() => {
+              const r = result.resumeData;
+              const skillCount = (r.skills ?? []).reduce(
+                (n, s) => n + (s.keywords?.length ?? 0),
+                0
+              );
+              const stats = [
+                { label: 'Experience', value: (r.work ?? []).length },
+                { label: 'Education', value: (r.education ?? []).length },
+                { label: 'Projects', value: (r.projects ?? []).length },
+                { label: 'Skills', value: skillCount },
+              ];
+              return (
+                <div className="border-t border-ash p-6 sm:p-8">
+                  <p className="mb-4 text-sm font-medium text-muted-foreground">
+                    Parsed from your background
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {stats.map((s) => (
+                      <div key={s.label} className="rounded-2xl bg-bone px-4 py-3">
+                        <p className="text-2xl font-light leading-none text-aubergine">{s.value}</p>
+                        <p className="mt-1 text-caption text-muted-foreground">{s.label}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="mt-4 text-xs text-muted-foreground">
+                    Something missing or off? Use{' '}
+                    <span className="font-medium text-aubergine">Edit fields</span> below to fix it —
+                    free, no credit.
+                  </p>
+                </div>
+              );
+            })()}
 
-                  {/* Conversational AI editing of THIS saved resume — free (no credit).
-                      Available whenever the result is persisted (currentJobId set). The
-                      assistant opens the PERSISTED resume, so any unsaved local field
-                      edits are persisted first (persist-before-navigate) rather than
-                      being silently dropped. */}
-                  {currentJobId && (
-                    <Button
-                      variant="outline"
-                      disabled={savingVersion}
-                      className="w-full border-2 border-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
-                      onClick={handleEditWithAI}
-                    >
-                      {savingVersion ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <Wand2 className="mr-2 h-4 w-4" />
-                      )}
-                      {savingVersion ? 'Saving edits…' : 'Edit with AI'}
-                      <span className="ml-2 rounded border border-black bg-green-100 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase">
-                        Free
-                      </span>
-                    </Button>
-                  )}
-
-                  {advancedEditError && (
-                    <p className="proof-label !text-red-700">{advancedEditError}</p>
+            {/* Matched skills */}
+            {result.matchAnalysis.matchedSkills.length > 0 && (
+              <div className="border-t border-ash p-6 sm:p-8">
+                <p className="mb-4 text-sm font-medium text-muted-foreground">Matched skills</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {result.matchAnalysis.matchedSkills.slice(0, 8).map((skill) => (
+                    <Badge key={skill} variant="success">
+                      {skill}
+                    </Badge>
+                  ))}
+                  {result.matchAnalysis.matchedSkills.length > 8 && (
+                    <Badge variant="default">
+                      +{result.matchAnalysis.matchedSkills.length - 8} more
+                    </Badge>
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="space-y-2 border-t border-ash p-6 sm:p-8">
+              <Button size="lg" className="w-full" onClick={handleDownloadPdf}>
+                <Download className="mr-2 h-4 w-4" />
+                Download PDF
+              </Button>
+
+              {/* Secondary exports — the resume .typ/code and every cover-letter
+                  export are consolidated into one Export menu so Download PDF stays
+                  the single primary action. */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-full">
+                    <Download className="mr-2 h-4 w-4" />
+                    Export
+                    <ChevronDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>Resume</DropdownMenuLabel>
+                  <DropdownMenuItem onClick={handleDownloadTyp}>
+                    <FileCode className="mr-2 h-4 w-4" />
+                    Download .typ
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleCopy}>
+                    {copySuccess ? (
+                      <Check className="mr-2 h-4 w-4 text-mint" />
+                    ) : (
+                      <Copy className="mr-2 h-4 w-4" />
+                    )}
+                    {copySuccess ? 'Copied!' : 'Copy code'}
+                  </DropdownMenuItem>
+
+                  {result.coverLetter && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuLabel>Cover letter</DropdownMenuLabel>
+                      <DropdownMenuItem
+                        onClick={handleDownloadCoverLetterPdf}
+                        disabled={!result.coverLetterTypst}
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        Download PDF
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={handleDownloadCoverLetterTyp}
+                        disabled={!result.coverLetterTypst}
+                      >
+                        <FileCode className="mr-2 h-4 w-4" />
+                        Download .typ
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={handleCopyCoverLetterCode}
+                        disabled={!result.coverLetterTypst}
+                      >
+                        {coverLetterCodeCopied ? (
+                          <Check className="mr-2 h-4 w-4 text-mint" />
+                        ) : (
+                          <Copy className="mr-2 h-4 w-4" />
+                        )}
+                        {coverLetterCodeCopied ? 'Copied!' : 'Copy code'}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleCopyCoverLetter}>
+                        {coverLetterCopied ? (
+                          <Check className="mr-2 h-4 w-4 text-mint" />
+                        ) : (
+                          <Copy className="mr-2 h-4 w-4" />
+                        )}
+                        {coverLetterCopied ? 'Copied!' : 'Copy text'}
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Save the background for reuse across future job descriptions. */}
+              {effBg.trim() && (
+                <Button variant="outline" className="w-full" onClick={openSaveProfile}>
+                  <BookmarkPlus className="mr-2 h-4 w-4" />
+                  Save as profile
+                </Button>
               )}
             </div>
 
-            {/* Save the background for reuse across future job descriptions. */}
-            {effBg.trim() && (
-              <Button
-                variant="outline"
-                className="w-full border-2 border-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
-                onClick={openSaveProfile}
-              >
-                <BookmarkPlus className="mr-2 h-4 w-4" />
-                Save as profile
-              </Button>
-            )}
+            {/* Refinement — the calm, primary edit surface. A single natural-language
+                box; the server infers scope from the feedback text. Free. */}
+            <div className="border-t border-ash p-6 sm:p-8">
+              <div className="mb-2 flex items-center gap-2">
+                <h3 className="text-base font-medium text-aubergine">Refine your resume</h3>
+                <Badge variant="success">Free</Badge>
+              </div>
+              <p className="mb-3 text-sm text-muted-foreground">
+                Describe what to change and the AI revises just what you ask — the resume, the
+                cover letter, or both — no credit, and your current version is kept (switch back
+                from History below).
+              </p>
+
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Input
+                  placeholder='e.g., "Focus on data skills" or "make the cover letter warmer"'
+                  value={refinementText}
+                  onChange={(e) => setRefinementText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleRefine();
+                  }}
+                  disabled={!currentJobId}
+                  className="flex-1"
+                />
+                <Button
+                  onClick={handleRefine}
+                  disabled={!refinementText.trim() || !currentJobId}
+                  className="w-full sm:w-auto"
+                >
+                  <Send className="mr-2 h-4 w-4" />
+                  Refine
+                </Button>
+              </div>
+              {!currentJobId && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Refinement will be available once this resume finishes saving.
+                </p>
+              )}
+            </div>
+
+            {/* Collapsed context: version history + the two power-user edit surfaces
+                (manual field editor + conversational AI editor). Kept out of the way
+                so the Refine box stays the primary control. All free — no billing. */}
+            <div className="border-t border-ash px-6 sm:px-8">
+              <Accordion type="multiple">
+                {versions.length > 1 && (
+                  <AccordionItem value="history">
+                    <AccordionTrigger>
+                      <span className="inline-flex items-center gap-2">
+                        <History className="h-4 w-4" />
+                        History ({versions.length})
+                      </span>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {versions.map((v) => {
+                          const labelText = v.versionLabel || `v${v.version}`;
+                          const ats = typeof v.atsScore === 'number' ? ` · ATS ${v.atsScore}` : '';
+                          if (v.isCurrent) {
+                            // Current version: editable label (rename) — free, no re-render.
+                            if (renaming) {
+                              return (
+                                <span key={v.id} className="inline-flex items-center gap-1">
+                                  <Input
+                                    value={renameValue}
+                                    onChange={(e) => setRenameValue(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') handleRenameVersion();
+                                      if (e.key === 'Escape') setRenaming(false);
+                                    }}
+                                    maxLength={120}
+                                    placeholder={`v${v.version}`}
+                                    aria-label="Version name"
+                                    className="h-9 w-44 text-xs"
+                                    autoFocus
+                                  />
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-9 w-9"
+                                    onClick={handleRenameVersion}
+                                    aria-label="Save name"
+                                  >
+                                    <Check className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-9 w-9"
+                                    onClick={() => setRenaming(false)}
+                                    aria-label="Cancel rename"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </span>
+                              );
+                            }
+                            return (
+                              <button
+                                key={v.id}
+                                onClick={() => {
+                                  setRenameValue(v.versionLabel ?? '');
+                                  setRenaming(true);
+                                }}
+                                className="inline-flex items-center gap-1 rounded-full bg-periwinkle/30 px-3 py-1 text-xs font-medium text-aubergine transition-colors hover:bg-periwinkle/40"
+                                title="Rename this version"
+                              >
+                                {labelText}
+                                {ats} · current
+                                <Pencil className="ml-1 h-3 w-3" />
+                              </button>
+                            );
+                          }
+                          return (
+                            <a
+                              key={v.id}
+                              href={`/editor?job=${v.id}`}
+                              className="rounded-full border border-ash px-3 py-1 text-xs font-medium text-aubergine transition-colors hover:bg-bone"
+                              title={v.title}
+                            >
+                              {labelText}
+                              {ats}
+                            </a>
+                          );
+                        })}
+                        {/* Compare the current version against the previous one (read-only). */}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="ml-auto"
+                          onClick={() => {
+                            const others = versions.filter((v) => !v.isCurrent);
+                            if (others.length > 0) openCompare(others[others.length - 1].id);
+                          }}
+                        >
+                          <Columns2 className="h-4 w-4" />
+                          Compare
+                        </Button>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
+
+                <AccordionItem value="advanced" className="border-b-0">
+                  <AccordionTrigger>
+                    <span className="inline-flex items-center gap-2">
+                      <SlidersHorizontal className="h-4 w-4" />
+                      Advanced edit
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-2">
+                      {/* Free, client-side structured field editing — no LLM, no credit. */}
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start"
+                        onClick={() => setEditMode((v) => !v)}
+                      >
+                        <Pencil className="mr-2 h-4 w-4" />
+                        {editMode ? 'Hide field editor' : 'Edit fields'}
+                        <Badge variant="success" className="ml-auto">
+                          Free
+                        </Badge>
+                      </Button>
+
+                      {/* Conversational AI editing of THIS saved resume — free (no credit).
+                          Available whenever the result is persisted (currentJobId set). The
+                          assistant opens the PERSISTED resume, so any unsaved local field
+                          edits are persisted first (persist-before-navigate) rather than
+                          being silently dropped. */}
+                      {currentJobId && (
+                        <Button
+                          variant="outline"
+                          disabled={savingVersion}
+                          className="w-full justify-start"
+                          onClick={handleEditWithAI}
+                        >
+                          {savingVersion ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : (
+                            <Wand2 className="mr-2 h-4 w-4" />
+                          )}
+                          {savingVersion ? 'Saving edits…' : 'Edit with AI'}
+                          <Badge variant="success" className="ml-auto">
+                            Free
+                          </Badge>
+                        </Button>
+                      )}
+
+                      {advancedEditError && (
+                        <p className="text-sm text-rose-ink">{advancedEditError}</p>
+                      )}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </div>
           </div>
-        </motion.div>
+        </FadeIn>
       </div>
+
+      {/* Free structured-edit panel (no LLM, no charge) — rendered full-width below
+          the grid so it has room and never nests inside the right-rail card. Toggled
+          from Advanced edit → Edit fields. */}
+      {editMode && (
+        <div className="mt-8">
+          <StructuredEditor
+            resume={result.resumeData}
+            onApply={handleApplyEdit}
+            onCancel={() => setEditMode(false)}
+            onSaveAsVersion={currentJobId ? handleSaveAsVersion : undefined}
+            saving={savingVersion}
+          />
+        </div>
+      )}
 
       {/* Save-as-profile dialog — persists the raw background for reuse. */}
       <Dialog open={saveProfileOpen} onOpenChange={setSaveProfileOpen}>
@@ -1698,9 +1669,7 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
-            <label htmlFor="profile-label" className="proof-label !text-foreground">
-              Profile name
-            </label>
+            <Label htmlFor="profile-label">Profile name</Label>
             <Input
               id="profile-label"
               placeholder="e.g., Senior Backend Engineer"
@@ -1709,27 +1678,23 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleSaveProfile();
               }}
-              className="border-2 border-black font-medium shadow-none focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] transition-all duration-200"
             />
-            <label htmlFor="profile-voice" className="proof-label !text-foreground">
-              Your writing sample — we&apos;ll match your voice
-            </label>
+            <Label htmlFor="profile-voice">Your writing sample — we&apos;ll match your voice</Label>
             <Textarea
               id="profile-voice"
               placeholder="Paste a paragraph you wrote (a past cover letter, a bio). Optional."
               value={saveProfileVoice}
               onChange={(e) => setSaveProfileVoice(e.target.value)}
-              className="min-h-[96px] rounded-lg border-2 border-black font-medium shadow-none focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] transition-all duration-200"
+              className="min-h-[96px]"
             />
             {saveProfileState === 'error' && (
-              <p className="proof-label !text-red-700">Could not save — please try again.</p>
+              <p className="text-sm text-rose-ink">Could not save — please try again.</p>
             )}
           </div>
           <DialogFooter>
             <Button
               onClick={handleSaveProfile}
               disabled={saveProfileState === 'saving' || saveProfileState === 'saved' || !effBg.trim()}
-              className="border-2 border-black bg-purple-600 font-bold text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:bg-purple-700 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
             >
               {saveProfileState === 'saving' ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -1743,51 +1708,6 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Refinement Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="mt-6 rounded-xl border-2 border-black bg-white p-4 sm:p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
-      >
-        <p className="proof-label mb-1">§ recompile</p>
-        <div className="mb-2 flex items-center gap-2 sm:mb-3">
-          <h3 className="text-base sm:text-lg font-black">Refine Your Resume</h3>
-          <span className="rounded border border-black bg-green-100 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase">
-            Free
-          </span>
-        </div>
-        <p className="text-xs sm:text-sm text-gray-500 mb-3">
-          Describe what to change and the AI revises just what you ask — the
-          resume, the cover letter, or both — no credit, and your current version
-          is kept (switch back from the version strip).
-        </p>
-
-        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-          <Input
-            placeholder='e.g., "Focus on data skills" or "make the cover letter warmer"'
-            value={refinementText}
-            onChange={(e) => setRefinementText(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') handleRefine(); }}
-            disabled={!currentJobId}
-            className="flex-1 border-2 border-black font-medium shadow-none focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] transition-all duration-200"
-          />
-          <Button
-            onClick={handleRefine}
-            disabled={!refinementText.trim() || !currentJobId}
-            className="w-full sm:w-auto border-2 border-black bg-purple-600 font-bold text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:bg-purple-700 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
-          >
-            <Send className="mr-2 h-4 w-4" />
-            Refine
-          </Button>
-        </div>
-        {!currentJobId && (
-          <p className="mt-2 text-xs text-muted-foreground">
-            Refinement will be available once this resume finishes saving.
-          </p>
-        )}
-      </motion.div>
     </main>
   );
 }

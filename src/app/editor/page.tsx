@@ -7,7 +7,7 @@ import { Navbar } from '@/components/shared/Navbar';
 import { Footer } from '@/components/shared/Footer';
 import { Button } from '@/components/ui/button';
 import { useElementScrollDirection } from '@/lib/hooks/useScrollDirection';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { AIEditorContent } from './AIEditorContent';
 
 /**
@@ -49,8 +49,8 @@ function AIEditorPageContent() {
   const hasInputs = inputs !== null && inputs.jd.trim() && inputs.bg.trim();
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#f0f0f0]">
-      <div ref={scrollContainerRef} className="flex-1 overflow-auto baseline-grid">
+    <div className="flex min-h-screen flex-col bg-background">
+      <div ref={scrollContainerRef} className="flex-1 overflow-auto">
         <Navbar
           currentPath="/editor"
           position="sticky"
@@ -60,26 +60,21 @@ function AIEditorPageContent() {
         {jobId ? (
           <AIEditorContent jobId={jobId} />
         ) : inputs === null ? (
-          <div className="container mx-auto px-4 pt-16 pb-20">
-            <div className="flex items-center justify-center py-20">
-              <div className="flex items-center gap-3 rounded-xl border-2 border-black bg-white px-6 py-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
-                <span className="proof-label">compile.log</span>
-                <p className="font-mono text-sm font-medium text-muted-foreground animate-pulse">
-                  loading editor…
-                </p>
-              </div>
+          <div className="mx-auto max-w-content px-4 sm:px-6 pt-16 pb-20">
+            <div className="flex flex-col items-center justify-center gap-3 py-24">
+              <Loader2 className="h-6 w-6 animate-spin text-periwinkle" />
+              <p className="text-sm text-muted-foreground">Loading editor…</p>
             </div>
           </div>
         ) : hasInputs ? (
           <AIEditorContent jd={inputs.jd} bg={inputs.bg} profileId={inputs.profileId} />
         ) : (
-          <main className="container mx-auto max-w-xl px-4 pt-12 md:pt-16 pb-20">
-            <div className="rounded-xl border-2 border-black bg-white p-6 sm:p-8 shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)]">
-              <p className="proof-label mb-3">ERR·NO_INPUT</p>
-              <h2 className="mb-3 text-xl sm:text-2xl font-black">
+          <main className="mx-auto max-w-xl px-4 sm:px-6 pt-12 md:pt-16 pb-20">
+            <div className="rounded-3xl border border-ash bg-white p-8 sm:p-10">
+              <h2 className="mb-3 text-xl sm:text-2xl tracking-tight text-aubergine">
                 No inputs found
               </h2>
-              <p className="mb-6 text-sm sm:text-base text-muted-foreground font-medium">
+              <p className="mb-6 text-sm sm:text-base text-muted-foreground">
                 We couldn&apos;t find the job description and background you submitted.
                 This can happen if you opened this page directly, refreshed in
                 private browsing mode, or the inputs were too large to store.
@@ -108,17 +103,13 @@ export default function AIEditorPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen flex-col bg-[#f0f0f0]">
-          <div className="flex-1 overflow-auto baseline-grid">
+        <div className="flex min-h-screen flex-col bg-background">
+          <div className="flex-1 overflow-auto">
             <Navbar currentPath="/editor" position="sticky" />
-            <div className="container mx-auto px-4 pt-16 pb-20">
-              <div className="flex items-center justify-center py-20">
-                <div className="flex items-center gap-3 rounded-xl border-2 border-black bg-white px-6 py-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
-                  <span className="proof-label">compile.log</span>
-                  <p className="font-mono text-sm font-medium text-muted-foreground animate-pulse">
-                    loading editor…
-                  </p>
-                </div>
+            <div className="mx-auto max-w-content px-4 sm:px-6 pt-16 pb-20">
+              <div className="flex flex-col items-center justify-center gap-3 py-24">
+                <Loader2 className="h-6 w-6 animate-spin text-periwinkle" />
+                <p className="text-sm text-muted-foreground">Loading editor…</p>
               </div>
             </div>
           </div>
