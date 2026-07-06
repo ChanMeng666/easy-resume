@@ -11,8 +11,8 @@ export default async function AssistantPage({ params }: { params: Promise<{ id: 
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen baseline-grid bg-[#f0f0f0] flex items-center justify-center">
-          <p className="font-mono text-sm font-medium text-muted-foreground animate-pulse">loading…</p>
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <p className="text-sm text-muted-foreground animate-pulse">Loading…</p>
         </div>
       }
     >
