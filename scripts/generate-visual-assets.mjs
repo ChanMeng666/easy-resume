@@ -78,10 +78,12 @@ const ASSETS = [
     size: '1024x1024',
     quality: 'medium',
     prompt:
-      'two rounded paper sheets being aligned and composed over one another on ' +
-      'a light bone background, one a pale lavender sheet, with a small ' +
-      'periwinkle four-point spark marking the alignment point. Same visual ' +
-      'weight and corner style as its sibling tiles.',
+      'two rounded paper sheets floating and aligning over one another on a ' +
+      'light bone background, one white with thin grey text bars and one pale ' +
+      'lavender, slightly rotated, with a small periwinkle four-point spark ' +
+      'at the overlap corner. Objects only, floating in space: absolutely no ' +
+      'hands, no people, no human figures, no body parts. Same visual weight ' +
+      'and corner style as its sibling tiles.',
   },
   {
     name: 'stepDownload',

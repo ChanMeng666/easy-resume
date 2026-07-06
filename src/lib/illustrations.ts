@@ -13,31 +13,31 @@
  */
 export const ILLUSTRATIONS = {
   hero: {
-    src: '/illustrations/hero-composition.svg',
+    src: '/illustrations/hero-composition.png',
     width: 1536,
     height: 640,
     alt: 'Overlapping resume sheets composed into a single typeset page.',
   },
   stepPaste: {
-    src: '/illustrations/step-paste.svg',
+    src: '/illustrations/step-paste.png',
     width: 640,
     height: 640,
     alt: 'A clipboard holding a pasted job description.',
   },
   stepCompose: {
-    src: '/illustrations/step-compose.svg',
+    src: '/illustrations/step-compose.png',
     width: 640,
     height: 640,
     alt: 'Two resume sheets being aligned and composed together.',
   },
   stepDownload: {
-    src: '/illustrations/step-download.svg',
+    src: '/illustrations/step-download.png',
     width: 640,
     height: 640,
     alt: 'A finished resume sheet with a download button.',
   },
   notFound: {
-    src: '/illustrations/not-found.svg',
+    src: '/illustrations/not-found.png',
     width: 640,
     height: 640,
     alt: 'A tilted empty sheet marking a page that could not be found.',
