@@ -1,0 +1,22 @@
+<svg width="640" height="640" viewBox="0 0 640 640" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true">
+  <!-- Step 3 — Download PDF. A finished sheet with a lavender download chip. -->
+  <rect width="640" height="640" fill="#f4f2f4"/>
+
+  <!-- Finished sheet. -->
+  <rect x="180" y="128" width="280" height="376" rx="24" fill="#fdfcfe" stroke="#e9e8ea" stroke-width="2"/>
+
+  <!-- Typeset content. -->
+  <rect x="216" y="176" width="120" height="14" rx="7" fill="#3c315b"/>
+  <rect x="216" y="204" width="72" height="9" rx="4.5" fill="#ab9ff2"/>
+  <rect x="216" y="234" width="208" height="8" rx="4" fill="#86848d"/>
+  <rect x="216" y="256" width="188" height="8" rx="4" fill="#86848d"/>
+  <rect x="216" y="290" width="88" height="9" rx="4.5" fill="#3c315b"/>
+  <rect x="216" y="314" width="208" height="8" rx="4" fill="#86848d"/>
+  <rect x="216" y="336" width="176" height="8" rx="4" fill="#86848d"/>
+
+  <!-- Lavender circular download chip, straddling the sheet's lower edge. -->
+  <circle cx="320" cy="486" r="46" fill="#e2dffe"/>
+  <path d="M320 464 V500" stroke="#3c315b" stroke-width="6" stroke-linecap="round"/>
+  <path d="M304 486 L320 502 L336 486" stroke="#3c315b" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <path d="M300 510 H340" stroke="#3c315b" stroke-width="6" stroke-linecap="round"/>
+</svg>

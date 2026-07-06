@@ -1,8 +1,10 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Navbar } from '@/components/shared/Navbar';
 import { Footer } from '@/components/shared/Footer';
 import { ArrowLeft } from 'lucide-react';
+import { ILLUSTRATIONS } from '@/lib/illustrations';
 
 /**
  * 404 page — a calm, centered "page not found" state on the Paper canvas.
@@ -13,6 +15,15 @@ export default function NotFound() {
       <Navbar />
       <main className="page-shell page-pad-b mx-auto flex flex-1 items-center justify-center px-4 text-center">
         <div className="w-full max-w-lg">
+          <div className="mx-auto mb-8 max-w-xs overflow-hidden rounded-3xl">
+            <Image
+              src={ILLUSTRATIONS.notFound.src}
+              width={ILLUSTRATIONS.notFound.width}
+              height={ILLUSTRATIONS.notFound.height}
+              alt={ILLUSTRATIONS.notFound.alt}
+              className="h-auto w-full"
+            />
+          </div>
           <p className="mb-4 text-caption uppercase tracking-wider text-fog-deep">Error 404</p>
           <h1 className="text-4xl sm:text-5xl font-light tracking-tight text-aubergine">
             Page not found.
