@@ -2,11 +2,11 @@
 
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { motion } from 'framer-motion';
 import { Navbar } from '@/components/shared/Navbar';
 import { Footer } from '@/components/shared/Footer';
+import { FadeIn } from '@/components/shared/FadeIn';
 import { Button } from '@/components/ui/button';
-import { CropFrame } from '@/components/shared/CropFrame';
+import { Badge } from '@/components/ui/badge';
 import { CheckCircle, Sparkles, Zap, Crown, Info } from 'lucide-react';
 
 const plans = [
@@ -16,7 +16,6 @@ const plans = [
     period: 'forever',
     description: 'AI resume generation to get you started',
     icon: Sparkles,
-    color: 'bg-gray-100',
     features: [
       'AI resume generation from a job description',
       '7 professional Typst templates',
@@ -35,7 +34,6 @@ const plans = [
     period: '/month',
     description: '20 builds a month for an active search',
     icon: Zap,
-    color: 'bg-purple-100',
     popular: true,
     features: [
       'Everything in Free',
@@ -56,7 +54,6 @@ const plans = [
     period: '/month',
     description: 'Unlimited everything for power users',
     icon: Crown,
-    color: 'bg-cyan-100',
     features: [
       'Everything in Pro',
       'Unlimited credits',
@@ -67,7 +64,7 @@ const plans = [
       'Priority support',
     ],
     cta: 'Go Unlimited',
-    ctaVariant: 'default' as const,
+    ctaVariant: 'secondary' as const,
     priceType: 'unlimited_monthly',
   },
 ];
@@ -86,7 +83,7 @@ const COMING_SOON_FEATURES = new Set<string>([
 ]);
 
 /**
- * Pricing page content with Neobrutalism design.
+ * Pricing page content with the Phantom design system.
  * Shows subscription tiers and credit pack purchases. Reads the
  * `?cancelled=true` query param Stripe appends when a user abandons checkout,
  * so it is wrapped in <Suspense> by the page export.
@@ -131,38 +128,36 @@ function PricingContent() {
   };
 
   return (
-    <div className="min-h-screen baseline-grid bg-[#f0f0f0]">
+    <div className="min-h-screen bg-background">
       <Navbar currentPath="/pricing" />
 
       <main className="page-shell page-pad-b container mx-auto px-4">
         {/* Hero */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center max-w-2xl mx-auto mb-16"
-        >
-          <p className="proof-label mb-3">§ Pricing — Pay per result</p>
-          <h1 className="text-4xl md:text-5xl font-brand mb-4">
+        <FadeIn className="text-center max-w-2xl mx-auto mb-16">
+          <p className="text-caption uppercase tracking-wider text-fog-deep mb-3">
+            Pricing — Pay per result
+          </p>
+          <h1 className="text-4xl md:text-5xl mb-4">
             Sell results, not tools.
           </h1>
-          <p className="text-lg text-muted-foreground font-medium">
+          <p className="text-lead text-muted-foreground">
             Free to build. You&apos;re only charged when a real PDF is composed —
             failed builds are free, and every resume downloads as editable{' '}
             <span className="font-mono">.typ</span> source, so there&apos;s zero
             lock-in.
           </p>
-        </motion.div>
+        </FadeIn>
 
         {cancelled && (
-          <div className="max-w-2xl mx-auto mb-8 flex items-start gap-3 bg-yellow-100 border-2 border-black rounded-xl p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
-            <Info className="h-5 w-5 flex-shrink-0 text-yellow-800 mt-0.5" />
-            <p className="flex-1 text-sm font-bold text-yellow-900">
+          <div className="max-w-2xl mx-auto mb-8 flex items-start gap-3 bg-buttercream text-[#6b5d13] rounded-2xl p-4">
+            <Info className="h-5 w-5 flex-shrink-0 mt-0.5" />
+            <p className="flex-1 text-sm">
               Checkout cancelled — no charge was made. You can pick a plan whenever
               you&apos;re ready.
             </p>
             <button
               onClick={() => setCancelled(false)}
-              className="text-yellow-900 font-black px-2"
+              className="px-2"
               aria-label="Dismiss"
             >
               ✕
@@ -171,44 +166,36 @@ function PricingContent() {
         )}
 
         {error && (
-          <div className="max-w-2xl mx-auto mb-8 bg-red-100 border-2 border-black rounded-xl p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] text-sm font-bold text-red-900">
+          <div className="max-w-2xl mx-auto mb-8 bg-blush text-rose-ink rounded-2xl p-4 text-sm">
             {error}
           </div>
         )}
 
         {/* Plans Grid */}
-        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto mb-20">
+        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto mb-24">
           {plans.map((plan, idx) => (
-            <motion.div
-              key={plan.name}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.1 }}
-            >
-              <CropFrame
-                className={`relative h-full bg-white rounded-xl p-6 border-2 border-black ${
-                  plan.popular
-                    ? 'shadow-[8px_8px_0px_0px_rgba(108,60,233,0.9)]'
-                    : 'shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]'
+            <FadeIn key={plan.name} delay={idx * 0.06} className="h-full">
+              <div
+                className={`relative h-full bg-white rounded-3xl p-8 md:p-12 border ${
+                  plan.popular ? 'border-periwinkle' : 'border-ash'
                 }`}
               >
                 {plan.popular && (
-                  <div className="absolute -top-3 right-4 px-3 py-1 bg-primary text-white font-mono text-[10px] font-bold uppercase tracking-[0.18em] rounded border-2 border-black">
-                    Most Popular
+                  <div className="absolute -top-3 right-6">
+                    <Badge variant="accent">Popular</Badge>
                   </div>
                 )}
 
-                <div className="inline-flex p-3 rounded-xl border-2 border-black bg-white mb-4">
-                  <plan.icon className="h-6 w-6 text-primary" />
+                <div className="inline-flex p-3 rounded-full bg-bone mb-4">
+                  <plan.icon className="h-6 w-6 text-periwinkle" />
                 </div>
 
-                <p className="proof-label mb-1">{`PLAN·${String(idx + 1).padStart(2, '0')}`}</p>
-                <h2 className="text-2xl font-black">{plan.name}</h2>
+                <h2 className="text-2xl">{plan.name}</h2>
                 <div className="flex items-baseline gap-1 mt-2 mb-2">
-                  <span className="font-brand text-4xl">{plan.price}</span>
-                  <span className="font-mono text-sm text-muted-foreground">{plan.period}</span>
+                  <span className="text-4xl font-light">{plan.price}</span>
+                  <span className="text-sm text-muted-foreground">{plan.period}</span>
                 </div>
-                <p className="text-sm text-muted-foreground font-medium mb-6">{plan.description}</p>
+                <p className="text-sm text-muted-foreground mb-6">{plan.description}</p>
 
                 <Button
                   variant={plan.ctaVariant}
@@ -226,44 +213,40 @@ function PricingContent() {
                       <li key={feature} className="flex items-start gap-2 text-sm">
                         <CheckCircle
                           className={`h-4 w-4 flex-shrink-0 mt-0.5 ${
-                            soon ? 'text-gray-300' : 'text-primary'
+                            soon ? 'text-fog' : 'text-periwinkle'
                           }`}
                         />
-                        <span className={`font-medium ${soon ? 'text-muted-foreground' : ''}`}>
+                        <span className={soon ? 'text-muted-foreground' : ''}>
                           {feature}
                           {soon && (
-                            <span className="ml-2 rounded border-2 border-black bg-gray-100 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.1em] align-middle">
+                            <Badge variant="default" className="ml-2 align-middle">
                               Coming soon
-                            </span>
+                            </Badge>
                           )}
                         </span>
                       </li>
                     );
                   })}
                 </ul>
-              </CropFrame>
-            </motion.div>
+              </div>
+            </FadeIn>
           ))}
         </div>
 
         {/* Credit Packs */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.2 }}
-          className="motion-reveal max-w-2xl mx-auto"
-        >
-          <p className="proof-label text-center mb-2">§ Top-up</p>
-          <h2 className="text-2xl font-black text-center mb-6">Need just a few credits?</h2>
+        <FadeIn className="max-w-2xl mx-auto mb-24">
+          <p className="text-caption uppercase tracking-wider text-fog-deep text-center mb-2">
+            Top-up
+          </p>
+          <h2 className="text-2xl text-center mb-6">Need just a few credits?</h2>
           <div className="flex justify-center gap-4">
             {creditPacks.map((pack) => (
-              <CropFrame
+              <div
                 key={pack.credits}
-                className="bg-white rounded-xl p-6 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] text-center"
+                className="bg-white rounded-3xl p-8 border border-ash text-center"
               >
-                <p className="proof-label mb-1">{`CR·${String(pack.credits).padStart(3, '0')}`}</p>
-                <p className="text-3xl font-black mb-1">{pack.credits} Credits</p>
-                <p className="font-brand text-xl text-purple-600 mb-4">{pack.price}</p>
+                <p className="text-3xl font-light mb-1">{pack.credits} Credits</p>
+                <p className="text-xl text-aubergine mb-4">{pack.price}</p>
                 <Button
                   variant="outline"
                   onClick={() => handlePurchase(pack.priceType)}
@@ -271,20 +254,17 @@ function PricingContent() {
                 >
                   {isLoading === pack.priceType ? 'Redirecting...' : 'Buy Now'}
                 </Button>
-              </CropFrame>
+              </div>
             ))}
           </div>
-        </motion.div>
+        </FadeIn>
 
         {/* Credit Usage Table */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.2 }}
-          className="motion-reveal max-w-2xl mx-auto mt-12 sm:mt-16"
-        >
-          <p className="proof-label text-center mb-2">§ Ledger</p>
-          <h2 className="text-xl sm:text-2xl font-black text-center mb-4 sm:mb-6">
+        <FadeIn className="max-w-2xl mx-auto">
+          <p className="text-caption uppercase tracking-wider text-fog-deep text-center mb-2">
+            Ledger
+          </p>
+          <h2 className="text-xl sm:text-2xl text-center mb-4 sm:mb-6">
             What credits get you
           </h2>
 
@@ -302,19 +282,19 @@ function PricingContent() {
             return (
               <>
                 {/* sm+ : table */}
-                <div className="hidden sm:block bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] overflow-hidden">
+                <div className="hidden sm:block bg-white rounded-3xl border border-ash overflow-hidden">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b-2 border-black bg-gray-50">
-                        <th className="text-left p-4 font-black text-sm">Action</th>
-                        <th className="text-center p-4 font-black text-sm">Credits</th>
+                      <tr className="border-b border-ash bg-bone">
+                        <th className="text-left p-4 font-medium text-sm">Action</th>
+                        <th className="text-center p-4 font-medium text-sm">Credits</th>
                       </tr>
                     </thead>
                     <tbody>
                       {rows.map((row) => (
-                        <tr key={row.action} className="border-b border-gray-100">
-                          <td className="p-4 text-sm font-medium">{row.action}</td>
-                          <td className="p-4 font-mono text-sm font-bold text-center">{row.credits}</td>
+                        <tr key={row.action} className="border-b border-ash last:border-b-0">
+                          <td className="p-4 text-sm">{row.action}</td>
+                          <td className="p-4 text-sm font-medium text-center">{row.credits}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -326,12 +306,12 @@ function PricingContent() {
                   {rows.map((row) => (
                     <div
                       key={row.action}
-                      className="bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] p-4 flex items-center justify-between gap-3"
+                      className="bg-white rounded-3xl border border-ash p-4 flex items-center justify-between gap-3"
                     >
-                      <span className="text-sm font-medium leading-snug">
+                      <span className="text-sm leading-snug">
                         {row.action}
                       </span>
-                      <span className="font-mono text-sm font-bold flex-shrink-0">
+                      <span className="text-sm font-medium flex-shrink-0">
                         {row.credits}
                       </span>
                     </div>
@@ -340,7 +320,7 @@ function PricingContent() {
               </>
             );
           })()}
-        </motion.div>
+        </FadeIn>
       </main>
 
       <Footer />
@@ -349,14 +329,14 @@ function PricingContent() {
 }
 
 /**
- * Pricing page with Neobrutalism design.
+ * Pricing page with the Phantom design system.
  * Shows subscription tiers and credit pack purchases.
  */
 export default function PricingPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen baseline-grid bg-[#f0f0f0]">
+        <div className="min-h-screen bg-background">
           <Navbar currentPath="/pricing" />
         </div>
       }
