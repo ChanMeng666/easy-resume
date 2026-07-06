@@ -58,7 +58,7 @@ Built with Next.js 15, React 19, TypeScript, and Vercel AI SDK.
 
 ## Introduction
 
-Vitex is an AI-powered resume generation platform that transforms a job description and your professional background into a polished, ATS-optimized resume PDF and cover letter. An 8-step AI pipeline handles everything from JD parsing and skill matching to server-side PDF compilation, with Typst compiling PDFs locally in under 100ms. It is **agent-ready**: every capability is reachable over an authenticated HTTP API (the web UI and the public v1 API share one pipeline core), and billing is **outcome-based** — you are charged only when a resume is successfully produced. The UI follows a bold Neobrutalism design system with hard shadows, thick borders, and high contrast.
+Vitex is an AI-powered resume generation platform that transforms a job description and your professional background into a polished, ATS-optimized resume PDF and cover letter. An 8-step AI pipeline handles everything from JD parsing and skill matching to server-side PDF compilation, with Typst compiling PDFs locally in under 100ms. It is **agent-ready**: every capability is reachable over an authenticated HTTP API (the web UI and the public v1 API share one pipeline core), and billing is **outcome-based** — you are charged only when a resume is successfully produced. The UI follows the **Phantom** design system: a soft, flat aubergine-and-lavender aesthetic with pill geometry, whisper-weight typography, and generous whitespace.
 
 Vitex is built for **a person plus their AI assistant** on a **"one core, N thin adapters"** design — "The API is the UI". Everything the web app does, an agent can do over the public v1 HTTP API, the published [`vitex-cli`](cli/README.md), or the hosted MCP connector. The guiding framing is **Career as Code**: your career facts are the source, each tailored PDF is a reproducible build artifact, the refinement chain is a series of commits, outcome billing means you pay per successful build, and the exported `.typ` source means zero lock-in. See [ADR 0003](docs/decisions/0003-adapter-strategy-and-hosted-mcp.md).
 
@@ -93,7 +93,7 @@ Vitex is built for **a person plus their AI assistant** on a **"one core, N thin
 | Framework | Next.js 15, React 19, TypeScript |
 | AI | Vercel AI SDK v6 + OpenAI GPT-4o |
 | Resume Rendering | Typst (local binary, <100ms compilation) |
-| Design System | Neobrutalism (Tailwind CSS + shadcn/ui) |
+| Design System | Phantom — soft, flat aubergine/lavender (Tailwind CSS + shadcn/ui) |
 | Database | Neon PostgreSQL + Drizzle ORM |
 | Auth | Neon Auth (Stack Auth) + API keys for agents |
 | Payments | Stripe (outcome-based credits) |

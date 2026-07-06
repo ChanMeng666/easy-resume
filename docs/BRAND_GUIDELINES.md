@@ -2,22 +2,28 @@
 
 > Official brand design system for Vitex - Your Career, Perfectly Composed
 
-**Version**: 2.0.0  
-**Last Updated**: December 2024  
+**Version**: 3.0.0  
+**Last Updated**: July 2026  
 **Status**: Active  
-**Design System**: Neobrutalism
+**Design System**: Phantom
+
+> **Implementation spec**: This document covers brand essence and design intent.
+> The authoritative, token-level implementation reference is
+> [`docs/DESIGN-SYSTEM.md`](./DESIGN-SYSTEM.md) — it is ground truth for exact
+> palette values, Tailwind names, named font sizes, and component recipes. Where
+> this document and the design system differ, the design system wins.
 
 ---
 
 ## Table of Contents
 
 1. [Brand Foundation](#1-brand-foundation)
-2. [Design System: Neobrutalism](#2-design-system-neobrutalism)
+2. [Design System: Phantom](#2-design-system-phantom)
 3. [Color System](#3-color-system)
 4. [Typography](#4-typography)
 5. [Logo Usage](#5-logo-usage)
 6. [UI Components](#6-ui-components)
-7. [Shadows & Borders](#7-shadows--borders)
+7. [Elevation & Geometry](#7-elevation--geometry)
 8. [Motion & Animation](#8-motion--animation)
 9. [Layout Patterns](#9-layout-patterns)
 10. [Brand Voice](#10-brand-voice)
@@ -51,7 +57,7 @@ To become the preferred professional resume tool for global tech talent.
 | **Simple** | Zero learning curve |
 | **Portable** | Zero lock-in — export editable `.typ` source anytime |
 | **Open** | Open source and transparent |
-| **Bold** | Distinctive, memorable design |
+| **Composed** | Calm, considered, quietly confident design |
 
 ### 1.6 Brand Taglines
 
@@ -61,676 +67,344 @@ To become the preferred professional resume tool for global tech talent.
 
 ---
 
-## 2. Design System: Neobrutalism
+## 2. Design System: Phantom
 
-### 2.1 What is Neobrutalism?
+### 2.1 What is Phantom?
 
-Neobrutalism (also known as Neo-brutalism) is a modern design aesthetic that combines the raw, honest approach of Brutalist architecture with contemporary digital design elements. It features:
+**Phantom** is a soft, monochromatic aubergine-and-lavender aesthetic: flat
+surfaces, pill geometry, whisper-weight typography, and generous whitespace. It
+replaces the former Neobrutalism system (thick black borders, hard offset
+shadows, `#f0f0f0`, `font-black`, Titan One, Vitex Purple/Cyan) and its
+"Typeset Proof" layer (crop marks, mono proof-labels, § section numbers)
+entirely. The world is quiet and confident rather than loud and tactile.
 
-- **Bold, thick borders** (typically black)
-- **Hard shadows** (solid color, no blur)
-- **High contrast** color combinations
-- **Playful yet professional** aesthetic
-- **Clear visual hierarchy**
+### 2.2 Why Phantom for Vitex?
 
-### 2.2 Why Neobrutalism for Vitex?
-
-1. **Distinctiveness**: Stands out from generic "AI-generated" aesthetics
-2. **Professionalism with personality**: Bold but not childish
-3. **Clear affordances**: Users immediately understand interactive elements
-4. **Memorable**: Creates strong brand recognition
-5. **Accessibility**: High contrast improves readability
+1. **Calm confidence**: A composed, editorial surface that lets the work speak
+2. **Distinctiveness**: A single-hue aubergine/lavender palette reads as its own brand, not generic "AI slop"
+3. **Legibility first**: Light type on airy layouts, high whitespace, restrained accents
+4. **Flat and honest**: No fake depth — separation comes from 1px borders, `bone` panels, and space
+5. **Accessibility**: Deliberate contrast rules (muted-text floor, dark-text-on-pastel) baked into the palette
 
 ### 2.3 Core Design Principles
 
 | Principle | Description |
 |-----------|-------------|
-| **Bold Borders** | All interactive elements have 2-3px black borders |
-| **Hard Shadows** | Solid shadows offset 4-8px, no blur |
-| **Light Background** | Soft gray (#f0f0f0) base with white cards |
-| **High Contrast** | Black borders against colorful fills |
-| **Playful Motion** | Subtle hover animations that feel tactile |
+| **Flat surfaces** | No shadows except a single lavender glow on the primary CTA |
+| **Pill geometry** | Buttons/nav/tags/badges are `rounded-full`; cards `rounded-3xl`; inputs `rounded-2xl` |
+| **Whisper-weight type** | Geist at 300/400/500 only — `font-medium` is the emphasis ceiling |
+| **Aubergine spine** | `#3c315b` for headings, nav, and dark sections; lavender/periwinkle accents |
+| **Generous whitespace** | When in doubt, add space rather than a border |
 | **No Dark Mode** | Single, cohesive light theme only |
 
 ### 2.4 Design Don'ts
 
-- ❌ Don't use soft shadows or blur
-- ❌ Don't use gradients for backgrounds (reserved for brand accents only)
-- ❌ Don't use thin borders (minimum 2px)
-- ❌ Don't use rounded shadows (shadows are always rectangular)
+- ❌ No black borders, no `border-2`+ for decoration, no hard offset shadows
+- ❌ No `shadow-sm/md/lg/xl` or arbitrary `shadow-[…]` — the only shadow is `shadow-glow`
+- ❌ No `font-black`/`font-bold` or any weight 600+; no Titan One / `.font-brand`
+- ❌ No `neo-*`, `proof-label`, `crop-frame`, `baseline-grid`, `vitex-grid` classes (deleted)
+- ❌ No `#6C3CE9` / `#00D4AA` (old brand colors) in UI code — logos are exempt (see §5)
+- ❌ No gradients, background patterns, photos, or decorative floating elements
+- ❌ No new colors outside the Phantom palette
 - ❌ Don't implement dark mode
-- ❌ Don't use generic "Inter" or system fonts for emphasis
 
 ---
 
 ## 3. Color System
 
-### 3.1 Background Colors
+Exact hex/Tailwind mappings live in [`docs/DESIGN-SYSTEM.md`](./DESIGN-SYSTEM.md#palette)
+and are defined in `src/app/globals.css` (`:root` raw palette + shadcn HSL layer)
+and `tailwind.config.ts` (literal color names). Summary:
 
-| Name | HEX | CSS Variable | Usage |
-|------|-----|--------------|-------|
-| **Neo Gray** | `#f0f0f0` | `--neo-bg` | Page background |
-| **White** | `#ffffff` | `--neo-white` | Card backgrounds |
-| **Black** | `#000000` | `--neo-black` | Borders, shadows |
+### 3.1 Core Palette
 
-### 3.2 Brand Colors
+| Name | HEX | Tailwind | Role |
+|------|-----|----------|------|
+| **Aubergine** | `#3c315b` | `aubergine` / `text-primary` | Brand spine: headings, nav, dark section bg |
+| **Ghost Lavender** | `#e2dffe` | `lavender` | Primary CTA fill (with `shadow-glow`) |
+| **Periwinkle** | `#ab9ff2` | `periwinkle` / `ring` | Secondary accent, focus rings, icon accents |
+| **Cornflower** | `#4a87f2` | `cornflower` | Rare high-energy `pop` button (marketing only) |
+| **Buttercream** | `#ffffc4` | `buttercream` | Pastel `cream` button / warning bg |
+| **Blush Mist** | `#ffdadc` | `blush` | Soft destructive bg / warm accent |
+| **Mint Signal** | `#2ec08b` | `mint` | Success fills/icons |
+| **Mint Ink** | `#157f5c` | `mint-ink` | Success TEXT on white (raw mint fails contrast) |
+| **Paper White** | `#fdfcfe` | `paper` / `bg-background` | Page canvas |
+| **Obsidian** | `#1c1c1c` | `obsidian` / `text-foreground` | Body text |
+| **Fog** | `#86848d` | `fog` | Muted text ≥20px only, decorative strokes |
+| **Fog Deep** | `#5f5d67` | `fog-deep` / `text-muted-foreground` | Small muted text (AA-safe) |
+| **Ash** | `#e9e8ea` | `ash` / `border` | 1px borders, secondary button bg |
+| **Bone** | `#f4f2f4` | `bone` / `bg-muted` | Light panels, hover fills, stat tiles |
+| **Rosewood** | `#b23a48` | `bg-destructive` | Solid destructive (final confirmations only) |
+| **Rose Ink** | `#9f2936` | `rose-ink` | Destructive text on Blush/white |
 
-| Name | HEX | CSS Variable | Usage |
-|------|-----|--------------|-------|
-| **Vitex Purple** | `#6C3CE9` | `--vitex-purple` | Primary buttons, CTAs |
-| **Vitex Purple Light** | `#8B5CF6` | `--vitex-purple-light` | Hover states |
-| **Vitex Purple Dark** | `#5521C9` | `--vitex-purple-dark` | Active states |
-| **Electric Cyan** | `#00D4AA` | `--vitex-cyan` | Accent, success states |
-| **Electric Cyan Light** | `#34E7C0` | `--vitex-cyan-light` | Accent hover |
+### 3.2 Semantic Recipes
 
-### 3.3 Semantic Colors
+- **Success**: `bg-mint/15 text-mint-ink`
+- **Warning**: `bg-buttercream text-[#6b5d13]`
+- **Destructive (soft)**: `bg-blush text-rose-ink`
+- **Destructive (solid)**: `bg-destructive text-destructive-foreground` — AlertDialog confirmations only
 
-| Name | HEX | Usage |
-|------|-----|-------|
-| **Success** | `#22C55E` (green-500) | Success badges, confirmations |
-| **Warning** | `#FACC15` (yellow-400) | Warning messages |
-| **Error** | `#EF4444` (red-500) | Error states, destructive |
-| **Info** | `#3B82F6` (blue-500) | Informational messages |
+### 3.3 Color Usage Rules
 
-### 3.4 Text Colors
-
-| Name | HEX | CSS Variable | Usage |
-|------|-----|--------------|-------|
-| **Primary** | `#1a1a1a` | `--text-primary` | Headlines, body text |
-| **Secondary** | `#525252` | `--text-secondary` | Secondary content |
-| **Muted** | `#737373` | `--text-muted` | Placeholders, hints |
-
-### 3.5 Text Gradient (Brand Only)
-
-```css
-/* Only for headlines and brand emphasis */
-.text-gradient-vitex {
-  background: linear-gradient(90deg, #6C3CE9 0%, #00D4AA 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-```
-
-### 3.6 Color Usage Rules
-
-1. **Primary actions** always use Vitex Purple with black border
-2. **Accent actions** use Electric Cyan for secondary CTAs
-3. **All interactive elements** have black borders
-4. **Text gradients** only on hero headlines, never body text
-5. **White backgrounds** for cards, gray for page background
-6. **No dark mode** - maintain single cohesive theme
+1. **One primary action per view** uses `<Button>` default (lavender + `shadow-glow`)
+2. **Aubergine** is the spine — headings, nav text, dark-section backgrounds
+3. **Accents are restrained** — periwinkle for focus/icons; cornflower/cream at most once per marketing page
+4. **No text gradients**, no brand-color gradients — flat fills only
+5. **Paper canvas** with `bone` panels and `ash` 1px borders for separation
+6. **No dark mode** — maintain the single cohesive light theme
 
 ---
 
 ## 4. Typography
 
-### 4.1 Font Hierarchy
+### 4.1 Type System
 
-Vitex uses a three-tier font hierarchy:
+Phantom uses a **single typeface** with a strict weight ceiling.
 
-| Tier | Font | CSS Variable | Tailwind Class | Usage |
-|------|------|--------------|----------------|-------|
-| **Brand/Display** | Titan One | `--font-titan-one` | `font-brand` | Hero headlines, CTA titles, brand name |
-| **Headlines** | System Stack | - | `font-black` | Section titles, card titles |
-| **Body** | System Stack | - | `font-medium` | Body text, descriptions |
-| **Code** | Geist Mono | `--font-geist-mono` | `font-mono` | Code, technical content |
+| Role | Font | Weight | Notes |
+|------|------|--------|-------|
+| **Display / Headings** | Geist | 300 | `text-display` (64px), `text-hero` (96px), `h1–h3` |
+| **Body** | Geist | 400 | Default; global `-0.025em` tracking |
+| **Emphasis** | Geist | 500 (`font-medium`) | The emphasis ceiling — never heavier |
+| **Code** | Geist Mono | 400 | `font-mono`, strictly for code snippets |
 
-### 4.2 Brand Font: Titan One
+- **Geist only** (`font-sans`). Titan One is gone; there is no `.font-brand`.
+- Weights are **300 / 400 / 500 only**. Never `font-bold`, `font-black`, or 600+.
+- **Tracking** is `-0.025em` everywhere (set globally on `body`; add
+  `tracking-tight` on manually built headings).
+- Display type (≥64px) collapses line-height to 1.0–1.1.
 
-**Titan One** is our brand display font - a bold, playful typeface that perfectly complements the Neobrutalism design system.
+### 4.2 Named Sizes
 
-```css
-/* Loaded via Next.js Google Fonts */
-font-family: 'Titan One', sans-serif;
-letter-spacing: 0.05em; /* Applied automatically via .font-brand class */
-```
+Defined in `tailwind.config.ts` (`fontSize`):
 
-**Design Note:** Titan One has chunky letterforms that can appear crowded at default spacing. The `.font-brand` class automatically applies `letter-spacing: 0.05em` (tracking-wider) for optimal readability.
+| Name | Size | Line-height | Usage |
+|------|------|-------------|-------|
+| `text-caption` | 13px | 1.35 | Eyebrows, captions, metadata |
+| `text-body-sm` | 15px | 1.4 | Dense body copy |
+| `text-lead` | 20px | 1.35 | Lead paragraphs |
+| `text-display` | 64px | 1.1 | Section display headings |
+| `text-hero` | 96px | 1.0 | Hero headline |
 
-**Usage Guidelines:**
-- Use for Hero section main headlines (H1)
-- Use for CTA section titles
-- Use for brand name displays ("Vitex")
-- **Never use for body text** - reserved for high-impact moments only
+Standard Tailwind sizes fill the gaps.
 
-```tsx
-// Brand headline with gradient
-<h1 className="font-brand text-5xl">Your Headline Here</h1>
+### 4.3 Eyebrow / Label Treatment
 
-// Brand text with gradient effect
-<span className="text-gradient-vitex-brand text-4xl">Vitex</span>
-```
+There is **no** mono-uppercase label device (the old `.proof-label` is deleted).
+When an eyebrow is genuinely needed, use it sparingly:
 
-### 4.3 System Font Stack
+- On dark: `text-caption uppercase tracking-wider text-periwinkle`
+- On light: `text-caption uppercase tracking-wider text-fog-deep`
 
-```css
-/* System font stack - clean and fast */
-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 
-             'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
-```
+### 4.4 Typography Rules
 
-### 4.4 Font Weights in Neobrutalism
-
-| Weight | Name | CSS Class | Usage |
-|--------|------|-----------|-------|
-| 400 | Regular (Titan One) | `font-brand` | Brand headlines, Hero titles |
-| 900 | Black | `font-black` | Section headlines, card titles |
-| 700 | Bold | `font-bold` | Buttons, labels, emphasis |
-| 500 | Medium | `font-medium` | Body text, descriptions |
-| 400 | Regular | `font-normal` | Code, long-form content |
-
-### 4.5 Type Scale
-
-| Element | Size | Font | Tailwind Classes |
-|---------|------|------|------------------|
-| H1 (Hero) | 48-72px | Titan One | `text-5xl sm:text-6xl lg:text-7xl font-brand` |
-| H1 (CTA) | 30-36px | Titan One | `text-3xl md:text-4xl font-brand` |
-| H2 (Section) | 30-36px | System Black | `text-3xl md:text-4xl font-black` |
-| H3 (Card) | 20-24px | System Black | `text-xl sm:text-2xl font-black` |
-| Body | 16px | System Medium | `text-base font-medium` |
-| Small | 14px | System Medium | `text-sm font-medium` |
-| Caption | 12px | System Bold | `text-xs font-bold uppercase` |
-
-### 4.6 Typography Rules
-
-1. **Hero headlines** use `font-brand` (Titan One)
-2. **CTA section titles** use `font-brand` (Titan One)
-3. **Section headlines** use `font-black` (weight 900)
-4. **Buttons and labels** use `font-bold` (weight 700)
-5. **Body text** uses `font-medium` (weight 500)
-6. **Tight letter spacing** for headlines (`tracking-tight`)
-7. **Uppercase** for tags and small badges
-
-### 4.7 Brand Text Gradient
-
-Combine Titan One with the brand gradient for maximum visual impact:
-
-```css
-/* Brand font with gradient effect */
-.text-gradient-vitex-brand {
-  font-family: var(--font-titan-one), sans-serif;
-  background: linear-gradient(90deg, #6C3CE9 0%, #00D4AA 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-```
-
-Use this class for:
-- Featured hero text with emphasis
-- Brand name displays in marketing sections
-- Key phrases that need maximum attention
+1. **Headings** are light-weight (300), aubergine, with balanced wrapping (`h1–h3` are pre-styled in `globals.css`)
+2. **Body text** is Geist 400; emphasis tops out at `font-medium` (500)
+3. **Tight tracking** (`-0.025em`) is global — reinforce with `tracking-tight` on custom headings
+4. **Code** uses Geist Mono, reserved for code snippets only
+5. Muted text follows the accessibility floor in §3 / §11
 
 ---
 
 ## 5. Logo Usage
 
-### 5.1 Logo in Neobrutalism Context
+### 5.1 Logo Presentation
 
-The Vitex logo should be displayed within a card container:
+The Vitex logo sits on a flat surface — no bordered card, no hard shadow. Present
+it directly on `paper` or `bone`, or inside a plain `rounded-2xl` container when a
+container is needed:
 
 ```html
-<div class="p-2 bg-white rounded-lg border-2 border-black 
-            shadow-[3px_3px_0px_0px_rgba(0,0,0,0.9)]">
-  <img src="/vitex.svg" alt="Vitex" width="28" height="28" />
-</div>
+<img src="/vitex.svg" alt="Vitex" width="28" height="28" />
 ```
 
 ### 5.2 Logo Placement
 
 | Context | Treatment |
 |---------|-----------|
-| Navbar | Logo in bordered card container |
-| Footer | Logo with larger padding and shadow |
-| Favicon | Standard usage without container |
+| Navbar | Logo mark + wordmark, flat, no container |
+| Footer | Logo mark on the dark aubergine section |
+| Favicon | Standard mark, no container |
 
 ### 5.3 Logo Wordmark
 
-When displayed as text:
+When displayed as text, use the light Phantom weight:
 
 ```html
-<span class="text-xl font-black">Vitex</span>
+<span class="text-xl font-medium tracking-tight text-aubergine">Vitex</span>
 ```
 
-Or with gradient:
+### 5.4 Legacy logo colors (known exception)
 
-```html
-<span class="text-3xl font-black text-gradient-vitex">Vitex</span>
-```
+> **Honest note:** the logo SVG files in `public/logo/` (and `public/vitex.svg`)
+> still carry the **legacy Vitex Purple `#6C3CE9`** brand mark. Phantom bans
+> `#6C3CE9` / `#00D4AA` in UI code, but the logo assets are **explicitly exempt**
+> until they are redrawn to the Phantom palette. Do not "fix" the logo colors in
+> passing — that is a separate, deliberate asset task.
 
 ---
 
 ## 6. UI Components
 
-### 6.1 Buttons
+Component recipes are enumerated in
+[`docs/DESIGN-SYSTEM.md`](./DESIGN-SYSTEM.md#components-cheat-sheet). All primitives
+live in `src/components/ui/` (shadcn/ui, restyled for Phantom).
 
-#### Primary Button
-```css
-.btn-primary {
-  background-color: #6C3CE9;
-  color: white;
-  border: 2px solid black;
-  border-radius: 0.5rem; /* rounded-lg */
-  padding: 0.625rem 1.25rem; /* h-10 px-5 */
-  font-weight: 700;
-  box-shadow: 4px 4px 0px 0px rgba(0,0,0,0.9);
-  transition: all 0.2s ease;
-}
+### 6.1 Buttons (`src/components/ui/button.tsx`)
 
-.btn-primary:hover {
-  box-shadow: 6px 6px 0px 0px rgba(0,0,0,0.9);
-  transform: translate(-2px, -2px);
-}
+Pill geometry (`rounded-full`), `font-medium tracking-tight`, **color-only** hover
+transitions. The only elevation is `shadow-glow` on the default variant.
 
-.btn-primary:active {
-  box-shadow: 2px 2px 0px 0px rgba(0,0,0,0.9);
-  transform: translate(2px, 2px);
-}
-```
+| Variant | Fill | Text | Use |
+|---------|------|------|-----|
+| `default` | `lavender` + `shadow-glow` | aubergine | Primary action (one per view) |
+| `secondary` | `ash` | obsidian | Secondary action |
+| `outline` | `paper` + `border-ash` | aubergine | Secondary / quiet action |
+| `ghost` | transparent (hover `bone`) | aubergine | Inline / quiet action |
+| `link` | none | aubergine | Text link |
+| `destructive` | `blush` (soft) | `rose-ink` | Delete / remove |
+| `accent` | `periwinkle` | aubergine | Marketing accent (max 1/page) |
+| `pop` | `cornflower` | white | Rare marketing CTA (`size="lg"` only) |
+| `cream` | `buttercream` | obsidian | Rare marketing accent |
 
-#### Outline Button
-```css
-.btn-outline {
-  background-color: white;
-  color: #1a1a1a;
-  border: 2px solid black;
-  border-radius: 0.5rem;
-  box-shadow: 4px 4px 0px 0px rgba(0,0,0,0.9);
-  /* Same hover/active as primary */
-}
-```
-
-#### Ghost Button
-```css
-.btn-ghost {
-  background-color: transparent;
-  border: 2px solid transparent;
-  box-shadow: none;
-}
-
-.btn-ghost:hover {
-  background-color: #f3f4f6;
-  border-color: black;
-  box-shadow: 2px 2px 0px 0px rgba(0,0,0,0.9);
-}
-```
-
-#### Button Sizes
-
-| Size | Height | Padding | Border Radius |
-|------|--------|---------|---------------|
-| sm | 32px | 16px horizontal | 6px |
-| default | 40px | 20px horizontal | 8px |
-| lg | 48px | 32px horizontal | 12px |
+Sizes: `sm` (h-9), `default` (h-10), `lg` (h-12), `icon` (h-10 w-10).
 
 ### 6.2 Cards
 
-```css
-.card {
-  background-color: white;
-  border: 2px solid black;
-  border-radius: 0.75rem; /* rounded-xl */
-  box-shadow: 4px 4px 0px 0px rgba(0,0,0,0.9);
-  transition: all 0.2s ease;
-}
+White fill, `border border-ash` (1px), `rounded-3xl` (24px), generous padding
+(`p-8` app / `p-12` marketing). **No shadow.** Panels on paper may instead use
+`bg-bone` with no border. Separation comes from the border, the bone fill, and
+whitespace — never from elevation.
 
-.card:hover {
-  box-shadow: 6px 6px 0px 0px rgba(0,0,0,0.9);
-  transform: translate(-2px, -2px);
-}
-```
+### 6.3 Inputs & Textareas
 
-### 6.3 Inputs
+`rounded-2xl` (16px), `border border-ash`, periwinkle focus ring (`focus-visible:ring-ring`).
+No shadow. Menus/popovers also use `rounded-2xl`.
 
-```css
-.input {
-  background-color: white;
-  border: 2px solid black;
-  border-radius: 0.5rem;
-  padding: 0.5rem 1rem;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
+### 6.4 Badges / Chips
 
-.input:focus {
-  outline: none;
-  box-shadow: 4px 4px 0px 0px rgba(0,0,0,0.9);
-  transform: translate(-2px, -2px);
-}
-```
-
-### 6.4 Badges
-
-```css
-.badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.25rem 0.75rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  border: 2px solid black;
-  border-radius: 0.5rem;
-  box-shadow: 2px 2px 0px 0px rgba(0,0,0,0.9);
-}
-
-/* Variants */
-.badge-primary { background-color: #6C3CE9; color: white; }
-.badge-accent { background-color: #00D4AA; color: white; }
-.badge-warning { background-color: #FACC15; color: black; }
-.badge-success { background-color: #22C55E; color: white; }
-```
+Pill (`rounded-full`), 1px border, no shadow. Variants: `success` (`bg-mint/15
+text-mint-ink`), `warning` (`bg-buttercream`), `destructive` (`bg-blush
+text-rose-ink`), `accent` (periwinkle), `default` (bone).
 
 ### 6.5 Tabs
 
-```css
-.tabs-list {
-  background-color: white;
-  border: 2px solid black;
-  border-radius: 0.75rem;
-  padding: 0.375rem;
-  box-shadow: 4px 4px 0px 0px rgba(0,0,0,0.9);
-}
+Bone pill track (`rounded-full`), white active pill. No borders/shadows on the
+track — the active pill is distinguished by fill only.
 
-.tab-trigger {
-  padding: 0.5rem 1rem;
-  font-weight: 700;
-  border-radius: 0.5rem;
-  transition: all 0.2s ease;
-}
+### 6.6 Dialogs / Accordions
 
-.tab-trigger[data-state="active"] {
-  background-color: #6C3CE9;
-  color: white;
-  border: 2px solid black;
-  box-shadow: 2px 2px 0px 0px rgba(0,0,0,0.9);
-}
-```
-
-### 6.6 Dialogs
-
-```css
-.dialog-overlay {
-  background-color: rgba(0, 0, 0, 0.6);
-}
-
-.dialog-content {
-  background-color: white;
-  border: 2px solid black;
-  border-radius: 0.75rem;
-  box-shadow: 8px 8px 0px 0px rgba(0,0,0,0.9);
-  padding: 1.5rem;
-}
-
-.dialog-close-button {
-  width: 32px;
-  height: 32px;
-  border: 2px solid black;
-  border-radius: 0.5rem;
-  background-color: white;
-  box-shadow: 2px 2px 0px 0px rgba(0,0,0,0.9);
-}
-```
-
-### 6.7 Dropdown Menus
-
-```css
-.dropdown-content {
-  background-color: white;
-  border: 2px solid black;
-  border-radius: 0.75rem;
-  padding: 0.5rem;
-  box-shadow: 4px 4px 0px 0px rgba(0,0,0,0.9);
-}
-
-.dropdown-item {
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.5rem;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.dropdown-item:hover {
-  background-color: #f3f4f6;
-}
-
-.dropdown-separator {
-  height: 2px;
-  background-color: black;
-  margin: 0.25rem 0;
-}
-```
+Dialogs: `rounded-3xl`, `border border-ash`, no offset shadow (a soft scrim
+overlay is fine). Accordions: `ash` 1px dividers, no shadow.
 
 ---
 
-## 7. Shadows & Borders
+## 7. Elevation & Geometry
 
-### 7.1 Shadow Scale
+### 7.1 Elevation — FLAT
 
-| Name | CSS Value | Tailwind | Usage |
-|------|-----------|----------|-------|
-| **sm** | `2px 2px 0px 0px rgba(0,0,0,0.9)` | `shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]` | Small elements, badges |
-| **default** | `4px 4px 0px 0px rgba(0,0,0,0.9)` | `shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]` | Cards, buttons, inputs |
-| **lg** | `6px 6px 0px 0px rgba(0,0,0,0.9)` | `shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)]` | Hover states |
-| **xl** | `8px 8px 0px 0px rgba(0,0,0,0.9)` | `shadow-[8px_8px_0px_0px_rgba(0,0,0,0.9)]` | Dialogs, hero elements |
-
-### 7.2 CSS Variables for Shadows
+- The **only** shadow in the system is `shadow-glow` (`0 0 4px #e2dffe`), reserved
+  for the primary lavender CTA. Never use `shadow-sm/md/lg/xl` or arbitrary
+  `shadow-[…]`.
+- Cards separate via `border border-ash` (1px) + generous padding. Panels on
+  paper may instead use `bg-bone` with no border.
+- No gradients, background patterns, photos, or decorative floating elements.
 
 ```css
-:root {
-  --neo-shadow-sm: 2px 2px 0px 0px rgba(0,0,0,0.9);
-  --neo-shadow: 4px 4px 0px 0px rgba(0,0,0,0.9);
-  --neo-shadow-lg: 6px 6px 0px 0px rgba(0,0,0,0.9);
-  --neo-shadow-xl: 8px 8px 0px 0px rgba(0,0,0,0.9);
+/* tailwind.config.ts */
+boxShadow: {
+  glow: '0 0 4px #e2dffe',   /* the ONLY shadow — primary CTA only */
 }
 ```
 
-### 7.3 Border Standards
+### 7.2 Geometry / Radius
 
-| Element | Border Width | Color |
-|---------|--------------|-------|
-| Cards | 2px | black |
-| Buttons | 2px | black |
-| Inputs | 2px | black |
-| Dialogs | 2px | black |
-| Tags/Badges | 2px | black |
-| Dividers | 2px | black |
+| Element | Radius | Tailwind |
+|---------|--------|----------|
+| Buttons, nav container, tags, badges, chips | pill | `rounded-full` |
+| Cards, panels, dialogs | 24px | `rounded-3xl` |
+| Inputs, textareas, menus | 16px | `rounded-2xl` |
 
-### 7.4 Border Radius Scale
+**Radius floor**: nothing below 16px on small elements, 24px on cards.
 
-| Name | Value | Tailwind | Usage |
-|------|-------|----------|-------|
-| **sm** | 4px | `rounded` | Tags |
-| **md** | 6px | `rounded-md` | Small buttons |
-| **lg** | 8px | `rounded-lg` | Buttons, inputs |
-| **xl** | 12px | `rounded-xl` | Cards, dialogs |
-| **2xl** | 16px | `rounded-2xl` | Hero sections |
+### 7.3 Borders
+
+- 1px only, `border-ash` (`#e9e8ea`). No black borders, no `border-2`+ for decoration.
+- Dark sections use `border-white/10` for code blocks and dividers.
 
 ---
 
 ## 8. Motion & Animation
 
-### 8.1 Hover Behavior Pattern
+### 8.1 One Motion Pattern: `<FadeIn>`
 
-All interactive cards follow this pattern:
-
-```css
-.interactive-card {
-  transition: all 0.2s ease;
-}
-
-.interactive-card:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 6px 6px 0px 0px rgba(0,0,0,0.9);
-}
-```
-
-### 8.2 Button Click Pattern
-
-```css
-.button:active {
-  transform: translate(2px, 2px);
-  box-shadow: 2px 2px 0px 0px rgba(0,0,0,0.9);
-}
-```
-
-### 8.3 Framer Motion Usage
-
-Use framer-motion for:
-- Page load animations (`initial`, `animate`)
-- Scroll-triggered reveals (`whileInView`)
-- Staggered list animations
-
-**Do NOT use framer-motion for:**
-- Hover shadows (use CSS instead to respect border-radius)
-- Random values that cause hydration mismatches
+The single sanctioned motion pattern is `<FadeIn>`
+(`src/components/shared/FadeIn.tsx`): a fade + 8px upward rise, 0.4s, played
+**once** when the element scrolls into view. Optional `delay` staggers siblings
+(≤0.06s steps, max ~4 staggered siblings per section).
 
 ```tsx
-// Good: CSS hover + framer-motion for entrance
-<motion.div
-  initial={{ opacity: 0, y: 20 }}
-  animate={{ opacity: 1, y: 0 }}
-  className="hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] 
-             hover:translate-x-[-2px] hover:translate-y-[-2px]
-             transition-all duration-200"
->
-  {/* content */}
-</motion.div>
-
-// Bad: framer-motion whileHover with boxShadow
-<motion.div
-  whileHover={{ boxShadow: "8px 8px 0px 0px rgba(0,0,0,0.9)" }}
->
-  {/* Shadow will be square, not rounded! */}
-</motion.div>
+<FadeIn delay={0.06}>
+  {/* content — fades + drifts up once on scroll into view */}
+</FadeIn>
 ```
 
-### 8.4 Custom Animations
+### 8.2 Motion Don'ts
 
-```css
-/* Bounce animation for floating elements */
-@keyframes neo-bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
-}
+- ❌ No `whileHover` scale/rotate/boxShadow
+- ❌ No springs, no infinite loops, no page transitions
+- ❌ No hard-shadow hover animations (the old Neobrutalism translate-and-shadow pattern is gone)
+- **Hover feedback is color change only**, built into the components.
 
-/* Pulse animation for attention */
-@keyframes neo-pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-}
+### 8.3 Reduced Motion
 
-/* Wiggle animation for playful elements */
-@keyframes neo-wiggle {
-  0%, 100% { transform: rotate(0deg); }
-  25% { transform: rotate(-3deg); }
-  75% { transform: rotate(3deg); }
-}
-```
+`prefers-reduced-motion` is respected globally — animation and transition are
+reduced to near-zero.
 
-### 8.5 Timing
+### 8.4 Focus
 
-| Type | Duration | Easing | Usage |
-|------|----------|--------|-------|
-| Instant | 100ms | ease | Micro-interactions |
-| Fast | 200ms | ease | Hover states, button clicks |
-| Normal | 300ms | ease-out | Page transitions |
-| Slow | 500ms | ease-in-out | Complex animations |
+Keyboard focus shows a **periwinkle ring** (`focus-visible:ring-ring`), applied
+globally via `:focus-visible`.
 
 ---
 
 ## 9. Layout Patterns
 
-### 9.1 Page Background
+Exact spacing values live in
+[`docs/DESIGN-SYSTEM.md`](./DESIGN-SYSTEM.md#layout--spacing). Summary:
 
-```css
-.page {
-  background-color: #f0f0f0;
-  min-height: 100vh;
-}
-```
+### 9.1 Page Shell
 
-### 9.2 Background Patterns
+- Page canvas is `paper` (`#fdfcfe`).
+- **`.page-shell`** clears the fixed floating nav (plus a deliberate gap). Use it
+  on every route instead of bare top padding. Pair with **`.page-pad-b`** for
+  bottom spacing.
 
-#### Grid Pattern
-```css
-.neo-grid-bg {
-  background-image: 
-    linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px);
-  background-size: 20px 20px;
-}
-```
+### 9.2 Container & Rhythm
 
-#### Dots Pattern
-```css
-.neo-dots-bg {
-  background-image: radial-gradient(rgba(0,0,0,0.1) 1px, transparent 1px);
-  background-size: 16px 16px;
-}
-```
+- Page container: `max-w-content` (1200px / `75rem`) + `px-4 sm:px-6`, centered.
+- Section rhythm: **`.section-y`** or `py-16 md:py-24`; ~64px (`space-y-16`)
+  between major blocks.
+- Card padding: `p-8` on app surfaces, `p-12` on marketing surfaces. Grid gaps
+  `gap-6`–`gap-8`.
+- Density is comfortable — prefer whitespace over borders.
 
-### 9.3 Section Containers
+### 9.3 Dark Sections
 
-```css
-/* White section with border */
-.section-white {
-  background-color: white;
-  border-top: 2px solid black;
-  border-bottom: 2px solid black;
-}
+**`.section-dark`** (aubergine bg, paper text) is allowed in **exactly two
+places**: the homepage CLI/MCP band and the Footer. All tool/app pages stay
+light. On dark: links `text-white/70 hover:text-white`, section labels
+`text-periwinkle`, code blocks `rounded-3xl border border-white/10 bg-white/5`.
 
-/* Gray section (default) */
-.section-gray {
-  background-color: #f0f0f0;
-}
-```
+### 9.4 Navbar
 
-### 9.4 Card Grid Layouts
+A fixed, floating pill-style nav on `paper`; aubergine text; no bottom border
+slab and no hard shadow. `.page-shell` reserves the space beneath it.
 
-```html
-<!-- 3-column responsive grid -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-  <!-- cards -->
-</div>
+### 9.5 Footer
 
-<!-- 2-column layout (editor) -->
-<div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
-  <div class="lg:col-span-2"><!-- editor --></div>
-  <div class="lg:col-span-3"><!-- preview --></div>
-</div>
-```
-
-### 9.5 Navbar
-
-```css
-.navbar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 50;
-  background-color: white;
-  border-bottom: 2px solid black;
-}
-```
-
-### 9.6 Footer
-
-```css
-.footer {
-  background-color: white;
-  border-top: 2px solid black;
-}
-
-.footer-card {
-  background-color: #fafafa;
-  border: 2px solid black;
-  border-radius: 0.75rem;
-  padding: 1.5rem;
-  box-shadow: 4px 4px 0px 0px rgba(0,0,0,0.9);
-}
-```
+The Footer is one of the two sanctioned `.section-dark` surfaces — aubergine
+background, paper/`white/70` text, flat.
 
 ---
 
@@ -740,190 +414,101 @@ Use framer-motion for:
 
 | Attribute | Description |
 |-----------|-------------|
-| **Bold** | Confident, direct, impactful |
+| **Composed** | Calm, considered, quietly confident |
 | **Professional** | Expert, reliable, trustworthy |
 | **Friendly** | Approachable, supportive, encouraging |
 | **Clear** | Direct, concise, jargon-free |
+
+The voice is anchored in **Career as Code**: your career facts are source, each
+tailored PDF is a reproducible build artifact, the refine chain is a sequence of
+commits, and the exported `.typ` source is zero lock-in.
 
 ### 10.2 UI Copy Examples
 
 | Element | Copy |
 |---------|------|
-| Primary CTA | "Build My Resume" or "Get Started" |
-| Secondary CTA | "View Templates" |
+| Primary CTA | "Generate My Resume" or "Get Started" |
+| Secondary CTA | "See how it works" |
 | Export | "Download .typ source" |
 | Empty State | "No resumes yet" |
-| Success | "Your resume is ready!" |
+| Success | "Your resume is ready" |
 | Error | "Something went wrong. Please try again." |
 
 ---
 
 ## 11. Implementation Reference
 
-### 11.1 Key CSS Files
+### 11.1 Ground-Truth Files
 
 | File | Purpose |
 |------|---------|
-| `src/app/globals.css` | CSS variables, utility classes, Neobrutalism foundations |
-| `tailwind.config.ts` | Tailwind theme configuration |
+| [`docs/DESIGN-SYSTEM.md`](./DESIGN-SYSTEM.md) | **Authoritative** token + component spec |
+| `src/app/globals.css` | `:root` raw palette, shadcn HSL layer, `.page-shell` / `.page-pad-b` / `.section-y` / `.section-dark` utilities |
+| `tailwind.config.ts` | Literal color names, `shadow-glow`, `max-w-content`, named font sizes |
+| `src/components/ui/` | shadcn primitives restyled for Phantom |
+| `src/components/shared/FadeIn.tsx` | The one motion pattern |
 
-### 11.2 CSS Utility Classes
+### 11.2 Phantom Utility Classes
 
-```css
-/* In globals.css */
-.neo-shadow-sm { box-shadow: var(--neo-shadow-sm); }
-.neo-shadow { box-shadow: var(--neo-shadow); }
-.neo-shadow-lg { box-shadow: var(--neo-shadow-lg); }
-.neo-shadow-xl { box-shadow: var(--neo-shadow-xl); }
+These replace the deleted `.neo-*` utilities:
 
-.neo-border { border: 2px solid black; }
-.neo-border-3 { border: 3px solid black; }
-
-.neo-card { 
-  @apply bg-white rounded-xl neo-border neo-shadow transition-all duration-200;
-}
-
-.neo-grid-bg { /* grid pattern */ }
-.neo-dots-bg { /* dots pattern */ }
-
-.text-gradient-vitex { /* brand gradient text */ }
-```
+| Class | Purpose |
+|-------|---------|
+| `.page-shell` | Clears the fixed floating nav + gap; use on every route |
+| `.page-pad-b` | Consistent bottom padding |
+| `.section-y` | Uniform inter-section vertical rhythm |
+| `.section-dark` | Aubergine dark band (homepage CLI/MCP band + Footer only) |
 
 ### 11.3 Component Library
 
-- **Base**: shadcn/ui components
-- **Styling**: Tailwind CSS with Neobrutalism overrides
+- **Base**: shadcn/ui components (restyled for Phantom)
+- **Styling**: Tailwind CSS (light mode only, no dark mode)
 - **Icons**: Lucide React
-- **Animation**: Framer Motion (for entrances only)
+- **Animation**: Framer Motion — `<FadeIn>` entrances only
 
-### 11.4 Icon Guidelines
+### 11.4 Accessibility Red Lines
 
-- Use **Lucide React** icons exclusively
-- Icon stroke width: 2px (default)
-- Icon size in buttons: 16px (`h-4 w-4`)
-- Icon size standalone: 20-24px (`h-5 w-5` or `h-6 w-6`)
-- Icons in colored containers should use white fill
+- Small muted text uses `text-muted-foreground` (Fog Deep). Raw `fog` only ≥20px or decorative.
+- Cornflower with white text only at `size="lg"`; otherwise dark text.
+- Periwinkle surfaces pair with aubergine/obsidian text — never white.
+- Keyboard focus: periwinkle ring, global via `:focus-visible` + `focus-visible:ring-ring`.
 
-### 11.5 Responsive Breakpoints
+### 11.5 Out of Scope
 
-```css
-sm: 640px   /* Small devices */
-md: 768px   /* Medium devices */
-lg: 1024px  /* Large devices */
-xl: 1280px  /* Extra large devices */
-2xl: 1536px /* 2X large devices */
-```
+`src/templates/**` and `src/styles/{pdf,a4-layout}.css` style the **generated
+resume PDFs**, not the app UI. The Phantom system does not apply there — leave
+them untouched.
 
 ---
 
-## Appendix A: Component Quick Reference
+## Appendix A: Migration from v2.x (Neobrutalism → Phantom)
 
-### Button Classes
+### Breaking Changes in v3.0
 
-```tsx
-// Primary
-<Button variant="default">Primary</Button>
+1. **Palette replaced** — aubergine/lavender/periwinkle in, Vitex Purple/Cyan out
+2. **Flat elevation** — hard offset shadows removed; only `shadow-glow` remains
+3. **Pill geometry** — `rounded-full` buttons, `rounded-3xl` cards, `rounded-2xl` inputs
+4. **Weight ceiling** — `font-medium` (500) max; `font-black`/`font-bold` and Titan One removed
+5. **1px ash borders** replace 2px black borders
+6. **Motion collapsed** to a single `<FadeIn>` entrance pattern
+7. **"Typeset Proof" layer removed** — crop marks, `.proof-label`, baseline grid, § numbering all deleted
 
-// Outline
-<Button variant="outline">Outline</Button>
+### Removed / Deleted
 
-// Ghost
-<Button variant="ghost">Ghost</Button>
-
-// Accent (Cyan)
-<Button variant="accent">Accent</Button>
-
-// Destructive
-<Button variant="destructive">Delete</Button>
-```
-
-### Card Example
-
-```tsx
-<Card className="hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] 
-                hover:translate-x-[-2px] hover:translate-y-[-2px]">
-  <CardHeader>
-    <CardTitle>Card Title</CardTitle>
-    <CardDescription>Card description here</CardDescription>
-  </CardHeader>
-  <CardContent>
-    {/* content */}
-  </CardContent>
-</Card>
-```
-
-### Badge Variants
-
-```tsx
-<Badge variant="default">Primary</Badge>
-<Badge variant="secondary">Secondary</Badge>
-<Badge variant="accent">Accent</Badge>
-<Badge variant="success">Success</Badge>
-<Badge variant="warning">Warning</Badge>
-<Badge variant="destructive">Error</Badge>
-```
+- Neobrutalism: `.neo-*` utilities, hard shadows, 2px black borders, `#f0f0f0` canvas
+- Typeset Proof: `<CropFrame>` / `.crop-frame`, `.proof-label`, `.baseline-grid`, `.vitex-grid`
+- Titan One / `.font-brand`; brand text gradients (`.text-gradient-vitex`)
+- Vitex Purple `#6C3CE9` / Electric Cyan `#00D4AA` from UI code (logos exempt, see §5.4)
 
 ---
 
-## Appendix B: Migration from v1.0
-
-### Breaking Changes in v2.0
-
-1. **Removed dark mode** - Light-only Neobrutalism design
-2. **New shadow system** - Hard shadows instead of soft
-3. **Border requirements** - All interactive elements require borders
-4. **Typography weights** - Increased use of `font-black` (900)
-5. **Animation approach** - CSS hover instead of framer-motion for shadows
-
-### Removed Features
-
-- Dark mode toggle
-- Soft shadow utilities
-- Glass morphism effects
-- Gradient backgrounds (except for brand text)
-
----
-
-## Appendix D: "Typeset Proof" Evolution (v2.1)
-
-Neobrutalism is retained in full (2px ink borders, hard offset shadows, light
-`#f0f0f0` theme, purple/cyan). v2.1 layers a **typesetting "proof" identity** on
-top, derived from what Vitex *is* — a Typst-engine resume composer that produces a
-real compiled PDF.
-
-### Typography roles
-- **Display / brand — Titan One** (`.font-brand`): hero H1 + the "Vitex" wordmark
-  only. Used with restraint so it stays special.
-- **Body & headings — Geist** (`--font-geist-sans`): the default body font.
-- **Utility / structure — Geist Mono** (`.font-mono`): the *precision voice*.
-  Eyebrows, line/step numbers, ATS scores, dates, metadata, crop-mark labels.
-
-### Signature utilities (in `globals.css`)
-| Class | Purpose |
-|-------|---------|
-| `.proof-label` | Uppercase mono coordinate label (`§01 — COMPOSE`, `ATS·094`, `STEP 03 / 08`). The eyebrow/numbering device site-wide. |
-| `.crop-frame` | Print-proof registration ("crop") marks at all four corners. Use the `<CropFrame>` component (`src/components/shared/CropFrame.tsx`). Auto-hides ≤480px. |
-| `.baseline-grid` | Faint ruled-galley page texture on a 28px baseline. Apply to page backgrounds. |
-| `.vitex-grid` | 60/40 editorial grid mirroring the resume's own layout (`generator.ts`). Stacks on mobile. |
-
-### Page shell & vertical rhythm
-- `--nav-h: 4.5rem` is the single source of truth for the fixed navbar height.
-- `.page-shell` clears the navbar **plus** a deliberate gap (`calc(var(--nav-h) + 2.5rem)`, more on `md+`). Use it on every route instead of bare `pt-20` so content never crowds the nav.
-- `.section-y` for uniform inter-section rhythm; `.page-pad-b` for bottom spacing.
-
-### Motion & accessibility
-- The homepage hero "composes" raw text into a typeset page (`.compile-line` / `.compile-sweep`).
-- A global `prefers-reduced-motion` guard reduces all animation/transition to near-zero and freezes the compile reveal to its final state.
-- `:focus-visible` shows a crisp purple ring on every interactive element.
-
----
-
-## Appendix C: Version History
+## Appendix B: Version History
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 2.1.0 | Jun 2026 | "Typeset Proof" evolution: mono precision voice, crop marks, baseline grid, 60/40 grid, page-shell rhythm |
-| 2.0.0 | Dec 2024 | Complete redesign with Neobrutalism system |
+| 3.0.0 | Jul 2026 | **Phantom** redesign: soft aubergine/lavender, flat surfaces, pill geometry, whisper-weight Geist, single `<FadeIn>` motion. Replaces Neobrutalism + Typeset Proof. See `docs/DESIGN-SYSTEM.md`. |
+| 2.1.0 | Jun 2026 | "Typeset Proof" evolution (superseded) |
+| 2.0.0 | Dec 2024 | Neobrutalism system (superseded) |
 | 1.0.0 | Dec 2024 | Initial brand system creation |
 
 ---

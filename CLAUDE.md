@@ -8,19 +8,22 @@ Vitex is a Typst-based resume generator built with Next.js 15, React 19, and Typ
 
 **Brand**: Vitex (formerly Easy Resume) - "Your Career, Perfectly Composed"
 
-**Design System**: **Neobrutalism** - A bold, distinctive design aesthetic featuring:
-- Thick black borders (2-3px) on all interactive elements
-- Hard shadows (4-8px offset, solid black, no blur)
-- Light gray background (#f0f0f0) with white cards
-- High contrast, playful yet professional aesthetic
+**Design System**: **Phantom** - A soft, monochromatic aubergine + lavender aesthetic featuring:
+- Flat surfaces — the only shadow is a single lavender glow (`shadow-glow`) on the primary CTA
+- 1px `ash` (#e9e8ea) borders; pill geometry (`rounded-full`) for buttons/nav/tags, `rounded-3xl` cards, `rounded-2xl` inputs
+- Paper canvas (#fdfcfe) with `bone` panels; aubergine (#3c315b) spine for headings, nav, and dark sections
+- Whisper-weight Geist typography (weights 300/400/500 only; `font-medium` is the ceiling) with `-0.025em` tracking
 - No dark mode - single cohesive light theme
 
-**Brand Guidelines**: See `docs/BRAND_GUIDELINES.md` for comprehensive brand design documentation including:
-- Neobrutalism design principles and implementation
-- Color system (Vitex Purple #6C3CE9, Electric Cyan #00D4AA)
-- Typography specifications (font-black for headlines, font-bold for buttons)
-- Shadow and border standards
-- UI component styling with hover animations
+**Authoritative spec**: `docs/DESIGN-SYSTEM.md` is ground truth for exact palette
+values, Tailwind names, named font sizes, and component recipes.
+
+**Brand Guidelines**: See `docs/BRAND_GUIDELINES.md` for brand design documentation including:
+- Phantom design principles (flat surfaces, pill geometry, whisper-weight type)
+- Color system (Aubergine #3c315b, Ghost Lavender #e2dffe, Periwinkle #ab9ff2)
+- Typography specifications (Geist 300/400/500, `-0.025em` tracking)
+- Elevation (flat + single `shadow-glow` CTA) and geometry standards
+- UI component styling with color-only hover
 - Logo usage guidelines
 - Brand voice and tone
 
@@ -376,39 +379,45 @@ session-gated + CSRF-protected rather than rate-limited.)
 
 ## UI Components
 
-### Design System: Neobrutalism
+### Design System: Phantom
 
-The UI follows a **Neobrutalism** design aesthetic with these key characteristics:
+The UI follows the **Phantom** design system — soft, monochromatic aubergine +
+lavender: flat surfaces, pill geometry, whisper-weight type, generous whitespace.
+`docs/DESIGN-SYSTEM.md` is the authoritative token/component spec; the summary
+below is a pointer, not a duplicate.
 
 #### Core Style Rules
 ```css
-/* Standard shadow sizes */
---neo-shadow-sm: 2px 2px 0px 0px rgba(0,0,0,0.9);   /* badges, small elements */
---neo-shadow: 4px 4px 0px 0px rgba(0,0,0,0.9);       /* cards, buttons, inputs */
---neo-shadow-lg: 6px 6px 0px 0px rgba(0,0,0,0.9);   /* hover states */
---neo-shadow-xl: 8px 8px 0px 0px rgba(0,0,0,0.9);   /* dialogs, hero elements */
+/* Elevation is FLAT — the ONLY shadow is the primary-CTA glow */
+/* tailwind.config.ts */ boxShadow: { glow: '0 0 4px #e2dffe' }
 
-/* Standard borders: always 2px solid black */
-/* Standard border-radius: rounded-lg (8px) for buttons, rounded-xl (12px) for cards */
+/* Borders: 1px `ash` (#e9e8ea), never black; separation also via `bone` panels + whitespace */
+/* Geometry: rounded-full (buttons/nav/tags), rounded-3xl (cards), rounded-2xl (inputs/menus) */
+/* Type: Geist only, weights 300/400/500 (font-medium ceiling), -0.025em tracking */
+/* Canvas: paper #fdfcfe; spine: aubergine #3c315b; accent: periwinkle #ab9ff2 */
 ```
 
 #### Utility Classes (in globals.css)
-- `.neo-shadow`, `.neo-shadow-lg`, `.neo-shadow-xl` - Hard shadow utilities
-- `.neo-border` - 2px solid black border
-- `.neo-card` - Complete card styling with white bg, border, and shadow
-- `.neo-grid-bg`, `.neo-dots-bg` - Background patterns
+The `.neo-*` utilities are **deleted**. Phantom adds layout utilities instead:
+- `.page-shell` - Clears the fixed floating nav (+ gap); use on every route
+- `.page-pad-b` - Consistent bottom padding
+- `.section-y` - Uniform inter-section vertical rhythm
+- `.section-dark` - Aubergine dark band (allowed ONLY on the homepage CLI/MCP band + Footer)
+
+Colors/geometry come from Tailwind literals (`bg-lavender`, `text-aubergine`,
+`border-ash`, `rounded-3xl`, `shadow-glow`, `max-w-content`) — see `tailwind.config.ts`.
 
 #### Hover Behavior Pattern
-**Important**: Use CSS for hover shadows, NOT framer-motion `whileHover` with boxShadow (causes square shadows on rounded elements).
+**Important**: Hover feedback is **color change only** (built into the components).
+Never use `whileHover` scale/rotate/boxShadow, and never the old translate-and-shadow
+pattern.
 
 ```tsx
-// Correct: CSS hover classes
-<Card className="hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] 
-                hover:translate-x-[-2px] hover:translate-y-[-2px] 
-                transition-all duration-200">
+// Correct: color-only hover (Phantom Button already does this)
+<Button variant="secondary">Save</Button>  // bg-ash → hover:bg-[#dedde0]
 
-// Wrong: framer-motion boxShadow (ignores border-radius)
-<motion.div whileHover={{ boxShadow: "8px 8px 0px 0px rgba(0,0,0,0.9)" }}>
+// Wrong: hard-shadow / translate hover (deleted Neobrutalism pattern)
+<Card className="hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px]">
 ```
 
 ### Page Structure
@@ -454,21 +463,24 @@ The UI follows a **Neobrutalism** design aesthetic with these key characteristic
 - **LatexPreview** (`src/components/preview/LatexPreview.tsx`): unused legacy component (stale "Latex" name — no importer in `src/`; kept for reference only)
 
 ### UI Library
-- **shadcn/ui**: Pre-built components in `src/components/ui/` customized for Neobrutalism
+- **shadcn/ui**: Pre-built components in `src/components/ui/` restyled for Phantom
 - **Styling**: Tailwind CSS (light mode only, no dark mode)
 - **Icons**: Lucide React icon library
-- **Animation**: Framer Motion for page entrances and staggered reveals (NOT for hover shadows)
+- **Animation**: Framer Motion via the single `<FadeIn>` entrance pattern only (never for hover)
 
 ### Component Styling Quick Reference
 
-| Component | Border | Shadow | Hover Shadow | Radius |
-|-----------|--------|--------|--------------|--------|
-| Button | 2px black | 4px 4px | 6px 6px | rounded-lg |
-| Card | 2px black | 4px 4px | 6px 6px | rounded-xl |
-| Input | 2px black | none | 4px 4px (focus) | rounded-lg |
-| Dialog | 2px black | 8px 8px | - | rounded-xl |
-| Badge | 2px black | 2px 2px | - | rounded-lg |
-| Tabs | 2px black | 4px 4px | - | rounded-xl |
+Flat everywhere: 1px `ash` borders, no shadows except the primary-CTA `shadow-glow`.
+
+| Component | Border | Shadow | Hover | Radius |
+|-----------|--------|--------|-------|--------|
+| Button (default) | none | `shadow-glow` (lavender) | color only | rounded-full |
+| Button (secondary/outline) | 1px ash (outline) | none | color only | rounded-full |
+| Card | 1px ash | none | none | rounded-3xl |
+| Input | 1px ash | none | periwinkle ring (focus) | rounded-2xl |
+| Dialog | 1px ash | none (soft scrim) | - | rounded-3xl |
+| Badge | 1px | none | - | rounded-full |
+| Tabs | none (bone track) | none | active = white pill | rounded-full |
 
 ## File Organization
 
@@ -764,7 +776,7 @@ letters match their voice:
 
 A profile can be **published** to a stable, unguessable public URL — "your career
 as a page an agent can read":
-- **Routes**: `/p/[slug]` (HTML, Neobrutalism), `/p/[slug]/json`, `/p/[slug]/md`
+- **Routes**: `/p/[slug]` (HTML, Phantom), `/p/[slug]/json`, `/p/[slug]/md`
   (`src/server/profiles/publicMarkdown.ts`). `not-found.tsx` for unpublished/unknown.
 - **Store**: `candidate_profiles.public_slug` (stable, unguessable — kept on
   unpublish so republishing restores the same URL) + `published_at` (visibility is
@@ -1131,13 +1143,13 @@ When adding new resume sections:
 5. **Maintainability**: Ensure code is robust, extensible, and maintainable.
 
 ### UI Development Guidelines
-1. **Follow Neobrutalism**: All new UI must use the Neobrutalism design system
-2. **No Dark Mode**: Do not implement dark mode styling
-3. **CSS for Hover Shadows**: Use Tailwind CSS classes for hover shadows, not framer-motion `whileHover` with boxShadow
+1. **Follow Phantom**: All new UI must follow the Phantom design system — `docs/DESIGN-SYSTEM.md` is ground truth
+2. **No Dark Mode**: Do not implement dark mode styling (still true)
+3. **Flat surfaces**: No shadows except `shadow-glow` on the primary CTA; separate with 1px `ash` borders, `bone` panels, and whitespace
 4. **Avoid Hydration Mismatches**: Never use `Math.random()` or `Date.now()` in components that render on both server and client
-5. **Consistent Shadows**: Use the standard shadow scale (2px/4px/6px/8px)
-6. **Always Use Borders**: All interactive elements must have 2px black borders
-7. **Framer Motion Usage**: Use for entrance animations and staggered reveals only
+5. **Weight ceiling**: Geist weights 300/400/500 only — `font-medium` is the max; never `font-bold`/`font-black`
+6. **Pill geometry**: `rounded-full` buttons/nav/tags, `rounded-3xl` cards, `rounded-2xl` inputs; no black borders
+7. **Motion**: One pattern only — `<FadeIn>` entrances; hover feedback is color change only, never `whileHover` scale/rotate/boxShadow
 
 ### Communication
 - Explain actions clearly in conversation.
