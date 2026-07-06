@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { Check, X, Save, Loader2 } from 'lucide-react';
 import type { ResumeData } from '@/lib/validation/schema';
 
@@ -58,55 +59,52 @@ export function StructuredEditor({ resume, onApply, onCancel, onSaveAsVersion, s
     });
 
   return (
-    <div className="rounded-xl border-2 border-black bg-white p-4 sm:p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div>
-          <p className="proof-label mb-1">§ edit-fields</p>
-          <h3 className="text-base sm:text-lg font-black">Edit resume fields</h3>
-        </div>
-        <span className="rounded-lg border-2 border-black bg-green-100 px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.14em]">
-          Free · no credit
-        </span>
+    <div className="rounded-3xl border border-ash bg-white p-6 sm:p-8">
+      <div className="mb-6 flex items-center justify-between gap-3">
+        <h3 className="text-lg font-medium tracking-tight text-aubergine">Edit resume fields</h3>
+        <Badge variant="success">Free · no credit</Badge>
       </div>
 
-      <div className="space-y-5">
+      <div className="space-y-6">
         {/* Basics */}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="se-name" className="proof-label !text-foreground">Name</Label>
-            <Input
-              id="se-name"
-              value={draft.basics.name}
-              onChange={(e) => setBasics({ name: e.target.value })}
-            />
+        <div className="space-y-4 border-b border-ash pb-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="se-name">Name</Label>
+              <Input
+                id="se-name"
+                value={draft.basics.name}
+                onChange={(e) => setBasics({ name: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="se-label">Professional title</Label>
+              <Input
+                id="se-label"
+                value={draft.basics.label}
+                onChange={(e) => setBasics({ label: e.target.value })}
+              />
+            </div>
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="se-label" className="proof-label !text-foreground">Professional title</Label>
-            <Input
-              id="se-label"
-              value={draft.basics.label}
-              onChange={(e) => setBasics({ label: e.target.value })}
-            />
-          </div>
-        </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="se-summary" className="proof-label !text-foreground">Summary</Label>
-          <Textarea
-            id="se-summary"
-            rows={3}
-            value={draft.basics.summary ?? ''}
-            onChange={(e) => setBasics({ summary: e.target.value })}
-          />
+          <div className="space-y-1.5">
+            <Label htmlFor="se-summary">Summary</Label>
+            <Textarea
+              id="se-summary"
+              rows={3}
+              value={draft.basics.summary ?? ''}
+              onChange={(e) => setBasics({ summary: e.target.value })}
+            />
+          </div>
         </div>
 
         {/* Skills */}
         {draft.skills.length > 0 && (
-          <div className="space-y-2">
-            <p className="proof-label !text-foreground">Skills (comma-separated)</p>
+          <div className="space-y-3 border-b border-ash pb-6">
+            <p className="text-sm font-medium text-muted-foreground">Skills (comma-separated)</p>
             {draft.skills.map((skill, i) => (
               <div key={`${skill.name}-${i}`} className="space-y-1.5">
-                <Label htmlFor={`se-skill-${i}`} className="text-xs font-bold">{skill.name}</Label>
+                <Label htmlFor={`se-skill-${i}`} className="text-xs">{skill.name}</Label>
                 <Input
                   id={`se-skill-${i}`}
                   value={skill.keywords.join(', ')}
@@ -119,11 +117,11 @@ export function StructuredEditor({ resume, onApply, onCancel, onSaveAsVersion, s
 
         {/* Work highlights */}
         {draft.work.length > 0 && (
-          <div className="space-y-2">
-            <p className="proof-label !text-foreground">Experience bullets (one per line)</p>
+          <div className="space-y-3">
+            <p className="text-sm font-medium text-muted-foreground">Experience bullets (one per line)</p>
             {draft.work.map((job, i) => (
               <div key={`${job.company}-${i}`} className="space-y-1.5">
-                <Label htmlFor={`se-work-${i}`} className="text-xs font-bold">
+                <Label htmlFor={`se-work-${i}`} className="text-xs">
                   {job.position} · {job.company}
                 </Label>
                 <Textarea
@@ -138,11 +136,8 @@ export function StructuredEditor({ resume, onApply, onCancel, onSaveAsVersion, s
         )}
       </div>
 
-      <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-        <Button
-          onClick={() => onApply(draft)}
-          className="border-2 border-black bg-purple-600 font-bold text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:bg-purple-700 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
-        >
+      <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+        <Button onClick={() => onApply(draft)}>
           <Check className="mr-2 h-4 w-4" />
           Apply changes
         </Button>
@@ -151,18 +146,13 @@ export function StructuredEditor({ resume, onApply, onCancel, onSaveAsVersion, s
             variant="outline"
             onClick={() => onSaveAsVersion(draft)}
             disabled={saving}
-            className="border-2 border-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
             title="Save these edits as a new version — free, no AI"
           >
             {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
             Save as new version
           </Button>
         )}
-        <Button
-          variant="outline"
-          onClick={onCancel}
-          className="border-2 border-black font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
-        >
+        <Button variant="ghost" onClick={onCancel}>
           <X className="mr-2 h-4 w-4" />
           Cancel
         </Button>
