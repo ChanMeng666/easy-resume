@@ -2,9 +2,10 @@
  * Public career profile page (`/p/{slug}`) — the human-readable face of a
  * published candidate profile. Server component, no auth: it renders ONLY the
  * allowlist projection (`getPublicProfileBySlug`), and 404s for an unknown or
- * unpublished slug. Read-optimized Neobrutalism: a single column, generous
- * typography, print-friendly. Its machine twins are `/p/{slug}/json` and
- * `/p/{slug}/md`, advertised via <link rel="alternate"> in the metadata.
+ * unpublished slug. Read-optimized Phantom: a single column, whisper-weight
+ * type, generous whitespace, print-friendly. Its machine twins are
+ * `/p/{slug}/json` and `/p/{slug}/md`, advertised via <link rel="alternate">
+ * in the metadata.
  */
 
 import { cache } from 'react';
@@ -14,6 +15,7 @@ import { notFound } from 'next/navigation';
 import { getPublicProfileBySlug, type PublicProfile } from '@/server/profiles/store';
 import { safePublicUrl } from '@/server/profiles/publicUrl';
 import { formatDateRange } from '@/lib/typst/utils';
+import { Button } from '@/components/ui/button';
 
 export const runtime = 'nodejs';
 
@@ -55,10 +57,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-/** A bold Neobrutalism section heading with a hard underline. */
+/** A light-weight aubergine section heading over an ash divider. */
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="text-xl font-black uppercase tracking-tight mb-4 pb-2 border-b-[3px] border-black">
+    <h2 className="text-lg font-light tracking-tight text-aubergine mb-5 pb-3 border-b border-ash">
       {children}
     </h2>
   );
@@ -70,23 +72,40 @@ export default async function PublicProfilePage({ params }: PageProps) {
   if (!profile) notFound();
 
   return (
-    <div className="min-h-screen bg-[#f0f0f0] py-10 px-4 print:bg-white print:py-0">
-      <article className="mx-auto max-w-2xl bg-white border-2 border-black rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,0.9)] p-8 sm:p-10 print:border-0 print:shadow-none print:p-0">
+    <div className="min-h-screen bg-background print:bg-white">
+      {/* Quiet top bar: whose profile, plus its machine-readable twins. */}
+      <div className="border-b border-ash print:hidden">
+        <div className="mx-auto flex h-16 max-w-2xl items-center justify-between gap-4 px-4 sm:px-6">
+          <span className="truncate text-body-sm font-medium text-aubergine">{profile.name}</span>
+          <nav className="flex items-center gap-1.5">
+            <Button asChild variant="ghost" size="sm">
+              <a href={`/p/${slug}/json`}>JSON</a>
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <a href={`/p/${slug}/md`}>Markdown</a>
+            </Button>
+          </nav>
+        </div>
+      </div>
+
+      <main className="mx-auto max-w-2xl px-4 py-12 sm:px-6 sm:py-16 print:px-0 print:py-0">
         {/* Header */}
-        <header className="mb-8">
-          <h1 className="text-4xl font-black tracking-tight leading-tight">{profile.name}</h1>
+        <header className="mb-12">
+          <h1 className="text-3xl font-light tracking-tight text-aubergine sm:text-4xl">
+            {profile.name}
+          </h1>
           {profile.headline && (
-            <p className="mt-2 text-lg font-bold text-[#6C3CE9]">{profile.headline}</p>
+            <p className="mt-3 text-lead text-fog-deep">{profile.headline}</p>
           )}
           {profile.location && (
-            <p className="mt-1 font-mono text-sm text-neutral-600">{profile.location}</p>
+            <p className="mt-2 text-body-sm text-muted-foreground">{profile.location}</p>
           )}
           {profile.profiles.length > 0 && (
-            <ul className="mt-4 flex flex-wrap gap-2">
+            <ul className="mt-6 flex flex-wrap gap-2">
               {profile.profiles.map((p, i) => {
                 const href = safePublicUrl(p.url);
-                const chipClass =
-                  "inline-block border-2 border-black rounded-lg px-3 py-1 text-sm font-bold bg-[#00D4AA] shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]";
+                const pillClass =
+                  'inline-flex items-center rounded-full border border-ash px-3 py-1 text-caption text-aubergine transition-colors';
                 return (
                   <li key={i}>
                     {href ? (
@@ -94,12 +113,12 @@ export default async function PublicProfilePage({ params }: PageProps) {
                         href={href}
                         target="_blank"
                         rel="noopener noreferrer nofollow"
-                        className={`${chipClass} hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,0.9)] transition-all`}
+                        className={`${pillClass} hover:bg-bone`}
                       >
                         {p.label || p.network}
                       </a>
                     ) : (
-                      <span className={chipClass}>{p.label || p.network}</span>
+                      <span className={pillClass}>{p.label || p.network}</span>
                     )}
                   </li>
                 );
@@ -108,186 +127,187 @@ export default async function PublicProfilePage({ params }: PageProps) {
           )}
         </header>
 
-        {/* Summary */}
-        {profile.summary && (
-          <section className="mb-8">
-            <SectionHeading>Summary</SectionHeading>
-            <p className="leading-relaxed text-[15px]">{profile.summary}</p>
-          </section>
-        )}
+        <div className="space-y-12">
+          {/* Summary */}
+          {profile.summary && (
+            <section>
+              <SectionHeading>Summary</SectionHeading>
+              <p className="text-body-sm leading-relaxed text-obsidian">{profile.summary}</p>
+            </section>
+          )}
 
-        {/* Experience */}
-        {profile.work.length > 0 && (
-          <section className="mb-8">
-            <SectionHeading>Experience</SectionHeading>
-            <div className="space-y-6">
-              {profile.work.map((w, i) => (
-                <div key={i}>
-                  <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-                    <h3 className="font-black text-base">
-                      {w.position}
-                      {w.company && <span className="font-bold text-neutral-700"> · {w.company}</span>}
-                    </h3>
-                    <span className="font-mono text-xs text-neutral-500 whitespace-nowrap">
-                      {formatDateRange(w.startDate, w.endDate)}
-                    </span>
-                  </div>
-                  {(w.location || w.type) && (
-                    <p className="font-mono text-xs text-neutral-500 mt-0.5">
-                      {[w.location, w.type].filter(Boolean).join(' · ')}
-                    </p>
-                  )}
-                  {w.highlights.length > 0 && (
-                    <ul className="mt-2 list-disc pl-5 space-y-1 text-[15px] leading-relaxed">
-                      {w.highlights.map((h, j) => (
-                        <li key={j}>{h}</li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Projects */}
-        {profile.projects.length > 0 && (
-          <section className="mb-8">
-            <SectionHeading>Projects</SectionHeading>
-            <div className="space-y-6">
-              {profile.projects.map((p, i) => {
-                const href = p.url ? safePublicUrl(p.url) : null;
-                return (
-                <div key={i}>
-                  <h3 className="font-black text-base">
-                    {href ? (
-                      <a
-                        href={href}
-                        target="_blank"
-                        rel="noopener noreferrer nofollow"
-                        className="underline decoration-2 underline-offset-2 hover:text-[#6C3CE9]"
-                      >
-                        {p.name}
-                      </a>
-                    ) : (
-                      p.name
-                    )}
-                  </h3>
-                  {p.description && (
-                    <p className="mt-1 text-[15px] leading-relaxed text-neutral-800">{p.description}</p>
-                  )}
-                  {p.highlights.length > 0 && (
-                    <ul className="mt-2 list-disc pl-5 space-y-1 text-[15px] leading-relaxed">
-                      {p.highlights.map((h, j) => (
-                        <li key={j}>{h}</li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-                );
-              })}
-            </div>
-          </section>
-        )}
-
-        {/* Education */}
-        {profile.education.length > 0 && (
-          <section className="mb-8">
-            <SectionHeading>Education</SectionHeading>
-            <div className="space-y-4">
-              {profile.education.map((e, i) => (
-                <div key={i}>
-                  <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-                    <h3 className="font-black text-base">
-                      {[e.studyType, e.area].filter(Boolean).join(', ') || e.institution}
-                    </h3>
-                    <span className="font-mono text-xs text-neutral-500 whitespace-nowrap">
-                      {formatDateRange(e.startDate, e.endDate)}
-                    </span>
-                  </div>
-                  <p className="font-mono text-xs text-neutral-500 mt-0.5">
-                    {[e.institution, e.location, e.gpa ? `GPA: ${e.gpa}` : null]
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </p>
-                  {e.note && <p className="mt-1 text-[15px] leading-relaxed">{e.note}</p>}
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Skills */}
-        {profile.skills.length > 0 && (
-          <section className="mb-8">
-            <SectionHeading>Skills</SectionHeading>
-            <div className="space-y-3">
-              {profile.skills.map((s, i) => (
-                <div key={i}>
-                  <p className="font-black text-sm uppercase tracking-wide text-neutral-700">
-                    {s.name}
-                  </p>
-                  <div className="mt-1 flex flex-wrap gap-2">
-                    {s.keywords.map((k, j) => (
-                      <span
-                        key={j}
-                        className="inline-block border-2 border-black rounded-md px-2 py-0.5 text-xs font-bold bg-[#f0f0f0]"
-                      >
-                        {k}
+          {/* Experience */}
+          {profile.work.length > 0 && (
+            <section>
+              <SectionHeading>Experience</SectionHeading>
+              <div className="space-y-8">
+                {profile.work.map((w, i) => (
+                  <div key={i} className="work-item">
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                      <h3 className="text-base font-medium text-aubergine">
+                        {w.position}
+                        {w.company && <span className="text-fog-deep"> · {w.company}</span>}
+                      </h3>
+                      <span className="whitespace-nowrap text-caption text-muted-foreground">
+                        {formatDateRange(w.startDate, w.endDate)}
                       </span>
-                    ))}
+                    </div>
+                    {(w.location || w.type) && (
+                      <p className="mt-1 text-caption text-muted-foreground">
+                        {[w.location, w.type].filter(Boolean).join(' · ')}
+                      </p>
+                    )}
+                    {w.highlights.length > 0 && (
+                      <ul className="mt-3 list-disc space-y-1.5 pl-5 text-body-sm leading-relaxed text-obsidian">
+                        {w.highlights.map((h, j) => (
+                          <li key={j}>{h}</li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
+                ))}
+              </div>
+            </section>
+          )}
 
-        {/* Achievements */}
-        {profile.achievements.length > 0 && (
-          <section className="mb-8">
-            <SectionHeading>Achievements</SectionHeading>
-            <ul className="list-disc pl-5 space-y-1 text-[15px] leading-relaxed">
-              {profile.achievements.map((a, i) => (
-                <li key={i}>{a}</li>
-              ))}
-            </ul>
-          </section>
-        )}
+          {/* Projects */}
+          {profile.projects.length > 0 && (
+            <section>
+              <SectionHeading>Projects</SectionHeading>
+              <div className="space-y-8">
+                {profile.projects.map((p, i) => {
+                  const href = p.url ? safePublicUrl(p.url) : null;
+                  return (
+                    <div key={i} className="project-item">
+                      <h3 className="text-base font-medium text-aubergine">
+                        {href ? (
+                          <a
+                            href={href}
+                            target="_blank"
+                            rel="noopener noreferrer nofollow"
+                            className="underline-offset-2 hover:underline"
+                          >
+                            {p.name}
+                          </a>
+                        ) : (
+                          p.name
+                        )}
+                      </h3>
+                      {p.description && (
+                        <p className="mt-1.5 text-body-sm leading-relaxed text-obsidian">
+                          {p.description}
+                        </p>
+                      )}
+                      {p.highlights.length > 0 && (
+                        <ul className="mt-3 list-disc space-y-1.5 pl-5 text-body-sm leading-relaxed text-obsidian">
+                          {p.highlights.map((h, j) => (
+                            <li key={j}>{h}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          )}
 
-        {/* Certifications */}
-        {profile.certifications.length > 0 && (
-          <section className="mb-8">
-            <SectionHeading>Certifications</SectionHeading>
-            <ul className="list-disc pl-5 space-y-1 text-[15px] leading-relaxed">
-              {profile.certifications.map((c, i) => (
-                <li key={i}>{c}</li>
-              ))}
-            </ul>
-          </section>
-        )}
+          {/* Education */}
+          {profile.education.length > 0 && (
+            <section>
+              <SectionHeading>Education</SectionHeading>
+              <div className="space-y-6">
+                {profile.education.map((e, i) => (
+                  <div key={i} className="education-item">
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                      <h3 className="text-base font-medium text-aubergine">
+                        {[e.studyType, e.area].filter(Boolean).join(', ') || e.institution}
+                      </h3>
+                      <span className="whitespace-nowrap text-caption text-muted-foreground">
+                        {formatDateRange(e.startDate, e.endDate)}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-caption text-muted-foreground">
+                      {[e.institution, e.location, e.gpa ? `GPA: ${e.gpa}` : null]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </p>
+                    {e.note && (
+                      <p className="mt-1.5 text-body-sm leading-relaxed text-obsidian">{e.note}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Skills */}
+          {profile.skills.length > 0 && (
+            <section>
+              <SectionHeading>Skills</SectionHeading>
+              <div className="space-y-4">
+                {profile.skills.map((s, i) => (
+                  <div key={i}>
+                    <p className="text-body-sm font-medium text-aubergine">{s.name}</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {s.keywords.map((k, j) => (
+                        <span key={j} className="skill-tag">
+                          {k}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Achievements */}
+          {profile.achievements.length > 0 && (
+            <section>
+              <SectionHeading>Achievements</SectionHeading>
+              <ul className="list-disc space-y-1.5 pl-5 text-body-sm leading-relaxed text-obsidian">
+                {profile.achievements.map((a, i) => (
+                  <li key={i}>{a}</li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {/* Certifications */}
+          {profile.certifications.length > 0 && (
+            <section>
+              <SectionHeading>Certifications</SectionHeading>
+              <ul className="list-disc space-y-1.5 pl-5 text-body-sm leading-relaxed text-obsidian">
+                {profile.certifications.map((c, i) => (
+                  <li key={i}>{c}</li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </div>
 
         {/* Footer: agent-readable hint + attribution */}
-        <footer className="mt-10 pt-6 border-t-2 border-black print:hidden">
-          <p className="font-mono text-xs text-neutral-600">
+        <footer className="mt-16 border-t border-ash pt-6 print:hidden">
+          <p className="text-caption text-muted-foreground">
             Readable by AI agents:{' '}
-            <a href={`/p/${slug}/json`} className="font-bold underline hover:text-[#6C3CE9]">
+            <a href={`/p/${slug}/json`} className="text-aubergine hover:underline">
               /json
             </a>{' '}
             ·{' '}
-            <a href={`/p/${slug}/md`} className="font-bold underline hover:text-[#6C3CE9]">
+            <a href={`/p/${slug}/md`} className="text-aubergine hover:underline">
               /md
             </a>
           </p>
-          <p className="mt-2 font-mono text-xs text-neutral-500">
+          <p className="mt-2 text-caption text-muted-foreground">
             Published with{' '}
-            <Link href="/" className="font-bold underline hover:text-[#6C3CE9]">
+            <Link href="/" className="text-aubergine hover:underline">
               Vitex
             </Link>{' '}
             — LinkedIn is for humans; a Vitex endpoint is for AIs.
           </p>
         </footer>
-      </article>
+      </main>
     </div>
   );
 }
