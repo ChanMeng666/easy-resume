@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Titan_One } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import { StackAuthProvider } from "@/components/auth/StackProvider";
 import "./globals.css";
 
@@ -11,17 +11,6 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
-});
-
-/**
- * Titan One - Brand display font for headlines and brand elements.
- * Used for Hero titles, CTA headings, and brand name displays.
- */
-const titanOne = Titan_One({
-  weight: "400",
-  variable: "--font-titan-one",
-  subsets: ["latin"],
-  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -70,7 +59,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${titanOne.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {/* Fallback: if JS never runs (or a scroll observer fails), force
             scroll-reveal sections visible so content is never stuck hidden. */}

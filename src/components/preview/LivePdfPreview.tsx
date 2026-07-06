@@ -84,12 +84,12 @@ export function LivePdfPreview({
   // Initial state - no compilation yet
   if (!hasCompiled && !isCompiling) {
     return (
-      <div className="flex h-[40vh] min-h-[280px] md:h-[500px] flex-col items-center justify-center rounded-lg border bg-gray-50 px-4">
-        <Zap className="h-10 w-10 sm:h-12 sm:w-12 text-gray-400" />
-        <h3 className="mt-3 sm:mt-4 text-base sm:text-lg font-medium text-gray-700">
+      <div className="flex h-[40vh] min-h-[280px] md:h-[500px] flex-col items-center justify-center rounded-3xl border border-ash bg-bone px-4">
+        <Zap className="h-10 w-10 sm:h-12 sm:w-12 text-periwinkle" />
+        <h3 className="mt-3 sm:mt-4 text-base sm:text-lg font-medium text-aubergine">
           Live PDF Preview
         </h3>
-        <p className="mt-2 max-w-sm text-center text-xs sm:text-sm text-gray-500">
+        <p className="mt-2 max-w-sm text-center text-xs sm:text-sm text-muted-foreground">
           Your resume will be compiled and displayed here in real-time as you edit.
         </p>
         <Button
@@ -107,16 +107,16 @@ export function LivePdfPreview({
   // Compiling state
   if (isCompiling && !pdfUrl) {
     return (
-      <div className="flex h-[40vh] min-h-[280px] md:h-[500px] flex-col items-center justify-center rounded-lg border bg-gray-50 px-4">
-        <Loader2 className="h-10 w-10 sm:h-12 sm:w-12 animate-spin text-blue-600" />
-        <h3 className="mt-3 sm:mt-4 text-base sm:text-lg font-medium text-gray-700">
+      <div className="flex h-[40vh] min-h-[280px] md:h-[500px] flex-col items-center justify-center rounded-3xl border border-ash bg-bone px-4">
+        <Loader2 className="h-10 w-10 sm:h-12 sm:w-12 animate-spin text-periwinkle" />
+        <h3 className="mt-3 sm:mt-4 text-base sm:text-lg font-medium text-aubergine">
           Compiling...
         </h3>
-        <p className="mt-2 text-xs sm:text-sm text-gray-500">
+        <p className="mt-2 text-xs sm:text-sm text-muted-foreground">
           This may take a few seconds
         </p>
-        <div className="mt-4 flex items-center gap-2 text-xs text-gray-400">
-          <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-blue-600"></span>
+        <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-periwinkle"></span>
           Compiling Typst document
         </div>
       </div>
@@ -126,22 +126,22 @@ export function LivePdfPreview({
   // Error state
   if (error && !pdfUrl) {
     return (
-      <div className="flex h-[40vh] min-h-[280px] md:h-[500px] flex-col items-center justify-center rounded-lg border bg-red-50 px-4">
-        <AlertCircle className="h-10 w-10 sm:h-12 sm:w-12 text-red-500" />
-        <h3 className="mt-3 sm:mt-4 text-base sm:text-lg font-medium text-red-700">
+      <div className="flex h-[40vh] min-h-[280px] md:h-[500px] flex-col items-center justify-center rounded-3xl border border-ash bg-blush/30 px-4">
+        <AlertCircle className="h-10 w-10 sm:h-12 sm:w-12 text-rose-ink" />
+        <h3 className="mt-3 sm:mt-4 text-base sm:text-lg font-medium text-rose-ink">
           Compilation Failed
         </h3>
-        <p className="mt-2 max-w-md text-center text-xs sm:text-sm text-red-600">
+        <p className="mt-2 max-w-md text-center text-xs sm:text-sm text-rose-ink">
           {error.message}
         </p>
 
         {/* Show log excerpt if available */}
         {error.log && (
           <details className="mt-4 w-full max-w-lg">
-            <summary className="cursor-pointer text-xs sm:text-sm text-red-600 hover:underline">
+            <summary className="cursor-pointer text-xs sm:text-sm text-rose-ink hover:underline">
               View error log
             </summary>
-            <pre className="mt-2 max-h-[150px] overflow-auto rounded bg-gray-900 p-3 text-xs text-gray-100">
+            <pre className="mt-2 max-h-[150px] overflow-auto rounded-2xl bg-aubergine p-3 text-xs text-paper">
               {error.log}
             </pre>
           </details>
@@ -161,19 +161,19 @@ export function LivePdfPreview({
   return (
     <div className="space-y-2">
       {/* Status bar */}
-      <div className="flex items-center justify-between rounded-lg border-2 border-black bg-green-50 px-3 sm:px-4 py-2">
+      <div className="flex items-center justify-between rounded-full border border-ash bg-white px-3 sm:px-4 py-1.5">
         <div className="flex items-center gap-2">
           {isCompiling ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin text-primary" />
-              <span className="proof-label !text-primary">Updating preview…</span>
+              <Loader2 className="h-4 w-4 animate-spin text-periwinkle" />
+              <span className="text-caption font-medium text-aubergine">Updating preview…</span>
             </>
           ) : (
             <>
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
-              <span className="proof-label !text-green-700">
+              <CheckCircle2 className="h-4 w-4 text-mint" />
+              <span className="text-caption font-medium text-mint-ink">
                 resume.pdf · ready
-                {isCached && <span className="ml-2 !text-gray-500">cached</span>}
+                {isCached && <span className="ml-2 text-muted-foreground">cached</span>}
               </span>
             </>
           )}
@@ -204,14 +204,14 @@ export function LivePdfPreview({
           {/* Mobile: collapsed download card.
               iOS Safari blob-URL iframes are unreliable, so we surface
               "Open in new tab" + "Download" instead of an empty preview. */}
-          <div className="md:hidden rounded-lg border-2 border-black bg-white p-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
+          <div className="md:hidden rounded-3xl border border-ash bg-white p-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg border-2 border-black bg-purple-100">
-                <FileText className="h-5 w-5 text-purple-700" />
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-lavender">
+                <FileText className="h-5 w-5 text-aubergine" />
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-black truncate">{filename}.pdf</p>
-                <p className="text-xs text-muted-foreground font-medium">
+                <p className="text-sm font-medium text-aubergine truncate">{filename}.pdf</p>
+                <p className="text-xs text-muted-foreground">
                   Ready to download
                 </p>
               </div>
@@ -219,7 +219,7 @@ export function LivePdfPreview({
             <div className="grid grid-cols-2 gap-2">
               <Button
                 size="lg"
-                className="w-full border-2 border-black bg-purple-600 font-bold text-white text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
+                className="w-full text-sm"
                 onClick={() => downloadPdfFromUrl(pdfUrl, filename)}
               >
                 <Download className="mr-2 h-4 w-4" />
@@ -228,14 +228,14 @@ export function LivePdfPreview({
               <Button
                 size="lg"
                 variant="outline"
-                className="w-full border-2 border-black font-bold text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]"
+                className="w-full text-sm"
                 onClick={() => openPdfInNewTab(pdfUrl)}
               >
                 <ExternalLink className="mr-2 h-4 w-4" />
                 Open
               </Button>
             </div>
-            <p className="mt-3 text-xs text-muted-foreground font-medium text-center">
+            <p className="mt-3 text-xs text-muted-foreground text-center">
               For best results, view on a tablet or desktop.
             </p>
           </div>

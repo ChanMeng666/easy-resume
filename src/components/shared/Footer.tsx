@@ -3,54 +3,54 @@ import Link from 'next/link';
 import { Github, Sparkles, Terminal, Plug, Code2, LayoutDashboard, CreditCard } from 'lucide-react';
 
 /**
- * Site footer — "typeset proof" treatment: monospace section labels, a single
- * disciplined ink accent (no rainbow badges), and crop marks on the brand block.
+ * Site footer — the one persistent dark aubergine band. Flat surface, quiet
+ * periwinkle section labels, and understated white links.
  */
 export function Footer() {
   return (
-    <footer className="relative bg-white border-t-2 border-black">
-      <div className="container mx-auto px-4 py-10 sm:py-16">
+    <footer className="section-dark">
+      <div className="mx-auto max-w-content px-4 py-16">
         {/* Top Section: Brand Identity */}
-        <div className="mb-10 sm:mb-16 text-center">
+        <div className="mb-16 text-center">
           <div className="mb-6 flex flex-col items-center justify-center gap-4">
             <Link href="/" aria-label="Vitex home">
               <Image
-                src="/logo/vitex-logo-black.svg"
+                src="/logo/vitex-logo-white.svg"
                 alt="Vitex"
                 width={200}
                 height={86}
-                className="h-12 w-auto hover:opacity-80 transition-opacity"
+                className="h-12 w-auto transition-opacity hover:opacity-80"
               />
             </Link>
           </div>
-          <p className="mx-auto max-w-2xl text-base text-muted-foreground font-medium leading-relaxed">
+          <p className="mx-auto max-w-2xl text-lead text-white/70 leading-relaxed">
             Your career, perfectly composed. AI-powered resumes, typeset and compiled to PDF.
           </p>
         </div>
 
         {/* Main Content Grid */}
-        <div className="mb-8 sm:mb-12 grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-3 md:gap-8">
+        <div className="mb-12 grid grid-cols-1 gap-10 md:grid-cols-3">
           {/* Product */}
-          <div className="p-6 bg-gray-50 rounded-xl border-2 border-black">
-            <h3 className="proof-label mb-4 flex items-center gap-2 !text-foreground">
-              <Sparkles className="h-3.5 w-3.5 text-primary" />
-              §01 — Product
+          <div>
+            <h3 className="mb-4 flex items-center gap-2 text-caption uppercase tracking-wider text-periwinkle">
+              <Sparkles className="h-3.5 w-3.5" />
+              Product
             </h3>
             <ul className="space-y-3">
               <li>
-                <Link href="/" className="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-all hover:text-foreground hover:translate-x-1">
+                <Link href="/" className="flex items-center gap-2 text-sm text-white/70 transition-colors hover:text-white">
                   <Sparkles className="h-4 w-4" />
                   Home
                 </Link>
               </li>
               <li>
-                <Link href="/dashboard" className="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-all hover:text-foreground hover:translate-x-1">
+                <Link href="/dashboard" className="flex items-center gap-2 text-sm text-white/70 transition-colors hover:text-white">
                   <LayoutDashboard className="h-4 w-4" />
                   Dashboard
                 </Link>
               </li>
               <li>
-                <Link href="/pricing" className="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-all hover:text-foreground hover:translate-x-1">
+                <Link href="/pricing" className="flex items-center gap-2 text-sm text-white/70 transition-colors hover:text-white">
                   <CreditCard className="h-4 w-4" />
                   Pricing
                 </Link>
@@ -59,10 +59,10 @@ export function Footer() {
           </div>
 
           {/* Developers — the API is the UI: agent surfaces over HTTP */}
-          <div className="p-6 bg-gray-50 rounded-xl border-2 border-black">
-            <h3 className="proof-label mb-4 flex items-center gap-2 !text-foreground">
-              <Terminal className="h-3.5 w-3.5 text-primary" />
-              §02 — Developers
+          <div>
+            <h3 className="mb-4 flex items-center gap-2 text-caption uppercase tracking-wider text-periwinkle">
+              <Terminal className="h-3.5 w-3.5" />
+              Developers
             </h3>
             <ul className="space-y-3">
               <li>
@@ -70,7 +70,7 @@ export function Footer() {
                   href="https://www.npmjs.com/package/vitex-cli"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-all hover:text-foreground hover:translate-x-1"
+                  className="flex items-center gap-2 text-sm text-white/70 transition-colors hover:text-white"
                 >
                   <Terminal className="h-4 w-4" />
                   CLI (vitex-cli)
@@ -81,7 +81,7 @@ export function Footer() {
                   href="https://github.com/ChanMeng666/easy-resume/blob/master/docs/api/v1.md"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-all hover:text-foreground hover:translate-x-1"
+                  className="flex items-center gap-2 text-sm text-white/70 transition-colors hover:text-white"
                 >
                   <Code2 className="h-4 w-4" />
                   API Reference
@@ -92,45 +92,43 @@ export function Footer() {
                   href="https://github.com/ChanMeng666/easy-resume/blob/master/docs/connectors/claude.md"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-all hover:text-foreground hover:translate-x-1"
+                  className="flex items-center gap-2 text-sm text-white/70 transition-colors hover:text-white"
                 >
                   <Plug className="h-4 w-4" />
                   MCP Connector
                 </a>
               </li>
             </ul>
-            <p className="mt-4 proof-label !text-muted-foreground">
+            <p className="mt-4 text-caption text-white/50">
               Career as Code — the API is the UI.
             </p>
           </div>
 
           {/* Built By — a modest maker credit, no freelance solicitation */}
-          <div className="p-6 bg-gray-50 rounded-xl border-2 border-black">
-            <h3 className="proof-label mb-4 flex items-center gap-2 !text-foreground">
-              <Github className="h-3.5 w-3.5 text-primary" />
-              §03 — Built By
+          <div>
+            <h3 className="mb-4 flex items-center gap-2 text-caption uppercase tracking-wider text-periwinkle">
+              <Github className="h-3.5 w-3.5" />
+              Built By
             </h3>
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className="p-1 bg-white rounded-lg border-2 border-black">
-                  <Image
-                    src="/chan_logo.svg"
-                    alt="Chan Meng"
-                    width={40}
-                    height={40}
-                    className="h-10 w-10 rounded-md"
-                  />
-                </div>
+                <Image
+                  src="/chan_logo.svg"
+                  alt="Chan Meng"
+                  width={40}
+                  height={40}
+                  className="h-10 w-10 rounded-full"
+                />
                 <div>
-                  <p className="font-black">Chan Meng</p>
-                  <p className="text-xs text-muted-foreground font-medium">Full-Stack Developer</p>
+                  <p className="text-sm text-white">Chan Meng</p>
+                  <p className="text-caption text-white/60">Full-Stack Developer</p>
                 </div>
               </div>
               <a
                 href="https://github.com/ChanMeng666"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition-all hover:text-foreground hover:translate-x-1"
+                className="flex items-center gap-2 text-sm text-white/70 transition-colors hover:text-white"
               >
                 <Github className="h-4 w-4" />
                 GitHub
@@ -140,14 +138,14 @@ export function Footer() {
         </div>
 
         {/* Bottom Section: Copyright */}
-        <div className="border-t-2 border-black pt-6 sm:pt-8 text-center">
-          <p className="text-sm text-muted-foreground font-medium">
+        <div className="border-t border-white/10 pt-8 text-center">
+          <p className="text-sm text-white/60">
             © {new Date().getFullYear()} Vitex by{' '}
             <a
               href="https://github.com/ChanMeng666"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-bold text-primary transition-colors hover:text-primary/80"
+              className="text-white transition-colors hover:text-periwinkle"
             >
               Chan Meng
             </a>

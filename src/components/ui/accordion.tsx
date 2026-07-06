@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils"
 const Accordion = AccordionPrimitive.Root
 
 /**
- * Neobrutalism styled accordion item with bold border.
+ * Phantom accordion item — quiet Ash divider.
  */
 const AccordionItem = React.forwardRef<
   React.ElementRef<typeof AccordionPrimitive.Item>,
@@ -17,14 +17,14 @@ const AccordionItem = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <AccordionPrimitive.Item
     ref={ref}
-    className={cn("border-b-2 border-black", className)}
+    className={cn("border-b border-ash", className)}
     {...props}
   />
 ))
 AccordionItem.displayName = "AccordionItem"
 
 /**
- * Neobrutalism styled accordion trigger with bold typography.
+ * Phantom accordion trigger — medium-weight text that deepens to aubergine on hover.
  */
 const AccordionTrigger = React.forwardRef<
   React.ElementRef<typeof AccordionPrimitive.Trigger>,
@@ -34,15 +34,13 @@ const AccordionTrigger = React.forwardRef<
     <AccordionPrimitive.Trigger
       ref={ref}
       className={cn(
-        "flex flex-1 items-center justify-between py-4 text-sm font-bold transition-all hover:bg-gray-50 text-left [&[data-state=open]>svg]:rotate-180",
+        "flex flex-1 items-center justify-between py-4 text-sm font-medium text-muted-foreground transition-colors hover:text-aubergine text-left [&[data-state=open]>svg]:rotate-180 [&[data-state=open]]:text-aubergine",
         className
       )}
       {...props}
     >
       {children}
-      <div className="w-6 h-6 rounded-md border-2 border-black bg-white flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]">
-        <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200" />
-      </div>
+      <ChevronDown className="h-4 w-4 shrink-0 text-fog-deep transition-transform duration-200" />
     </AccordionPrimitive.Trigger>
   </AccordionPrimitive.Header>
 ))

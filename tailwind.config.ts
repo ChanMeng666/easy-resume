@@ -10,18 +10,21 @@ export default {
   theme: {
   	extend: {
   		fontFamily: {
-  			brand: ['var(--font-titan-one)', 'sans-serif'],
   			sans: ['var(--font-geist-sans)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
   			mono: ['var(--font-geist-mono)', 'ui-monospace', 'monospace'],
   		},
+  		fontSize: {
+  			// Named Phantom type roles (light weight + tight tracking applied per-use).
+  			caption: ['13px', { lineHeight: '1.35' }],
+  			'body-sm': ['15px', { lineHeight: '1.4', letterSpacing: '-0.375px' }],
+  			lead: ['20px', { lineHeight: '1.35', letterSpacing: '-0.5px' }],
+  			display: ['64px', { lineHeight: '1.1', letterSpacing: '-1.6px' }],
+  			hero: ['96px', { lineHeight: '1', letterSpacing: '-2.4px' }],
+  		},
   		colors: {
+  			// shadcn HSL tokens (remapped onto Phantom in globals.css)
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
-  			'background-paper': 'var(--background-paper)',
-  			'primary-main': 'var(--primary-main)',
-  			'primary-light': 'var(--primary-light)',
-  			'primary-dark': 'var(--primary-dark)',
-  			'text-secondary': 'var(--text-secondary)',
   			card: {
   				DEFAULT: 'hsl(var(--card))',
   				foreground: 'hsl(var(--card-foreground))'
@@ -50,6 +53,10 @@ export default {
   				DEFAULT: 'hsl(var(--destructive))',
   				foreground: 'hsl(var(--destructive-foreground))'
   			},
+  			success: {
+  				DEFAULT: 'hsl(var(--success))',
+  				foreground: 'hsl(var(--success-foreground))'
+  			},
   			border: 'hsl(var(--border))',
   			input: 'hsl(var(--input))',
   			ring: 'hsl(var(--ring))',
@@ -59,12 +66,40 @@ export default {
   				'3': 'hsl(var(--chart-3))',
   				'4': 'hsl(var(--chart-4))',
   				'5': 'hsl(var(--chart-5))'
-  			}
+  			},
+  			// Literal Phantom palette (use directly: bg-lavender, text-aubergine, border-ash…)
+  			aubergine: '#3c315b',
+  			lavender: '#e2dffe',
+  			periwinkle: '#ab9ff2',
+  			cornflower: '#4a87f2',
+  			buttercream: '#ffffc4',
+  			blush: '#ffdadc',
+  			mint: {
+  				DEFAULT: '#2ec08b',
+  				ink: '#157f5c'
+  			},
+  			paper: '#fdfcfe',
+  			obsidian: '#1c1c1c',
+  			fog: {
+  				DEFAULT: '#86848d',
+  				deep: '#5f5d67'
+  			},
+  			ash: '#e9e8ea',
+  			bone: '#f4f2f4',
+  			rosewood: '#b23a48',
+  			'rose-ink': '#9f2936'
   		},
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
-  			sm: 'calc(var(--radius) - 4px)'
+  			sm: 'calc(var(--radius) - 4px)',
+  			card: '1.5rem'
+  		},
+  		maxWidth: {
+  			content: '75rem'
+  		},
+  		boxShadow: {
+  			glow: '0 0 4px #e2dffe'
   		},
   		keyframes: {
   			'accordion-down': {

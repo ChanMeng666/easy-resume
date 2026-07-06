@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils"
 
 /**
- * Neobrutalism styled skeleton loader with border and striped animation.
+ * Phantom skeleton loader — soft Ash block with a gentle pulse.
  */
 function Skeleton({
   className,
@@ -10,7 +10,7 @@ function Skeleton({
   return (
     <div
       className={cn(
-        "animate-pulse rounded-lg bg-gray-200 border-2 border-black",
+        "animate-pulse rounded-2xl bg-ash",
         className
       )}
       {...props}

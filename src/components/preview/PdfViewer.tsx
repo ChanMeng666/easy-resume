@@ -87,9 +87,9 @@ export function PdfViewer({
 
   if (error) {
     return (
-      <div className="flex h-[60vh] min-h-[420px] md:h-[600px] items-center justify-center rounded-lg border bg-gray-50">
+      <div className="flex h-[60vh] min-h-[420px] md:h-[600px] items-center justify-center rounded-3xl border border-ash bg-bone">
         <div className="text-center">
-          <p className="text-red-600">{error}</p>
+          <p className="text-rose-ink">{error}</p>
           <Button
             variant="outline"
             size="sm"
@@ -105,10 +105,10 @@ export function PdfViewer({
   }
 
   return (
-    <div className="flex flex-col rounded-lg border-2 border-black bg-white">
+    <div className="flex flex-col rounded-3xl border border-ash bg-white">
       {/* Toolbar */}
       {showToolbar && (
-        <div className="flex items-center justify-between border-b-2 border-black px-4 py-2">
+        <div className="flex items-center justify-between border-b border-ash px-4 py-2">
           {/* Zoom Controls */}
           <div className="flex items-center gap-2">
             <Button
@@ -165,13 +165,13 @@ export function PdfViewer({
 
       {/* PDF Container */}
       <div
-        className={`relative overflow-hidden bg-gray-100 h-[60vh] min-h-[420px] md:h-[600px] ${showToolbar ? 'rounded-b-lg' : 'rounded-lg'}`}
+        className={`relative overflow-hidden bg-bone h-[60vh] min-h-[420px] md:h-[600px] ${showToolbar ? 'rounded-b-3xl' : 'rounded-3xl'}`}
       >
         {isLoading && (
-          <div className={`absolute inset-0 z-10 flex items-center justify-center bg-white/80 ${showToolbar ? 'rounded-b-lg' : 'rounded-lg'}`}>
+          <div className={`absolute inset-0 z-10 flex items-center justify-center bg-white/80 ${showToolbar ? 'rounded-b-3xl' : 'rounded-3xl'}`}>
             <div className="flex flex-col items-center gap-2">
-              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-              <span className="text-sm text-gray-600">
+              <Loader2 className="h-8 w-8 animate-spin text-periwinkle" />
+              <span className="text-sm text-muted-foreground">
                 Loading PDF...
               </span>
             </div>
@@ -187,7 +187,7 @@ export function PdfViewer({
           >
             <iframe
               src={url}
-              className="aspect-[3/4] w-full max-w-[600px] border-0 bg-white shadow-lg"
+              className="aspect-[3/4] w-full max-w-[600px] border border-ash bg-white"
               title="PDF Preview"
               onLoad={handleLoad}
               onError={handleError}
