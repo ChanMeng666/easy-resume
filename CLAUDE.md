@@ -919,7 +919,7 @@ This project underwent multiple architectural transformations:
    - **Layout**: Left column (intro, experience, projects), Right column (education, skills, achievements, certifications)
    - **Packages**: Uses only standard packages (paracol, geometry, xcolor, fontawesome5, hyperref, enumitem, titlesec)
 
-3. **UI Redesign to Neobrutalism (current)**:
+3. **UI Redesign to Neobrutalism (superseded by Phantom, see 20)**:
    - **Removed**: Dark mode support, soft shadows, glass morphism effects, gradient backgrounds
    - **Added**: Bold Neobrutalism design system with:
      - Hard shadows (4-8px offset, solid black)
@@ -1089,6 +1089,22 @@ This project underwent multiple architectural transformations:
       credits get you" ledger corrected (1 credit per compiled resume incl. cover
       letter + ATS; refine/AI-edit/failed-build free); `docs/BRAND_GUIDELINES.md`
       de-staled (LaTeX→Typst, dropped "data stored locally"/Overleaf).
+
+20. **Neobrutalism → Phantom UI redesign (current)**:
+    - **Removed**: the entire Neobrutalism system (`.neo-*` utilities, 2px black
+      borders, hard offset shadows, `#f0f0f0` canvas, `font-black`, Titan One) AND
+      the "Typeset Proof" metaphor layer (CropFrame crop marks, mono `proof-label`,
+      `baseline-grid`, § section numbers, compile theatrics). Old UI brand colors
+      #6C3CE9/#00D4AA retired (logo SVGs unchanged).
+    - **Added**: the **Phantom** design system (`docs/DESIGN-SYSTEM.md` = ground
+      truth): aubergine/lavender palette, flat surfaces with 1px ash borders, pill
+      geometry, whisper-weight Geist (300/400, cap `font-medium`), single lavender
+      glow on the primary CTA, 64px section rhythm, dark aubergine bands only on
+      the homepage CLI section + Footer, and one sanctioned motion pattern
+      (`FadeIn`). shadcn primitives, Navbar (floating pill), Footer, all pages,
+      OAuth consent pages, and Stack Auth theme re-themed; editor right rail
+      rebuilt as a single divided card (boxes-in-boxes removed).
+    - **Invariant preserved**: styling only — no pipeline/billing/handler changes.
 
 **Legacy reference**: `A4_RESUME_USAGE.md` documents the original HTML/CSS approach (not currently used)
 
