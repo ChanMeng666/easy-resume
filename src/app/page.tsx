@@ -386,12 +386,7 @@ export default function HomePage() {
                   </code>
                 </a>
 
-                <a
-                  href="https://github.com/ChanMeng666/easy-resume/blob/master/docs/connectors/claude.md"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block rounded-3xl border border-white/10 bg-white/5 p-8 transition-colors hover:bg-white/10"
-                >
+                <div className="rounded-3xl border border-white/10 bg-white/5 p-8">
                   <div className="mb-5 flex items-center justify-between">
                     <span className="text-caption uppercase tracking-wider text-periwinkle">MCP Connector</span>
                     <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10">
@@ -409,12 +404,21 @@ export default function HomePage() {
                     >
                       ChatGPT
                     </a>{' '}
-                    or Claude over MCP and let it build for you.
+                    or{' '}
+                    <a
+                      href="https://github.com/ChanMeng666/easy-resume/blob/master/docs/connectors/claude.md"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-white underline underline-offset-2 hover:text-white/80"
+                    >
+                      Claude
+                    </a>{' '}
+                    over MCP and let it build for you.
                   </p>
                   <span className="inline-block rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white/90">
                     ChatGPT &amp; Claude
                   </span>
-                </a>
+                </div>
               </div>
             </FadeIn>
           </div>
