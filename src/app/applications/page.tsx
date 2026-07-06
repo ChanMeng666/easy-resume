@@ -3,7 +3,6 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useUser } from "@stackframe/stack";
-import { motion } from "framer-motion";
 import {
   AlertCircle,
   Briefcase,
@@ -15,8 +14,10 @@ import {
 } from "lucide-react";
 import { Navbar } from "@/components/shared/Navbar";
 import { Button } from "@/components/ui/button";
+import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FadeIn } from "@/components/shared/FadeIn";
 import { APPLICATION_STATUSES, type ApplicationStatus } from "@/lib/validation/schema";
 
 interface ApplicationItem {
@@ -30,13 +31,13 @@ interface ApplicationItem {
   updatedAt: string;
 }
 
-/** Neobrutalism per-status badge colors (all share the 2px black border). */
-const STATUS_STYLES: Record<ApplicationStatus, string> = {
-  draft: "bg-gray-100 text-gray-800",
-  applied: "bg-blue-100 text-blue-800",
-  interview: "bg-yellow-100 text-yellow-800",
-  offer: "bg-green-200 text-green-900",
-  rejected: "bg-red-100 text-red-800",
+/** Map each application status to a tonal Phantom Badge variant. */
+const STATUS_VARIANT: Record<ApplicationStatus, BadgeProps["variant"]> = {
+  draft: "default",
+  applied: "accent",
+  interview: "warning",
+  offer: "success",
+  rejected: "destructive",
 };
 
 /** Format an ISO timestamp as a compact, locale-aware date. */
@@ -167,14 +168,12 @@ function ApplicationsContent() {
 
   if (user === undefined) {
     return (
-      <div className="min-h-screen baseline-grid bg-[#f0f0f0]">
+      <div className="min-h-screen bg-background">
         <Navbar currentPath="/applications" />
-        <div className="page-shell container mx-auto px-4">
-          <div className="flex items-center justify-center h-[60vh]">
-            <div className="flex items-center gap-3 rounded-xl border-2 border-black bg-white px-6 py-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
-              <span className="proof-label">applications</span>
-              <p className="font-mono text-sm font-medium text-muted-foreground animate-pulse">loading…</p>
-            </div>
+        <div className="page-shell mx-auto max-w-content px-4 sm:px-6">
+          <div className="flex h-[60vh] items-center justify-center gap-3 text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span className="text-sm">Loading…</span>
           </div>
         </div>
       </div>
@@ -186,32 +185,27 @@ function ApplicationsContent() {
   const visible = items?.filter((it) => filter === "all" || it.status === filter) ?? null;
 
   return (
-    <div className="min-h-screen baseline-grid bg-[#f0f0f0]">
+    <div className="min-h-screen bg-background">
       <Navbar currentPath="/applications" />
 
-      <main className="page-shell page-pad-b container mx-auto px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8 flex items-end justify-between gap-4"
-        >
+      <main className="page-shell page-pad-b mx-auto max-w-content px-4 sm:px-6">
+        <FadeIn className="mb-10 flex items-end justify-between gap-4">
           <div>
-            <p className="proof-label mb-2">§ Pipeline — Job Applications</p>
-            <h1 className="text-3xl font-brand">Applications</h1>
-            <p className="text-muted-foreground mt-1 font-medium">
+            <h1 className="text-3xl md:text-4xl">Applications</h1>
+            <p className="text-muted-foreground mt-2">
               Track where each resume went and how far it got.
             </p>
           </div>
-          <Button onClick={() => router.push("/")} className="gap-2 flex-shrink-0">
+          <Button onClick={() => router.push("/")} className="flex-shrink-0">
             <Sparkles className="w-4 h-4" />
             New Resume
           </Button>
-        </motion.div>
+        </FadeIn>
 
         <div className="max-w-3xl">
           {/* Add form */}
-          <div className="mb-6 bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] p-5">
-            <p className="proof-label mb-3">Add an application</p>
+          <div className="mb-6 rounded-3xl border border-ash bg-card p-6">
+            <p className="text-caption text-muted-foreground mb-3">Add an application</p>
             <div className="flex flex-col gap-3 sm:flex-row">
               <Input
                 value={company}
@@ -236,14 +230,13 @@ function ApplicationsContent() {
               <Button
                 onClick={handleCreate}
                 disabled={creating || !company.trim() || !position.trim()}
-                className="gap-2"
               >
                 {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                 Add
               </Button>
             </div>
             {linkedJobId && (
-              <p className="font-mono text-[11px] text-muted-foreground mt-3">
+              <p className="text-caption text-muted-foreground mt-3">
                 Linking to the generated resume you opened.
               </p>
             )}
@@ -255,10 +248,10 @@ function ApplicationsContent() {
               <button
                 key={s}
                 onClick={() => setFilter(s)}
-                className={`rounded-lg border-2 border-black px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.1em] transition-all ${
+                className={`rounded-full px-4 py-1.5 text-caption capitalize transition-colors ${
                   filter === s
-                    ? "bg-primary text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]"
-                    : "bg-white hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-1px] hover:translate-y-[-1px]"
+                    ? "bg-aubergine text-paper"
+                    : "bg-bone text-fog-deep hover:bg-ash"
                 }`}
               >
                 {s}
@@ -267,28 +260,28 @@ function ApplicationsContent() {
           </div>
 
           {loadError ? (
-            <div className="bg-white rounded-xl p-6 border-2 border-red-400 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
+            <div className="rounded-3xl border border-ash bg-card p-8">
               <div className="flex items-center gap-3 mb-3">
-                <AlertCircle className="h-5 w-5 text-red-600" />
-                <p className="font-black text-red-800">Couldn&apos;t load your applications</p>
+                <AlertCircle className="h-5 w-5 text-rose-ink" />
+                <p className="font-medium text-aubergine">Couldn&apos;t load your applications</p>
               </div>
-              <Button variant="outline" onClick={fetchApplications}>
+              <Button variant="secondary" onClick={fetchApplications}>
                 Try again
               </Button>
             </div>
           ) : visible === null ? (
             <div className="space-y-4">
-              <Skeleton className="h-[96px] w-full rounded-xl" />
-              <Skeleton className="h-[96px] w-full rounded-xl" />
-              <Skeleton className="h-[96px] w-full rounded-xl" />
+              <Skeleton className="h-[96px] w-full rounded-3xl" />
+              <Skeleton className="h-[96px] w-full rounded-3xl" />
+              <Skeleton className="h-[96px] w-full rounded-3xl" />
             </div>
           ) : visible.length === 0 ? (
-            <div className="bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] p-10 text-center">
-              <Briefcase className="h-10 w-10 mx-auto mb-4 text-muted-foreground" />
-              <p className="font-black text-lg mb-1">
+            <div className="rounded-3xl border border-ash bg-card p-12 text-center">
+              <Briefcase className="h-8 w-8 mx-auto mb-4 text-muted-foreground" />
+              <p className="text-lead text-aubergine mb-1">
                 {filter === "all" ? "No applications yet" : `No ${filter} applications`}
               </p>
-              <p className="text-sm text-muted-foreground font-medium">
+              <p className="text-sm text-muted-foreground">
                 Add one above, or use &ldquo;Track&rdquo; on a resume in My Resumes.
               </p>
             </div>
@@ -297,33 +290,31 @@ function ApplicationsContent() {
               {visible.map((item) => (
                 <div
                   key={item.id}
-                  className="bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] p-5"
+                  className="rounded-3xl border border-ash bg-card p-6 transition-colors hover:border-periwinkle"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0 flex-1">
-                      <p className="font-black text-base truncate">{item.company}</p>
-                      <p className="text-sm text-muted-foreground font-medium truncate">{item.position}</p>
-                      <p className="font-mono text-xs text-muted-foreground mt-1">
+                      <p className="text-base font-medium text-aubergine truncate">{item.company}</p>
+                      <p className="text-sm text-muted-foreground truncate">{item.position}</p>
+                      <p className="text-caption text-muted-foreground mt-1">
                         {item.appliedAt ? `Applied ${formatDate(item.appliedAt)}` : `Added ${formatDate(item.createdAt)}`}
                       </p>
                     </div>
-                    <span
-                      className={`flex-shrink-0 rounded-lg border-2 border-black px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.1em] shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)] ${STATUS_STYLES[item.status]}`}
-                    >
+                    <Badge variant={STATUS_VARIANT[item.status]} className="flex-shrink-0 capitalize">
                       {item.status}
-                    </span>
+                    </Badge>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t-2 border-gray-100">
+                  <div className="flex flex-wrap items-center gap-2 mt-5 pt-5 border-t border-ash">
                     {/* Status state machine: any transition allowed. */}
-                    <label className="font-mono text-[11px] font-medium text-muted-foreground inline-flex items-center gap-2">
+                    <label className="text-caption text-muted-foreground inline-flex items-center gap-2">
                       Status
                       <select
                         value={item.status}
                         onChange={(e) => handleStatusChange(item.id, e.target.value as ApplicationStatus)}
                         disabled={updatingId === item.id}
                         aria-label="Change status"
-                        className="rounded-lg border-2 border-black bg-white px-2 py-1 font-mono text-[11px] font-bold uppercase tracking-[0.08em] shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)] focus:outline-none"
+                        className="rounded-full border border-ash bg-paper px-3 py-1.5 text-caption capitalize text-aubergine transition-colors hover:bg-bone focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
                         {APPLICATION_STATUSES.map((s) => (
                           <option key={s} value={s}>
@@ -337,7 +328,6 @@ function ApplicationsContent() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="gap-2"
                         onClick={() => router.push(`/editor?job=${item.generationJobId}`)}
                       >
                         <ExternalLink className="w-4 h-4" />
@@ -348,19 +338,18 @@ function ApplicationsContent() {
                     <div className="ml-auto">
                       {confirmingId === item.id ? (
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-[11px] font-medium text-muted-foreground">Delete?</span>
+                          <span className="text-caption text-muted-foreground">Delete?</span>
                           <Button
                             size="sm"
-                            variant="outline"
+                            variant="destructive"
                             onClick={() => handleDelete(item.id)}
                             disabled={deletingId === item.id}
-                            className="border-red-400 text-red-700 hover:bg-red-50"
                           >
                             {deletingId === item.id ? "Deleting…" : "Yes"}
                           </Button>
                           <Button
                             size="sm"
-                            variant="outline"
+                            variant="ghost"
                             onClick={() => setConfirmingId(null)}
                             disabled={deletingId === item.id}
                           >
@@ -370,9 +359,8 @@ function ApplicationsContent() {
                       ) : (
                         <Button
                           size="sm"
-                          variant="outline"
+                          variant="ghost"
                           onClick={() => setConfirmingId(item.id)}
-                          className="gap-2"
                           aria-label="Delete application"
                         >
                           <Trash2 className="w-4 h-4" />

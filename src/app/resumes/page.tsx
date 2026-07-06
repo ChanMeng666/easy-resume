@@ -4,12 +4,13 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@stackframe/stack";
 import { useDebounce } from "use-debounce";
-import { motion } from "framer-motion";
 import { AlertCircle, FileText, Download, Trash2, Sparkles, Mail, Search, Loader2, Briefcase, Wand2 } from "lucide-react";
 import { Navbar } from "@/components/shared/Navbar";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FadeIn } from "@/components/shared/FadeIn";
 
 interface ResumeListItem {
   id: string;
@@ -29,6 +30,13 @@ const PAGE_SIZE = 20;
 function formatDate(iso: string): string {
   const d = new Date(iso);
   return `${d.toLocaleDateString()} · ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+}
+
+/** Map an ATS score to a tonal Badge variant (higher = calmer/greener). */
+function atsVariant(score: number): "success" | "accent" | "warning" {
+  if (score >= 80) return "success";
+  if (score >= 60) return "accent";
+  return "warning";
 }
 
 /**
@@ -119,14 +127,12 @@ function ResumesContent() {
 
   if (user === undefined) {
     return (
-      <div className="min-h-screen baseline-grid bg-[#f0f0f0]">
+      <div className="min-h-screen bg-background">
         <Navbar currentPath="/resumes" />
-        <div className="page-shell container mx-auto px-4">
-          <div className="flex items-center justify-center h-[60vh]">
-            <div className="flex items-center gap-3 rounded-xl border-2 border-black bg-white px-6 py-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
-              <span className="proof-label">my resumes</span>
-              <p className="font-mono text-sm font-medium text-muted-foreground animate-pulse">loading…</p>
-            </div>
+        <div className="page-shell mx-auto max-w-content px-4 sm:px-6">
+          <div className="flex h-[60vh] items-center justify-center gap-3 text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span className="text-sm">Loading…</span>
           </div>
         </div>
       </div>
@@ -136,27 +142,22 @@ function ResumesContent() {
   if (user === null) return null;
 
   return (
-    <div className="min-h-screen baseline-grid bg-[#f0f0f0]">
+    <div className="min-h-screen bg-background">
       <Navbar currentPath="/resumes" />
 
-      <main className="page-shell page-pad-b container mx-auto px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8 flex items-end justify-between gap-4"
-        >
+      <main className="page-shell page-pad-b mx-auto max-w-content px-4 sm:px-6">
+        <FadeIn className="mb-10 flex items-end justify-between gap-4">
           <div>
-            <p className="proof-label mb-2">§ Library — Generated Resumes</p>
-            <h1 className="text-3xl font-brand">My Resumes</h1>
-            <p className="text-muted-foreground mt-1 font-medium">
+            <h1 className="text-3xl md:text-4xl">My Resumes</h1>
+            <p className="text-muted-foreground mt-2">
               Re-open, re-download, or remove resumes you&apos;ve generated.
             </p>
           </div>
-          <Button onClick={() => router.push("/")} className="gap-2 flex-shrink-0">
+          <Button onClick={() => router.push("/")} className="flex-shrink-0">
             <Sparkles className="w-4 h-4" />
             New Resume
           </Button>
-        </motion.div>
+        </FadeIn>
 
         <div className="max-w-3xl">
           {/* Search + count */}
@@ -173,48 +174,48 @@ function ResumesContent() {
               />
             </div>
             {items !== null && (
-              <span className="proof-label whitespace-nowrap">
-                {String(total).padStart(2, "0")} {total === 1 ? "result" : "results"}
+              <span className="text-caption text-muted-foreground whitespace-nowrap">
+                {total} {total === 1 ? "result" : "results"}
               </span>
             )}
           </div>
 
           {loadError ? (
-            <div className="bg-white rounded-xl p-6 border-2 border-red-400 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
+            <div className="rounded-3xl border border-ash bg-card p-8">
               <div className="flex items-center gap-3 mb-3">
-                <AlertCircle className="h-5 w-5 text-red-600" />
-                <p className="font-black text-red-800">Couldn&apos;t load your resumes</p>
+                <AlertCircle className="h-5 w-5 text-rose-ink" />
+                <p className="font-medium text-aubergine">Couldn&apos;t load your resumes</p>
               </div>
-              <p className="text-sm text-red-700 mb-4 font-medium">
+              <p className="text-sm text-muted-foreground mb-5">
                 Something went wrong fetching your history.
               </p>
-              <Button variant="outline" onClick={() => fetchPage(debouncedQuery, 0, false)}>
+              <Button variant="secondary" onClick={() => fetchPage(debouncedQuery, 0, false)}>
                 Try again
               </Button>
             </div>
           ) : items === null ? (
             <div className="space-y-4">
-              <Skeleton className="h-[104px] w-full rounded-xl" />
-              <Skeleton className="h-[104px] w-full rounded-xl" />
-              <Skeleton className="h-[104px] w-full rounded-xl" />
+              <Skeleton className="h-[104px] w-full rounded-3xl" />
+              <Skeleton className="h-[104px] w-full rounded-3xl" />
+              <Skeleton className="h-[104px] w-full rounded-3xl" />
             </div>
           ) : items.length === 0 ? (
             debouncedQuery ? (
-              <div className="bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] p-10 text-center">
-                <Search className="h-10 w-10 mx-auto mb-4 text-muted-foreground" />
-                <p className="font-black text-lg mb-1">No matches</p>
-                <p className="text-sm text-muted-foreground font-medium">
+              <div className="rounded-3xl border border-ash bg-card p-12 text-center">
+                <Search className="h-8 w-8 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-lead text-aubergine mb-1">No matches</p>
+                <p className="text-sm text-muted-foreground">
                   No resumes match &ldquo;{debouncedQuery}&rdquo;. Try a different search.
                 </p>
               </div>
             ) : (
-              <div className="bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] p-10 text-center">
-                <FileText className="h-10 w-10 mx-auto mb-4 text-muted-foreground" />
-                <p className="font-black text-lg mb-1">No resumes yet</p>
-                <p className="text-sm text-muted-foreground font-medium mb-6">
+              <div className="rounded-3xl border border-ash bg-card p-12 text-center">
+                <FileText className="h-8 w-8 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-lead text-aubergine mb-1">No resumes yet</p>
+                <p className="text-sm text-muted-foreground mb-6">
                   Generate your first tailored resume and it&apos;ll show up here.
                 </p>
-                <Button onClick={() => router.push("/")} className="gap-2">
+                <Button onClick={() => router.push("/")}>
                   <Sparkles className="w-4 h-4" />
                   Generate a Resume
                 </Button>
@@ -227,35 +228,29 @@ function ResumesContent() {
                 return (
                   <div
                     key={item.id}
-                    className="bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] p-5"
+                    className="rounded-3xl border border-ash bg-card p-6 transition-colors hover:border-periwinkle"
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0">
-                        <p className="font-black text-base truncate">{item.title}</p>
-                        <p className="font-mono text-xs text-muted-foreground mt-1">
+                        <p className="text-base font-medium text-aubergine truncate">{item.title}</p>
+                        <p className="text-caption text-muted-foreground mt-1">
                           {formatDate(item.createdAt)}
+                          {item.templateId ? ` · ${item.templateId}` : ""}
                         </p>
                         <div className="flex flex-wrap items-center gap-2 mt-3">
                           {!isSucceeded && (
-                            <span className="px-2 py-1 rounded-lg bg-gray-100 border-2 border-black font-mono text-[10px] font-bold uppercase tracking-[0.14em]">
+                            <Badge variant="warning" className="capitalize">
                               {item.status}
-                            </span>
+                            </Badge>
                           )}
                           {typeof item.atsScore === "number" && (
-                            <span className="px-2 py-1 rounded-lg bg-primary/10 border-2 border-black font-mono text-[10px] font-bold uppercase tracking-[0.14em]">
-                              ATS {item.atsScore}
-                            </span>
-                          )}
-                          {item.templateId && (
-                            <span className="px-2 py-1 rounded-lg bg-gray-50 border-2 border-black font-mono text-[10px] font-bold uppercase tracking-[0.14em]">
-                              {item.templateId}
-                            </span>
+                            <Badge variant={atsVariant(item.atsScore)}>ATS {item.atsScore}</Badge>
                           )}
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t-2 border-gray-100">
+                    <div className="flex flex-wrap items-center gap-2 mt-5 pt-5 border-t border-ash">
                       <Button
                         size="sm"
                         onClick={() => router.push(`/editor?job=${item.id}`)}
@@ -267,7 +262,6 @@ function ResumesContent() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="gap-2"
                           onClick={() => router.push(`/resumes/${item.id}/assistant`)}
                         >
                           <Wand2 className="w-4 h-4" />
@@ -276,7 +270,7 @@ function ResumesContent() {
                       )}
                       {isSucceeded && item.pdfUrl && (
                         <a href={item.pdfUrl} target="_blank" rel="noopener noreferrer">
-                          <Button size="sm" variant="outline" className="gap-2">
+                          <Button size="sm" variant="outline">
                             <Download className="w-4 h-4" />
                             PDF
                           </Button>
@@ -288,7 +282,7 @@ function ResumesContent() {
                           target="_blank"
                           rel="noopener noreferrer"
                         >
-                          <Button size="sm" variant="outline" className="gap-2">
+                          <Button size="sm" variant="outline">
                             <Mail className="w-4 h-4" />
                             Cover Letter
                           </Button>
@@ -298,7 +292,6 @@ function ResumesContent() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="gap-2"
                           onClick={() =>
                             router.push(
                               `/applications?jobId=${item.id}&position=${encodeURIComponent(item.title ?? "")}`
@@ -312,21 +305,20 @@ function ResumesContent() {
                       <div className="ml-auto">
                         {confirmingId === item.id ? (
                           <div className="flex items-center gap-2">
-                            <span className="font-mono text-[11px] font-medium text-muted-foreground">
+                            <span className="text-caption text-muted-foreground">
                               Delete?
                             </span>
                             <Button
                               size="sm"
-                              variant="outline"
+                              variant="destructive"
                               onClick={() => handleDelete(item.id)}
                               disabled={deletingId === item.id}
-                              className="border-red-400 text-red-700 hover:bg-red-50"
                             >
                               {deletingId === item.id ? "Deleting…" : "Yes"}
                             </Button>
                             <Button
                               size="sm"
-                              variant="outline"
+                              variant="ghost"
                               onClick={() => setConfirmingId(null)}
                               disabled={deletingId === item.id}
                             >
@@ -336,9 +328,8 @@ function ResumesContent() {
                         ) : (
                           <Button
                             size="sm"
-                            variant="outline"
+                            variant="ghost"
                             onClick={() => setConfirmingId(item.id)}
-                            className="gap-2"
                             aria-label="Delete resume"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -353,10 +344,9 @@ function ResumesContent() {
               {hasMore && (
                 <div className="pt-2 text-center">
                   <Button
-                    variant="outline"
+                    variant="secondary"
                     onClick={handleLoadMore}
                     disabled={loadingMore}
-                    className="gap-2"
                   >
                     {loadingMore ? (
                       <>
