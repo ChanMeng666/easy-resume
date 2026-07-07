@@ -1037,10 +1037,21 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
       other: 'Generation failed',
     }[error.kind];
 
-    // Full, copyable diagnostic payload. Built here (client-only render path) so
-    // navigator/timestamp never run during SSR. The `error.debug` envelope
-    // carries the server's real failure reason (code, step, requestId, and the
-    // unwound cause chain) — the useful part for debugging.
+    // The server error envelope carries the real failure reason (code, step,
+    // requestId, and the unwound cause chain). We surface it two ways:
+    //  - In DEVELOPMENT: the full raw payload in a copyable panel, for debugging.
+    //  - In PRODUCTION: only the requestId as a support "reference ID". The raw
+    //    cause chain can include the candidate's own parsed résumé data (PII) and
+    //    a JSON stack trace is poor UX for an end user — so it stays out of prod.
+    // `process.env.NODE_ENV` is inlined by Next.js at build time for client code.
+    const isDev = process.env.NODE_ENV !== 'production';
+    const requestId =
+      error.debug && typeof error.debug === 'object'
+        ? (error.debug as { requestId?: string }).requestId
+        : undefined;
+
+    // Full diagnostic payload (dev only). Built here (client-only render path) so
+    // navigator/timestamp never run during SSR.
     const debugPayload = {
       message: error.message,
       kind: error.kind,
@@ -1049,14 +1060,16 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
     };
     const debugText = JSON.stringify(debugPayload, null, 2);
     const copyDebug = async () => {
-      const enriched =
-        `${debugText}\n\n` +
-        `when: ${new Date().toISOString()}\n` +
-        `userAgent: ${typeof navigator !== 'undefined' ? navigator.userAgent : ''}`;
+      // Dev copies the whole payload; prod copies just the reference id.
+      const text = isDev
+        ? `${debugText}\n\n` +
+          `when: ${new Date().toISOString()}\n` +
+          `userAgent: ${typeof navigator !== 'undefined' ? navigator.userAgent : ''}`
+        : (requestId ?? '');
       try {
-        await navigator.clipboard.writeText(enriched);
+        await navigator.clipboard.writeText(text);
       } catch {
-        // Clipboard blocked — the <pre> below is selectable as a fallback.
+        // Clipboard blocked — the panel content is selectable as a fallback.
       }
       setDebugCopied(true);
       setTimeout(() => setDebugCopied(false), 2000);
@@ -1082,27 +1095,50 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
             </p>
           )}
 
-          {/* Copyable debug log — the full server error envelope (code, step,
-              requestId, and the unwound cause chain). One-click copy so it can be
-              pasted straight into a bug report. */}
-          <div className="mb-6 rounded-2xl border border-ash bg-bone p-4">
-            <div className="mb-2 flex items-center justify-between gap-2">
-              <span className="text-caption uppercase tracking-wider text-fog-deep">
-                Debug log
-              </span>
+          {/* DEV ONLY: full copyable debug log — the server error envelope (code,
+              step, requestId, and the unwound cause chain). Kept out of production
+              because the cause chain can carry the candidate's parsed résumé (PII)
+              and a raw JSON trace is poor end-user UX. */}
+          {isDev && (
+            <div className="mb-6 rounded-2xl border border-ash bg-bone p-4">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <span className="text-caption uppercase tracking-wider text-fog-deep">
+                  Debug log (dev)
+                </span>
+                <Button size="sm" variant="outline" onClick={copyDebug}>
+                  {debugCopied ? (
+                    <Check className="mr-2 h-4 w-4 text-mint" />
+                  ) : (
+                    <Copy className="mr-2 h-4 w-4" />
+                  )}
+                  {debugCopied ? 'Copied!' : 'Copy log'}
+                </Button>
+              </div>
+              <pre className="max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-xl bg-white p-3 text-xs leading-relaxed text-foreground">
+                {debugText}
+              </pre>
+            </div>
+          )}
+
+          {/* PRODUCTION: a compact support reference so a user can report a failure
+              without exposing the raw trace. Only shown when the server returned a
+              requestId (i.e. the error reached the backend). */}
+          {!isDev && requestId && (
+            <div className="mb-6 flex items-center justify-between gap-3 rounded-2xl border border-ash bg-bone px-4 py-3">
+              <div className="min-w-0">
+                <p className="text-caption uppercase tracking-wider text-fog-deep">Reference ID</p>
+                <p className="truncate font-mono text-xs text-muted-foreground">{requestId}</p>
+              </div>
               <Button size="sm" variant="outline" onClick={copyDebug}>
                 {debugCopied ? (
                   <Check className="mr-2 h-4 w-4 text-mint" />
                 ) : (
                   <Copy className="mr-2 h-4 w-4" />
                 )}
-                {debugCopied ? 'Copied!' : 'Copy log'}
+                {debugCopied ? 'Copied!' : 'Copy'}
               </Button>
             </div>
-            <pre className="max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-xl bg-white p-3 text-xs leading-relaxed text-foreground">
-              {debugText}
-            </pre>
-          </div>
+          )}
 
           <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
             {error.kind === 'credits' ? (
