@@ -11,11 +11,12 @@ import {
   Send,
   Sparkles,
   Wand2,
-  Wrench,
   CheckCircle2,
 } from 'lucide-react';
 import { Navbar } from '@/components/shared/Navbar';
+import { FadeIn } from '@/components/shared/FadeIn';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { LivePdfPreview } from '@/components/preview/LivePdfPreview';
 import type { ResumeData } from '@/lib/validation/schema';
@@ -365,35 +366,32 @@ export function AssistantContent({ jobId }: { jobId: string }) {
 
   if (user === undefined || user === null) {
     return (
-      <div className="min-h-screen baseline-grid bg-[#f0f0f0]">
+      <div className="min-h-screen bg-background">
         <Navbar currentPath="/resumes" />
         <div className="flex items-center justify-center h-[70vh]">
-          <p className="font-mono text-sm font-medium text-muted-foreground animate-pulse">loading…</p>
+          <p className="text-sm text-muted-foreground animate-pulse">Loading…</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen baseline-grid bg-[#f0f0f0]">
+    <div className="min-h-screen bg-background">
       <Navbar currentPath="/resumes" />
-      <main className="page-shell container mx-auto px-4 pb-8">
+      <main className="page-shell page-pad-b mx-auto max-w-content px-4 sm:px-6">
         {/* Header */}
-        <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="proof-label mb-2">§ Resume Assistant</p>
-            <h1 className="text-2xl sm:text-3xl font-brand flex items-center gap-2">
-              <Wand2 className="h-6 w-6" />
+            <h1 className="flex items-center gap-2 text-3xl font-light tracking-tight text-aubergine">
+              <Wand2 className="h-6 w-6 text-periwinkle" />
               Edit with AI
             </h1>
-            <p className="text-muted-foreground mt-1 font-medium text-sm">
+            <p className="mt-2 text-muted-foreground">
               Describe a change and watch your resume update — chatting and edits are free.
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="rounded-lg border-2 border-black bg-green-100 px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.14em]">
-              Free · no credit
-            </span>
+          <div className="flex items-center gap-3">
+            <Badge variant="success">Free · no credit</Badge>
             <Button variant="outline" size="sm" className="gap-2" onClick={() => router.push('/resumes')}>
               <ArrowLeft className="h-4 w-4" />
               Back
@@ -402,39 +400,39 @@ export function AssistantContent({ jobId }: { jobId: string }) {
         </div>
 
         {phase === 'error' ? (
-          <div className="bg-white rounded-xl p-6 border-2 border-red-400 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] max-w-xl">
-            <div className="flex items-center gap-3 mb-2">
-              <AlertCircle className="h-5 w-5 text-red-600" />
-              <p className="font-black text-red-800">{initError}</p>
+          <div className="max-w-xl rounded-3xl border border-ash bg-white p-8">
+            <div className="mb-2 flex items-center gap-3">
+              <AlertCircle className="h-5 w-5 text-rose-ink" />
+              <p className="font-medium text-rose-ink">{initError}</p>
             </div>
             <Button variant="outline" onClick={() => router.push('/resumes')} className="mt-2">
               Back to My Resumes
             </Button>
           </div>
         ) : (
-          <div className="grid lg:grid-cols-2 gap-6">
+          <div className="grid gap-8 lg:grid-cols-2">
             {/* Chat column */}
-            <div className="flex flex-col rounded-xl border-2 border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] overflow-hidden h-[70vh]">
-              <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
+            <FadeIn className="flex h-[70vh] flex-col overflow-hidden rounded-3xl border border-ash bg-white">
+              <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto p-6">
                 {phase === 'init' ? (
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="font-mono text-sm">opening conversation…</span>
+                    <span className="text-sm">Opening conversation…</span>
                   </div>
                 ) : entries.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Sparkles className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
-                    <p className="font-black mb-1">Ask for an edit</p>
-                    <p className="text-sm text-muted-foreground font-medium mb-4">
+                  <div className="py-8 text-center">
+                    <Sparkles className="mx-auto mb-3 h-8 w-8 text-periwinkle" />
+                    <p className="mb-1 font-medium text-aubergine">Ask for an edit</p>
+                    <p className="mb-4 text-sm text-muted-foreground">
                       Try one of these to get started:
                     </p>
-                    <div className="flex flex-col gap-2 items-stretch max-w-sm mx-auto">
+                    <div className="mx-auto flex max-w-sm flex-col items-stretch gap-2">
                       {STARTERS.map((s) => (
                         <button
                           key={s}
                           onClick={() => send(s)}
                           disabled={unavailable}
-                          className="text-left rounded-lg border-2 border-black bg-gray-50 px-3 py-2 text-sm font-medium hover:bg-gray-100 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all duration-150 disabled:opacity-50"
+                          className="rounded-2xl border border-ash bg-white px-4 py-3 text-left text-sm text-aubergine transition-colors hover:bg-bone disabled:opacity-50"
                         >
                           {s}
                         </button>
@@ -445,12 +443,7 @@ export function AssistantContent({ jobId }: { jobId: string }) {
                   entries.map((e) =>
                     e.kind === 'tool' ? (
                       <div key={e.id} className="flex justify-center">
-                        <span
-                          className={`inline-flex items-center gap-1.5 rounded-lg border-2 px-2 py-1 font-mono text-[11px] font-bold ${
-                            e.error ? 'border-red-400 bg-red-50 text-red-700' : 'border-black bg-purple-50'
-                          }`}
-                        >
-                          <Wrench className="h-3 w-3" />
+                        <span className={`text-caption ${e.error ? 'text-rose-ink' : 'text-muted-foreground'}`}>
                           {toolLabel(e.toolName)}
                           {e.error ? ' — skipped' : ''}
                         </span>
@@ -458,10 +451,10 @@ export function AssistantContent({ jobId }: { jobId: string }) {
                     ) : (
                       <div key={e.id} className={`flex ${e.kind === 'user' ? 'justify-end' : 'justify-start'}`}>
                         <div
-                          className={`max-w-[85%] rounded-xl border-2 border-black px-3 py-2 text-sm font-medium whitespace-pre-wrap ${
+                          className={`max-w-[85%] whitespace-pre-wrap rounded-3xl px-5 py-3 text-sm ${
                             e.kind === 'user'
-                              ? 'bg-purple-600 text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,0.9)]'
-                              : 'bg-white shadow-[3px_3px_0px_0px_rgba(0,0,0,0.9)]'
+                              ? 'bg-bone text-obsidian'
+                              : 'border border-ash bg-white text-obsidian'
                           }`}
                         >
                           {e.text}
@@ -473,39 +466,39 @@ export function AssistantContent({ jobId }: { jobId: string }) {
                 {streaming && (
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="font-mono text-xs">working…</span>
+                    <span className="text-caption">Working…</span>
                   </div>
                 )}
               </div>
 
               {/* Errors + composer */}
               {turnError && (
-                <div className="px-4 py-2 border-t-2 border-red-200 bg-red-50 flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4 text-red-600 flex-shrink-0" />
-                  <span className="text-xs text-red-700 font-medium">{turnError}</span>
+                <div className="flex items-center gap-2 border-t border-ash bg-blush/30 px-6 py-3">
+                  <AlertCircle className="h-4 w-4 flex-shrink-0 text-rose-ink" />
+                  <span className="text-caption text-rose-ink">{turnError}</span>
                 </div>
               )}
               {savedId && (
-                <div className="px-4 py-2 border-t-2 border-green-200 bg-green-50 flex items-center justify-between gap-2">
-                  <span className="flex items-center gap-2 text-xs text-green-800 font-medium">
+                <div className="flex items-center justify-between gap-2 border-t border-ash bg-mint/15 px-6 py-3">
+                  <span className="flex items-center gap-2 text-caption text-mint-ink">
                     <CheckCircle2 className="h-4 w-4" />
                     Saved as a new version.
                   </span>
                   <button
                     onClick={() => router.push(`/editor?job=${savedId}`)}
-                    className="font-mono text-[11px] font-bold underline"
+                    className="text-caption text-aubergine underline underline-offset-4"
                   >
                     Open it
                   </button>
                 </div>
               )}
-              <div className="border-t-2 border-black p-3">
+              <div className="border-t border-ash p-4">
                 {unavailable ? (
-                  <p className="text-xs text-muted-foreground font-medium text-center py-2">
+                  <p className="py-2 text-center text-caption text-muted-foreground">
                     The resume this conversation edits is no longer available.
                   </p>
                 ) : (
-                  <div className="flex items-end gap-2">
+                  <div className="flex items-end gap-2 rounded-full border border-ash bg-white py-1.5 pl-4 pr-2 transition-colors focus-within:border-periwinkle focus-within:ring-2 focus-within:ring-periwinkle/40">
                     <Textarea
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
@@ -516,14 +509,15 @@ export function AssistantContent({ jobId }: { jobId: string }) {
                         }
                       }}
                       placeholder="e.g. Tighten my summary to two sentences"
-                      rows={2}
+                      rows={1}
                       disabled={streaming || phase !== 'ready'}
-                      className="resize-none"
+                      className="min-h-0 flex-1 border-0 bg-transparent px-0 py-1.5 focus:border-0 focus:ring-0"
                     />
                     <Button
                       onClick={() => send(input)}
                       disabled={streaming || phase !== 'ready' || !input.trim()}
-                      className="gap-2 flex-shrink-0"
+                      size="icon"
+                      className="flex-shrink-0"
                       aria-label="Send"
                     >
                       {streaming ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
@@ -531,23 +525,23 @@ export function AssistantContent({ jobId }: { jobId: string }) {
                   </div>
                 )}
               </div>
-            </div>
+            </FadeIn>
 
             {/* Live PDF column */}
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between gap-2 flex-wrap">
+            <FadeIn delay={0.06} className="flex flex-col gap-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-3">
-                  <span className="proof-label">live preview</span>
+                  <span className="text-caption text-muted-foreground">Live preview</span>
                   {/* Resume / Letter toggle — only when the resume has a cover letter. */}
                   {hasLetter && (
-                    <div className="inline-flex rounded-lg border-2 border-black overflow-hidden">
+                    <div className="inline-flex rounded-full bg-bone p-1">
                       {(['resume', 'letter'] as const).map((tab) => (
                         <button
                           key={tab}
                           onClick={() => setPreview(tab)}
-                          className={`px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-[0.12em] transition-colors ${
-                            preview === tab ? 'bg-purple-600 text-white' : 'bg-white hover:bg-gray-100'
-                          } ${tab === 'letter' ? 'border-l-2 border-black' : ''}`}
+                          className={`rounded-full px-3 py-1 text-caption capitalize transition-colors ${
+                            preview === tab ? 'bg-white text-aubergine' : 'text-muted-foreground hover:text-aubergine'
+                          }`}
                         >
                           {tab}
                         </button>
@@ -566,13 +560,11 @@ export function AssistantContent({ jobId }: { jobId: string }) {
                   Save as new version · Free
                 </Button>
               </div>
-              <div className="rounded-xl border-2 border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] overflow-hidden">
-                <LivePdfPreview
-                  typstCode={preview === 'letter' ? letterTypst : typstCode}
-                  filename={preview === 'letter' ? 'cover-letter' : 'resume'}
-                />
-              </div>
-            </div>
+              <LivePdfPreview
+                typstCode={preview === 'letter' ? letterTypst : typstCode}
+                filename={preview === 'letter' ? 'cover-letter' : 'resume'}
+              />
+            </FadeIn>
           </div>
         )}
       </main>

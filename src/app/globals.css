@@ -2,172 +2,135 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Import PDF and A4 specific styles */
+/* Import PDF and A4 specific styles (serve the resume document, not the app UI) */
 @import url('../styles/pdf.css');
 @import url('../styles/a4-layout.css');
 
-
 /* ============================================
-   NEOBRUTALISM DESIGN SYSTEM
+   PHANTOM DESIGN SYSTEM
+   Soft, monochromatic aubergine + lavender world.
+   Flat surfaces, pill geometry, whisper-weight type.
    ============================================ */
 
 :root {
-  /* Vitex Brand Colors */
-  --vitex-purple: #6C3CE9;
-  --vitex-purple-light: #8B5CF6;
-  --vitex-purple-dark: #5521C9;
-  --vitex-cyan: #00D4AA;
-  --vitex-cyan-light: #34E7C0;
-  
-  /* Neobrutalism Core */
-  --neo-bg: #f0f0f0;
-  --neo-white: #ffffff;
-  --neo-black: #000000;
-  --neo-shadow: 4px 4px 0px 0px rgba(0,0,0,0.9);
-  --neo-shadow-sm: 2px 2px 0px 0px rgba(0,0,0,0.9);
-  --neo-shadow-lg: 6px 6px 0px 0px rgba(0,0,0,0.9);
-  --neo-shadow-xl: 8px 8px 0px 0px rgba(0,0,0,0.9);
-  
-  /* Text Colors */
-  --text-primary: #1a1a1a;
-  --text-secondary: #525252;
-  --text-muted: #737373;
+  /* Phantom raw palette */
+  --color-aubergine: #3c315b;
+  --color-lavender: #e2dffe; /* Ghost Lavender — primary CTA fill */
+  --color-periwinkle: #ab9ff2;
+  --color-cornflower: #4a87f2;
+  --color-buttercream: #ffffc4;
+  --color-blush: #ffdadc;
+  --color-mint: #2ec08b;
+  --color-mint-ink: #157f5c;
+  --color-paper: #fdfcfe;
+  --color-obsidian: #1c1c1c;
+  --color-fog: #86848d;
+  --color-fog-deep: #5f5d67;
+  --color-ash: #e9e8ea;
+  --color-bone: #f4f2f4;
+  --color-rose-ink: #9f2936;
+  --color-rosewood: #b23a48;
 
-  /* Background Paper */
-  --background-paper: #ffffff;
+  /* The system's only shadow: a soft lavender halo on the primary CTA */
+  --glow-lavender: 0 0 4px #e2dffe;
 
-  /* ── "Typeset Proof" system ───────────────────────────── */
-  --ink: #0a0a0a;                 /* borders + primary ink */
-  --nav-h: 4.5rem;                /* fixed navbar height (single source of truth) */
-  --baseline: 28px;              /* typographic baseline unit (ruled-galley rhythm) */
-  --proof-rule: rgba(10, 10, 10, 0.045); /* faint baseline-grid rule */
-  --crop-len: 14px;              /* crop-mark leg length */
-  --crop-gap: 6px;               /* crop-mark offset from corner */
+  /* Fixed navbar height (single source of truth) */
+  --nav-h: 4.5rem;
 }
 
 body {
-  background-color: var(--neo-bg);
-  color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   font-feature-settings: 'kern' 1, 'liga' 1;
+  font-weight: 400;
   line-height: 1.6;
+  letter-spacing: -0.025em;
 }
 
 /* ============================================
-   NEOBRUTALISM UTILITY CLASSES
+   TAILWIND BASE LAYER — LIGHT MODE ONLY
+   shadcn HSL tokens remapped onto Phantom
+   ============================================ */
+
+@layer base {
+  :root {
+    --background: 270 50% 99%; /* Paper White #fdfcfe */
+    --foreground: 0 0% 11%; /* Obsidian #1c1c1c */
+    --card: 270 50% 99%; /* Paper White */
+    --card-foreground: 0 0% 11%;
+    --popover: 270 50% 99%;
+    --popover-foreground: 0 0% 11%;
+    --primary: 256 30% 27%; /* Aubergine #3c315b — deep links / emphasis / dark surfaces */
+    --primary-foreground: 270 50% 99%; /* Paper on aubergine */
+    --secondary: 270 5% 91%; /* Ash #e9e8ea */
+    --secondary-foreground: 0 0% 11%;
+    --muted: 300 8% 95%; /* Bone #f4f2f4 */
+    --muted-foreground: 252 5% 38%; /* Fog Deep #5f5d67 */
+    --accent: 249 76% 79%; /* Periwinkle #ab9ff2 */
+    --accent-foreground: 256 30% 27%; /* Aubergine text on periwinkle */
+    --destructive: 353 51% 46%; /* Rosewood #b23a48 */
+    --destructive-foreground: 270 50% 99%;
+    --success: 158 62% 47%; /* Mint Signal #2ec08b */
+    --success-foreground: 158 72% 29%; /* Mint Ink #157f5c */
+    --border: 270 5% 91%; /* Ash */
+    --input: 270 5% 91%; /* Ash */
+    --ring: 249 76% 79%; /* Periwinkle */
+    --radius: 1rem;
+    --chart-1: 256 30% 27%;
+    --chart-2: 249 76% 79%;
+    --chart-3: 213 87% 62%;
+    --chart-4: 158 62% 47%;
+    --chart-5: 60 100% 88%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  /* Whisper-weight headings — light weight, tight tracking, aubergine. */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-normal tracking-tight text-primary;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+  }
+
+  h1 {
+    @apply text-4xl sm:text-5xl lg:text-6xl;
+    font-weight: 300;
+    line-height: 1.05;
+  }
+
+  h2 {
+    @apply text-3xl sm:text-4xl;
+    font-weight: 300;
+    line-height: 1.1;
+  }
+
+  h3 {
+    @apply text-xl sm:text-2xl;
+    font-weight: 400;
+  }
+
+  /* Crisp keyboard focus — 2px Periwinkle ring across interactive elements. */
+  :focus-visible {
+    outline: 2px solid var(--color-periwinkle);
+    outline-offset: 2px;
+  }
+}
+
+/* ============================================
+   PHANTOM UTILITY CLASSES
    ============================================ */
 
 @layer utilities {
-  /* Shadow utilities */
-  .neo-shadow-sm {
-    box-shadow: var(--neo-shadow-sm);
-  }
-  
-  .neo-shadow {
-    box-shadow: var(--neo-shadow);
-  }
-  
-  .neo-shadow-lg {
-    box-shadow: var(--neo-shadow-lg);
-  }
-  
-  .neo-shadow-xl {
-    box-shadow: var(--neo-shadow-xl);
-  }
-  
-  /* Border utilities */
-  .neo-border {
-    border: 2px solid var(--neo-black);
-  }
-  
-  .neo-border-3 {
-    border: 3px solid var(--neo-black);
-  }
-  
-  .neo-border-4 {
-    border: 4px solid var(--neo-black);
-  }
-  
-  /* Card utility */
-  .neo-card {
-    @apply bg-white rounded-xl neo-border neo-shadow transition-all duration-200;
-  }
-  
-  .neo-card-hover:hover {
-    box-shadow: var(--neo-shadow-lg);
-    transform: translate(-2px, -2px);
-  }
-  
-  /* Button utilities */
-  .neo-button {
-    @apply neo-border neo-shadow font-bold transition-all duration-200;
-  }
-  
-  .neo-button:hover {
-    box-shadow: var(--neo-shadow-lg);
-    transform: translate(-2px, -2px);
-  }
-  
-  .neo-button:active {
-    box-shadow: var(--neo-shadow-sm);
-    transform: translate(2px, 2px);
-  }
-  
-  /* Input utilities */
-  .neo-input {
-    @apply neo-border bg-white rounded-lg px-4 py-2 font-medium transition-all duration-200;
-  }
-  
-  .neo-input:focus {
-    box-shadow: var(--neo-shadow);
-    outline: none;
-  }
-  
-  /* Background patterns */
-  .neo-grid-bg {
-    background-image: 
-      linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px);
-    background-size: 20px 20px;
-  }
-  
-  .neo-dots-bg {
-    background-image: radial-gradient(rgba(0,0,0,0.1) 1px, transparent 1px);
-    background-size: 16px 16px;
-  }
-  
-  /* Text gradient for brand */
-  .text-gradient-vitex {
-    @apply bg-gradient-to-r from-purple-600 to-cyan-500 bg-clip-text text-transparent;
-  }
-  
-  /* Brand font with gradient - combines Titan One with brand colors */
-  .text-gradient-vitex-brand {
-    @apply font-brand bg-gradient-to-r from-purple-600 to-cyan-500 bg-clip-text text-transparent;
-  }
-  
-  /* Non-interactive element styles (no shadow, no border) */
-  .neo-static {
-    @apply rounded-lg;
-  }
-  
-  .neo-static-card {
-    @apply bg-white rounded-xl;
-  }
-  
-  .neo-static-badge {
-    @apply inline-flex items-center rounded-lg px-3 py-1 text-xs font-bold;
-  }
-
-  /* ════════════════════════════════════════════════════════
-     "TYPESET PROOF" SIGNATURE SYSTEM
-     ════════════════════════════════════════════════════════ */
-
-  /* Page shell — clears the fixed navbar + a deliberate breathing gap.
-     Replaces the cramped per-page `pt-20`. */
+  /* Page shell — clears the fixed navbar + a deliberate breathing gap. */
   .page-shell {
     padding-top: calc(var(--nav-h) + 2.5rem);
   }
@@ -186,186 +149,30 @@ body {
     }
   }
 
-  /* Uniform inter-section rhythm (multiples of the baseline). */
+  /* Uniform 64px inter-section rhythm. */
   .section-y {
-    padding-top: 3rem;
-    padding-bottom: 3rem;
+    padding-top: 4rem;
+    padding-bottom: 4rem;
   }
   @media (min-width: 768px) {
     .section-y {
-      padding-top: 5rem;
-      padding-bottom: 5rem;
+      padding-top: 6rem;
+      padding-bottom: 6rem;
     }
   }
 
-  /* 60/40 editorial grid — mirrors the resume's own asymmetric layout. */
-  .vitex-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
+  /* Dark aubergine band — used sparingly (homepage CLI band + Footer only). */
+  .section-dark {
+    background-color: var(--color-aubergine);
+    color: var(--color-paper);
   }
-  @media (min-width: 768px) {
-    .vitex-grid {
-      grid-template-columns: 60% 40%;
-      gap: 2rem;
-      align-items: start;
-    }
-  }
-
-  /* Mono coordinate / proof label — the typeset structural voice. */
-  .proof-label {
-    font-family: var(--font-geist-mono), ui-monospace, monospace;
-    font-size: 0.6875rem;       /* 11px */
-    line-height: 1;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    font-weight: 500;
-    color: var(--text-muted);
-  }
-
-  /* Crop / registration marks — print-proof corner ticks drawn OUTSIDE
-     the element. Apply to a position:relative box with its own border. */
-  .crop-frame {
-    position: relative;
-  }
-  .crop-frame::before,
-  .crop-frame::after {
-    content: "";
-    position: absolute;
-    width: var(--crop-len);
-    height: var(--crop-len);
-    pointer-events: none;
-    z-index: 1;
-  }
-  /* top-left + top-right via ::before with two gradients */
-  .crop-frame::before {
-    top: calc(-1 * var(--crop-gap));
-    left: calc(-1 * var(--crop-gap));
-    border-top: 2px solid var(--ink);
-    border-left: 2px solid var(--ink);
-  }
-  .crop-frame::after {
-    bottom: calc(-1 * var(--crop-gap));
-    right: calc(-1 * var(--crop-gap));
-    border-bottom: 2px solid var(--ink);
-    border-right: 2px solid var(--ink);
-  }
-  /* The other two corners come from child marks for full registration. */
-  .crop-frame > .crop-tr,
-  .crop-frame > .crop-bl {
-    position: absolute;
-    width: var(--crop-len);
-    height: var(--crop-len);
-    pointer-events: none;
-    z-index: 1;
-  }
-  .crop-frame > .crop-tr {
-    top: calc(-1 * var(--crop-gap));
-    right: calc(-1 * var(--crop-gap));
-    border-top: 2px solid var(--ink);
-    border-right: 2px solid var(--ink);
-  }
-  .crop-frame > .crop-bl {
-    bottom: calc(-1 * var(--crop-gap));
-    left: calc(-1 * var(--crop-gap));
-    border-bottom: 2px solid var(--ink);
-    border-left: 2px solid var(--ink);
-  }
-  /* Hide crop marks on very small screens where they crowd the edge. */
-  @media (max-width: 480px) {
-    .crop-frame::before,
-    .crop-frame::after,
-    .crop-frame > .crop-tr,
-    .crop-frame > .crop-bl {
-      display: none;
-    }
-  }
-
-  /* Faint baseline-grid texture — the ruled typesetter's galley. */
-  .baseline-grid {
-    background-image: repeating-linear-gradient(
-      to bottom,
-      transparent 0,
-      transparent calc(var(--baseline) - 1px),
-      var(--proof-rule) calc(var(--baseline) - 1px),
-      var(--proof-rule) var(--baseline)
-    );
-  }
-}
-
-/* ============================================
-   BRAND FONT STYLING
-   Titan One requires extra letter-spacing for readability
-   ============================================ */
-
-.font-brand {
-  letter-spacing: 0.05em; /* tracking-wider equivalent */
-}
-
-/* ============================================
-   TAILWIND BASE LAYER - LIGHT MODE ONLY
-   ============================================ */
-
-@layer base {
-  :root {
-    --background: 0 0% 94%; /* #f0f0f0 */
-    --foreground: 0 0% 10%; /* Dark text */
-    --card: 0 0% 100%; /* White */
-    --card-foreground: 0 0% 10%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 10%;
-    --primary: 258 80% 57%; /* Vitex Purple #6C3CE9 */
-    --primary-foreground: 0 0% 100%;
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 10%;
-    --muted: 0 0% 92%;
-    --muted-foreground: 0 0% 45%;
-    --accent: 166 100% 42%; /* Electric Cyan #00D4AA */
-    --accent-foreground: 0 0% 10%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 0%; /* Black borders */
-    --input: 0 0% 0%;
-    --ring: 258 80% 57%;
-    --radius: 0.75rem;
-    --chart-1: 258 80% 57%;
-    --chart-2: 166 100% 42%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-  }
-}
-
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-  
-  /* Enhanced typography */
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-bold tracking-tight;
-    text-wrap: balance;
-  }
-
-  h1 {
-    @apply text-4xl sm:text-5xl lg:text-6xl;
-  }
-
-  h2 {
-    @apply text-3xl sm:text-4xl font-black;
-  }
-
-  h3 {
-    @apply text-xl sm:text-2xl;
-  }
-
-  /* Crisp keyboard focus across all interactive elements. */
-  :focus-visible {
-    outline: 2px solid var(--vitex-purple);
-    outline-offset: 2px;
+  .section-dark h1,
+  .section-dark h2,
+  .section-dark h3,
+  .section-dark h4,
+  .section-dark h5,
+  .section-dark h6 {
+    color: var(--color-paper);
   }
 }
 
@@ -377,10 +184,9 @@ body {
   max-width: 1100px;
   margin: 0 auto;
   padding: 1.5rem;
-  background: var(--background-paper);
-  border: 2px solid black;
-  border-radius: 0.75rem;
-  box-shadow: var(--neo-shadow);
+  background: var(--color-paper);
+  border: 1px solid var(--color-ash);
+  border-radius: 1.5rem;
 }
 
 @media (min-width: 640px) {
@@ -402,14 +208,14 @@ body {
   }
 }
 
-/* Skill tag styles */
+/* Skill tag — soft Bone pill. */
 .skill-tag {
-  background-color: rgba(108, 60, 233, 0.1);
-  border: 2px solid black;
-  border-radius: 0.5rem;
+  background-color: var(--color-bone);
+  border-radius: 9999px;
   padding: 0.25rem 0.75rem;
-  font-weight: 600;
+  font-weight: 400;
   font-size: 0.875rem;
+  color: var(--color-aubergine);
 }
 
 @media (max-width: 640px) {
@@ -428,15 +234,14 @@ body {
 }
 
 .work-item ul li::marker {
-  color: var(--vitex-purple);
-  font-weight: bold;
+  color: var(--color-periwinkle);
 }
 
 /* Responsive container adjustments */
 @media (max-width: 1024px) {
   .resume-container {
     margin: 0 0.5rem;
-    border-radius: 0.75rem;
+    border-radius: 1.5rem;
   }
 }
 
@@ -463,7 +268,7 @@ body {
     background: white !important;
     border-radius: 0 !important;
   }
-  
+
   body {
     background: white !important;
     color: black !important;
@@ -489,90 +294,9 @@ body {
 }
 
 /* ============================================
-   ANIMATION UTILITIES
+   ACCESSIBILITY — respect reduced-motion for all motion
    ============================================ */
 
-@keyframes neo-bounce {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-8px);
-  }
-}
-
-@keyframes neo-wiggle {
-  0%, 100% {
-    transform: rotate(0deg);
-  }
-  25% {
-    transform: rotate(-3deg);
-  }
-  75% {
-    transform: rotate(3deg);
-  }
-}
-
-@keyframes neo-pulse {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.05);
-  }
-}
-
-.animate-neo-bounce {
-  animation: neo-bounce 2s ease-in-out infinite;
-}
-
-.animate-neo-wiggle {
-  animation: neo-wiggle 1s ease-in-out infinite;
-}
-
-.animate-neo-pulse {
-  animation: neo-pulse 2s ease-in-out infinite;
-}
-
-/* Hover animation utilities */
-.hover-lift {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.hover-lift:hover {
-  transform: translate(-2px, -2px);
-}
-
-/* ── Compile / typeset reveal (homepage signature) ─────────── */
-@keyframes compile-line {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-    filter: blur(2px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-    filter: blur(0);
-  }
-}
-
-@keyframes compile-sweep {
-  from { transform: translateY(-100%); }
-  to { transform: translateY(220%); }
-}
-
-.compile-line {
-  animation: compile-line 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) both;
-}
-
-.compile-sweep {
-  animation: compile-sweep 2.2s ease-in-out infinite;
-}
-
-/* ════════════════════════════════════════════════════════
-   ACCESSIBILITY — respect reduced-motion for all motion
-   ════════════════════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -582,20 +306,4 @@ body {
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }
-  .compile-line {
-    opacity: 1;
-    transform: none;
-    filter: none;
-  }
-  .compile-sweep {
-    display: none;
-  }
-}
-
-/* ============================================
-   GRADIENT CANVAS (Legacy support)
-   ============================================ */
-
-.gradient-canvas {
-  display: none; /* Disabled in Neobrutalism design */
 }

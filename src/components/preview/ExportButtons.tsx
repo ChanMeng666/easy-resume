@@ -40,7 +40,7 @@ export function ExportButtons({ typstCode, resumeName = 'resume' }: ExportButton
       >
         {copyStatus === 'copied' ? (
           <>
-            <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
+            <CheckCircle className="mr-2 h-4 w-4 text-mint-ink" />
             Copied!
           </>
         ) : (

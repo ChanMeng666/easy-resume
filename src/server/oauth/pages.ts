@@ -22,22 +22,24 @@ export function escapeHtml(value: string): string {
 const PAGE_STYLE = `
   *{box-sizing:border-box}
   body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
-    background:#f0f0f0;padding:24px;
-    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#111}
-  .card{background:#fff;border:3px solid #000;border-radius:16px;
-    box-shadow:8px 8px 0 0 rgba(0,0,0,0.9);max-width:460px;width:100%;padding:32px}
-  h1{font-size:24px;font-weight:900;margin:0 0 16px;line-height:1.2}
+    background:#fdfcfe;padding:24px;letter-spacing:-0.025em;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1c1c1c}
+  .card{background:#fff;border:1px solid #e9e8ea;border-radius:24px;
+    box-shadow:none;max-width:460px;width:100%;padding:48px}
+  h1{font-size:24px;font-weight:400;color:#3c315b;margin:0 0 16px;line-height:1.2}
   p{font-size:15px;line-height:1.5;margin:0 0 16px}
-  .who{font-size:13px;font-weight:700;background:#f0f0f0;border:2px solid #000;border-radius:8px;
-    padding:8px 12px;margin:0 0 20px;display:inline-block}
-  .scopes{font-size:14px;color:#333;margin:0 0 24px}
+  .who{font-size:13px;background:#f4f2f4;border:none;border-radius:100px;
+    padding:8px 16px;margin:0 0 20px;display:inline-block}
+  .scopes{font-size:14px;color:#5f5d67;margin:0 0 24px}
   .actions{display:flex;gap:12px}
-  button{flex:1;font-size:15px;font-weight:700;padding:12px 16px;border:2px solid #000;
-    border-radius:8px;cursor:pointer;transition:all .15s;box-shadow:4px 4px 0 0 rgba(0,0,0,0.9)}
-  button:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 0 rgba(0,0,0,0.9)}
-  .allow{background:#6C3CE9;color:#fff}
-  .cancel{background:#fff;color:#000}
-  .err{color:#b00020;font-weight:700}
+  button{flex:1;font-size:15px;font-weight:400;padding:12px 16px;border:none;
+    border-radius:100px;cursor:pointer;transition:background .15s}
+  .allow{background:#e2dffe;color:#3c315b;box-shadow:0 0 4px #e2dffe}
+  .allow:hover{background:#d6d2fd}
+  .cancel{background:#e9e8ea;color:#1c1c1c}
+  .cancel:hover{background:#e2e1e3}
+  .err{color:#b23a48}
+  @media (max-width:480px){.card{padding:32px}}
 `;
 
 function shell(title: string, inner: string): string {

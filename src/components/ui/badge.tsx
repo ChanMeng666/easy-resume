@@ -4,28 +4,28 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 /**
- * Neobrutalism styled badge variants (non-interactive style).
- * Badges have no borders or shadows to distinguish from clickable elements.
+ * Phantom badge — soft pills with tonal fills, no borders or shadows
+ * (except the quiet outline variant).
  */
 const badgeVariants = cva(
-  "inline-flex items-center rounded-lg px-3 py-1 text-xs font-bold transition-colors",
+  "inline-flex items-center rounded-full px-3 py-1 text-xs font-medium tracking-tight transition-colors",
   {
     variants: {
       variant: {
         default:
-          "bg-primary text-white",
+          "bg-bone text-aubergine",
         secondary:
-          "bg-gray-100 text-foreground",
-        destructive:
-          "bg-destructive text-white",
-        outline: 
-          "bg-white text-foreground",
+          "bg-ash text-obsidian",
         accent:
-          "bg-accent text-accent-foreground",
+          "bg-periwinkle/30 text-aubergine",
         success:
-          "bg-green-500 text-white",
+          "bg-mint/15 text-mint-ink",
         warning:
-          "bg-yellow-400 text-black",
+          "bg-buttercream text-[#6b5d13]",
+        destructive:
+          "bg-blush text-rose-ink",
+        outline:
+          "border border-ash text-foreground",
       },
     },
     defaultVariants: {
@@ -39,7 +39,7 @@ export interface BadgeProps
     VariantProps<typeof badgeVariants> {}
 
 /**
- * Neobrutalism styled badge component.
+ * Phantom styled badge component.
  */
 function Badge({ className, variant, ...props }: BadgeProps) {
   return (

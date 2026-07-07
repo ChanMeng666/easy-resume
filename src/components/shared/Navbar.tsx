@@ -13,7 +13,7 @@ import { Sparkles, Menu, X, LayoutDashboard, CreditCard, Files, User, Briefcase 
 interface NavbarProps {
   currentPath?: string;
   rightContent?: ReactNode;
-  /** 
+  /**
    * Positioning mode for the navbar:
    * - 'fixed': Fixed at top of viewport with scroll-hide behavior (default)
    * - 'sticky': Sticky at top of scroll container with scroll-hide behavior
@@ -37,14 +37,12 @@ function isActivePath(currentPath: string, targetPath: string): boolean {
 }
 
 /**
- * Navigation link style generator.
+ * Navigation link style generator — soft pill links in aubergine.
  */
 function getNavLinkStyles(currentPath: string, targetPath: string): string {
   const isActive = isActivePath(currentPath, targetPath);
-  return `font-mono text-[11px] font-medium uppercase tracking-[0.18em] transition-all px-3 py-2 rounded-lg border-2 flex items-center gap-2 ${
-    isActive
-      ? 'text-primary bg-primary/10 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]'
-      : 'text-foreground border-transparent hover:border-black hover:bg-gray-100 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]'
+  return `text-sm text-aubergine transition-colors px-3 py-2 rounded-full flex items-center gap-2 ${
+    isActive ? 'bg-bone' : 'hover:bg-bone'
   }`;
 }
 
@@ -98,15 +96,15 @@ function NavLinksInner({ currentPath }: { currentPath: string }) {
 }
 
 /**
- * Mobile navigation menu component.
+ * Mobile navigation menu component — soft drawer, no hard shadow.
  */
-function MobileMenu({ 
-  isOpen, 
-  onClose, 
-  currentPath 
-}: { 
-  isOpen: boolean; 
-  onClose: () => void; 
+function MobileMenu({
+  isOpen,
+  onClose,
+  currentPath
+}: {
+  isOpen: boolean;
+  onClose: () => void;
   currentPath: string;
 }) {
   const user = useUser();
@@ -116,22 +114,22 @@ function MobileMenu({
   return (
     <div className="fixed inset-0 z-50 md:hidden">
       {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/50" 
+      <div
+        className="absolute inset-0 bg-obsidian/40"
         onClick={onClose}
       />
-      
+
       {/* Menu Panel */}
-      <div className="absolute right-0 top-0 h-full w-64 bg-white border-l-2 border-black shadow-[-4px_0px_0px_0px_rgba(0,0,0,0.9)] p-6">
+      <div className="absolute right-0 top-0 h-full w-64 bg-white border-l border-ash rounded-l-3xl p-6">
         <div className="flex justify-end mb-6">
-          <button 
+          <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-gray-100 border-2 border-transparent hover:border-black transition-all"
+            className="p-2 rounded-full text-aubergine hover:bg-bone transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
-        
+
         <nav className="flex flex-col gap-3">
           {/* My Resumes - Only for logged-in users */}
           {user && (
@@ -205,35 +203,37 @@ function MobileMenu({
 }
 
 /**
- * Neobrutalism styled navigation bar with auto-hide on scroll down.
- * Features bold borders, hard shadows, clean typography, and mobile responsiveness.
+ * Phantom floating pill navigation with auto-hide on scroll down.
+ * A capsule floats over the page; links are soft pills and the CTA is the
+ * lavender glow button.
  */
 export function Navbar({ currentPath = '/', rightContent, position, fixed, externalScrollDirection }: NavbarProps) {
   const windowScrollDirection = useScrollDirection();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Use external scroll direction if provided, otherwise use window scroll
-  const scrollDirection = externalScrollDirection !== undefined 
-    ? externalScrollDirection 
+  const scrollDirection = externalScrollDirection !== undefined
+    ? externalScrollDirection
     : windowScrollDirection;
 
   // Resolve position from new prop or legacy fixed prop
   const resolvedPosition = position ?? (fixed === false ? 'static' : 'fixed');
 
-  // Generate position classes based on mode
+  // Generate position classes based on mode. The pill floats with a top gap;
+  // it slides fully out of view (past its own height) when scrolling down.
   const getPositionClasses = () => {
     switch (resolvedPosition) {
       case 'fixed':
-        return `fixed top-0 left-0 right-0 z-50 transition-transform duration-300 ${
-          scrollDirection === 'down' ? '-translate-y-full' : 'translate-y-0'
+        return `fixed top-4 inset-x-0 z-50 px-4 transition-transform duration-300 ${
+          scrollDirection === 'down' ? '-translate-y-[150%]' : 'translate-y-0'
         }`;
       case 'sticky':
-        return `sticky top-0 z-50 transition-transform duration-300 ${
-          scrollDirection === 'down' ? '-translate-y-full' : 'translate-y-0'
+        return `sticky top-4 z-50 px-4 transition-transform duration-300 ${
+          scrollDirection === 'down' ? '-translate-y-[150%]' : 'translate-y-0'
         }`;
       case 'static':
       default:
-        return 'relative';
+        return 'relative px-4';
     }
   };
 
@@ -241,23 +241,23 @@ export function Navbar({ currentPath = '/', rightContent, position, fixed, exter
 
   return (
     <>
-      <nav className={`${positionClasses} bg-white border-b-2 border-black`}>
-        <div className="container mx-auto px-4">
-          <div className="flex h-[4.5rem] items-center justify-between">
+      <nav className={positionClasses}>
+        <div className="mx-auto max-w-content">
+          <div className="flex h-14 items-center justify-between rounded-full border border-ash bg-paper pl-5 pr-2">
             {/* Logo */}
             <Link href="/" className="flex items-center" aria-label="Vitex home">
-              <Image src="/logo/vitex-logo-black.svg" alt="Vitex" width={120} height={52} priority className="h-9 w-auto" />
+              <Image src="/logo/vitex-logo-black.svg" alt="Vitex" width={120} height={52} priority className="h-8 w-auto" />
             </Link>
 
             {/* Right Content - Custom or Default Navigation */}
             {rightContent || (
               <>
                 {/* Desktop Navigation */}
-                <div className="hidden md:flex items-center gap-4">
+                <div className="hidden md:flex items-center gap-2">
                   <Suspense fallback={
                     <Link
                       href="/pricing"
-                      className="font-mono text-[11px] font-medium uppercase tracking-[0.18em] transition-all hover:bg-gray-100 px-3 py-2 rounded-lg flex items-center gap-2"
+                      className="text-sm text-aubergine transition-colors hover:bg-bone px-3 py-2 rounded-full flex items-center gap-2"
                     >
                       <CreditCard className="w-4 h-4" />
                       Pricing
@@ -265,7 +265,7 @@ export function Navbar({ currentPath = '/', rightContent, position, fixed, exter
                   }>
                     <NavLinksInner currentPath={currentPath} />
                   </Suspense>
-                  
+
                   {/* Get Started - Primary CTA */}
                   <Link href="/">
                     <Button size="sm" className="gap-1">
@@ -281,14 +281,14 @@ export function Navbar({ currentPath = '/', rightContent, position, fixed, exter
                 </div>
 
                 {/* Mobile Menu Button */}
-                <div className="flex md:hidden items-center gap-3">
+                <div className="flex md:hidden items-center gap-2">
                   <Suspense fallback={null}>
                     <CreditBadge />
                   </Suspense>
                   <UserButton />
-                  <button 
+                  <button
                     onClick={() => setIsMobileMenuOpen(true)}
-                    className="p-2 rounded-lg hover:bg-gray-100 border-2 border-transparent hover:border-black transition-all"
+                    className="p-2 rounded-full text-aubergine hover:bg-bone transition-colors"
                   >
                     <Menu className="w-5 h-5" />
                   </button>
@@ -300,9 +300,9 @@ export function Navbar({ currentPath = '/', rightContent, position, fixed, exter
       </nav>
 
       {/* Mobile Menu */}
-      <MobileMenu 
-        isOpen={isMobileMenuOpen} 
-        onClose={() => setIsMobileMenuOpen(false)} 
+      <MobileMenu
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
         currentPath={currentPath}
       />
     </>

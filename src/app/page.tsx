@@ -3,14 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@stackframe/stack';
-import { motion } from 'framer-motion';
 import { Sparkles, Target, Bot, Download, User, Terminal, Plug } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Navbar } from '@/components/shared/Navbar';
 import { Footer } from '@/components/shared/Footer';
-import { CropFrame } from '@/components/shared/CropFrame';
+import { FadeIn } from '@/components/shared/FadeIn';
 
 declare global {
   interface Window {
@@ -45,78 +44,6 @@ const EXAMPLE_PROMPTS: { label: string; jd: string; bg: string }[] = [
     bg: "Data analyst with 3 years of experience in retail and e-commerce. I write SQL and Python (pandas) daily, build Tableau dashboards, and ran A/B tests that lifted conversion by 12%. I present findings to non-technical stakeholders weekly. B.A. in Economics with a statistics minor.",
   },
 ];
-
-/**
- * A "bar" of typeset text used in the composed-resume preview. Reveals with the
- * compile animation at a staggered delay so the page looks like it is being set.
- */
-function Bar({ w, accent, delay }: { w: string; accent?: boolean; delay: number }) {
-  return (
-    <div
-      className={`compile-line h-2 rounded ${accent ? 'bg-primary' : 'bg-gray-300'}`}
-      style={{ width: w, animationDelay: `${delay}s` }}
-    />
-  );
-}
-
-/**
- * Decorative preview of a "composed" two-column resume — the product's own
- * 60/40 layout, crop-marked like a print proof, with a compile sweep. This is
- * the homepage's signature element. Purely visual (aria-hidden).
- */
-function ComposedPreview() {
-  return (
-    <CropFrame
-      aria-hidden
-      className="mx-auto w-full max-w-sm overflow-hidden rounded-lg border-2 border-black bg-white shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)]"
-    >
-      {/* Proof header bar */}
-      <div className="flex items-center justify-between border-b-2 border-black bg-gray-50 px-3 py-2">
-        <span className="proof-label">resume.pdf · A4</span>
-        <span className="proof-label !text-primary">ATS·094</span>
-      </div>
-
-      {/* Page body with a downward compile sweep */}
-      <div className="relative p-4">
-        <div className="compile-sweep pointer-events-none absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-cyan-300/50 to-transparent" />
-
-        {/* Name + role */}
-        <div className="compile-line mb-1.5 h-4 w-2/3 rounded bg-foreground" style={{ animationDelay: '0.05s' }} />
-        <div className="compile-line mb-4 h-2 w-1/3 rounded bg-primary" style={{ animationDelay: '0.12s' }} />
-
-        {/* 60 / 40 grid — mirrors generator.ts */}
-        <div className="grid grid-cols-[60%_40%] gap-3">
-          <div className="space-y-2">
-            <Bar w="40%" accent delay={0.18} />
-            <Bar w="100%" delay={0.24} />
-            <Bar w="92%" delay={0.28} />
-            <Bar w="80%" delay={0.32} />
-            <div className="h-1" />
-            <Bar w="40%" accent delay={0.4} />
-            <Bar w="100%" delay={0.46} />
-            <Bar w="88%" delay={0.5} />
-          </div>
-          <div className="space-y-2">
-            <Bar w="55%" accent delay={0.36} />
-            <Bar w="90%" delay={0.42} />
-            <Bar w="70%" delay={0.46} />
-            <div className="h-1" />
-            <Bar w="55%" accent delay={0.54} />
-            <div className="flex flex-wrap gap-1 pt-0.5">
-              {['28%', '34%', '24%', '30%'].map((w, i) => (
-                <div
-                  key={i}
-                  className="compile-line h-3 rounded border border-black bg-cyan-100"
-                  style={{ width: w, animationDelay: `${0.58 + i * 0.04}s` }}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </CropFrame>
-  );
-}
 
 /**
  * Product-first homepage that lets users immediately start generating a resume.
@@ -241,322 +168,264 @@ export default function HomePage() {
   }
 
   return (
-    <div className="relative min-h-screen baseline-grid bg-[#f0f0f0] font-sans text-foreground">
-      <div className="flex flex-col min-h-screen">
-        <Navbar currentPath="/" />
+    <div className="relative flex min-h-screen flex-col bg-background text-foreground">
+      <Navbar currentPath="/" />
 
-        <main className="flex-grow page-shell page-pad-b">
-          {/* Hero — 60/40 editorial grid: pitch + inputs (left), composed proof (right) */}
-          <section className="container mx-auto px-4 max-w-6xl">
-            <motion.p
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-              className="proof-label mb-4"
-            >
-              § Vitex — Career as Code
-            </motion.p>
+      <main className="flex-grow page-shell page-pad-b">
+        {/* Hero — centered pitch + the input console */}
+        <section className="mx-auto max-w-content px-4 sm:px-6 py-16 md:py-24">
+          <FadeIn className="mx-auto max-w-3xl text-center">
+            <p className="mb-5 text-caption uppercase tracking-wider text-fog-deep">
+              Career as Code
+            </p>
+            <h1 className="text-5xl md:text-display font-light tracking-tight leading-[1.05] text-aubergine">
+              Your career, perfectly composed.
+            </h1>
+            <p className="mx-auto mt-6 max-w-2xl text-lead text-muted-foreground">
+              Your career facts are source code. Paste a job description and your
+              background — Vitex tailors, ATS-scores, and compiles a job-ready PDF
+              in about 30 seconds. You&apos;re charged only when the PDF builds;
+              refines are free.
+            </p>
+          </FadeIn>
 
-            <div className="vitex-grid">
-              {/* Left: headline + input console */}
-              <div>
-                <motion.h1
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5 }}
-                  className="font-brand text-4xl sm:text-5xl lg:text-[3.5rem] leading-[1.05] mb-4"
-                >
-                  Your career,
-                  <br />
-                  perfectly composed.
-                </motion.h1>
-                <motion.p
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.1 }}
-                  className="text-base sm:text-lg text-muted-foreground font-medium max-w-xl mb-6"
-                >
-                  Your career facts are source code. Paste a job description and
-                  your background — Vitex tailors, ATS-scores, and compiles a
-                  job-ready PDF in about 30 seconds. You&apos;re charged only when
-                  the PDF builds; refines are free.
-                </motion.p>
-
-                <motion.div
-                  initial={{ opacity: 0, y: 24 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.55, delay: 0.18 }}
-                  className="rounded-xl border-2 border-black bg-white p-4 sm:p-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)]"
-                >
-                  <div className="space-y-4">
-                    {/* Onboarding: one-click examples to prefill both fields. */}
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="proof-label !text-muted-foreground">New here? Try:</span>
-                      {EXAMPLE_PROMPTS.map((ex) => (
-                        <button
-                          key={ex.label}
-                          type="button"
-                          onClick={() => applyExample(ex)}
-                          className="rounded-lg border-2 border-black bg-cyan-100 px-2.5 py-1 font-mono text-xs font-bold transition-all duration-200 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-1px] hover:translate-y-[-1px]"
-                        >
-                          {ex.label}
-                        </button>
-                      ))}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="jd" className="proof-label !text-foreground">
-                        JD.txt — Job Description
-                      </Label>
-                      <Textarea
-                        id="jd"
-                        rows={5}
-                        placeholder="Paste the job description here…"
-                        value={jobDescription}
-                        onChange={(e) => setJobDescription(e.target.value)}
-                        className="min-h-[120px]"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="bg" className="proof-label !text-foreground">
-                        BG.txt — Your Background
-                      </Label>
-
-                      {/* Saved profiles — "enter once, reuse many". Selecting one
-                          fills the background below; you can still edit it. */}
-                      {profiles.length > 0 && (
-                        <div className="flex flex-wrap items-center gap-2 pb-1">
-                          <span className="proof-label !text-muted-foreground inline-flex items-center gap-1">
-                            <User className="h-3.5 w-3.5" />
-                            Use a saved profile:
-                          </span>
-                          {profiles.map((p) => {
-                            const active = selectedProfileId === p.id;
-                            return (
-                              <button
-                                key={p.id}
-                                type="button"
-                                onClick={() => handleSelectProfile(p.id)}
-                                className={`rounded-lg border-2 border-black px-2.5 py-1 font-mono text-xs font-bold transition-all duration-200 ${
-                                  active
-                                    ? 'bg-primary text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)]'
-                                    : 'bg-white hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-1px] hover:translate-y-[-1px]'
-                                }`}
-                                aria-pressed={active}
-                              >
-                                {p.label}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-
-                      <Textarea
-                        id="bg"
-                        rows={5}
-                        placeholder="Briefly describe your experience, skills, and education…"
-                        value={background}
-                        onChange={(e) => handleBackgroundChange(e.target.value)}
-                        className="min-h-[120px]"
-                      />
-                      {selectedProfileId && (
-                        <p className="proof-label !text-primary">
-                          Using saved profile — generation skips re-parsing.
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="mt-5 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="proof-label">3 free resumes on sign-up · No credit card required</p>
-                    <Button
-                      size="lg"
-                      onClick={handleGenerate}
-                      className="h-12 px-8 text-base gap-2 w-full sm:w-auto"
+          <FadeIn delay={0.06} className="mx-auto mt-12 max-w-2xl">
+            <div className="rounded-3xl border border-ash bg-white p-6 sm:p-8">
+              <div className="space-y-5">
+                {/* Onboarding: one-click examples to prefill both fields. */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-caption text-muted-foreground">New here? Try:</span>
+                  {EXAMPLE_PROMPTS.map((ex) => (
+                    <button
+                      key={ex.label}
+                      type="button"
+                      onClick={() => applyExample(ex)}
+                      className="rounded-full border border-ash bg-bone px-3 py-1 text-caption text-aubergine transition-colors hover:bg-ash"
                     >
-                      <Sparkles className="h-5 w-5" />
-                      Generate My Resume
-                    </Button>
-                  </div>
-                </motion.div>
+                      {ex.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="jd" className="text-body-sm font-medium text-aubergine">
+                    Job Description
+                  </Label>
+                  <Textarea
+                    id="jd"
+                    rows={5}
+                    placeholder="Paste the job description here…"
+                    value={jobDescription}
+                    onChange={(e) => setJobDescription(e.target.value)}
+                    className="min-h-[120px]"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="bg" className="text-body-sm font-medium text-aubergine">
+                    Your Background
+                  </Label>
+
+                  {/* Saved profiles — "enter once, reuse many". Selecting one
+                      fills the background below; you can still edit it. */}
+                  {profiles.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-2 pb-1">
+                      <span className="inline-flex items-center gap-1 text-caption text-muted-foreground">
+                        <User className="h-3.5 w-3.5" />
+                        Use a saved profile:
+                      </span>
+                      {profiles.map((p) => {
+                        const active = selectedProfileId === p.id;
+                        return (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => handleSelectProfile(p.id)}
+                            className={`rounded-full border px-3 py-1 text-caption transition-colors ${
+                              active
+                                ? 'border-periwinkle bg-periwinkle text-aubergine'
+                                : 'border-ash bg-bone text-aubergine hover:bg-ash'
+                            }`}
+                            aria-pressed={active}
+                          >
+                            {p.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  <Textarea
+                    id="bg"
+                    rows={5}
+                    placeholder="Briefly describe your experience, skills, and education…"
+                    value={background}
+                    onChange={(e) => handleBackgroundChange(e.target.value)}
+                    className="min-h-[120px]"
+                  />
+                  {selectedProfileId && (
+                    <p className="text-caption text-fog-deep">
+                      Using saved profile — generation skips re-parsing.
+                    </p>
+                  )}
+                </div>
               </div>
 
-              {/* Right: composed-resume proof */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.96 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.6, delay: 0.3 }}
-                className="hidden md:flex flex-col items-center pt-6"
-              >
-                <ComposedPreview />
-                <p className="proof-label mt-6 text-center">
-                  Two-column layout · Typst-compiled · Recruiter-ready
+              <div className="mt-6 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-caption text-muted-foreground">
+                  3 free resumes on sign-up · No credit card required
                 </p>
-              </motion.div>
+                <Button
+                  size="lg"
+                  onClick={handleGenerate}
+                  className="w-full gap-2 sm:w-auto"
+                >
+                  <Sparkles className="h-5 w-5" />
+                  Generate My Resume
+                </Button>
+              </div>
             </div>
-          </section>
+          </FadeIn>
+        </section>
 
-          {/* How It Works — a real 3-step sequence, set as a typeset galley */}
-          <section className="section-y mt-4 bg-white border-y-2 border-black">
-            <div className="container mx-auto px-4 max-w-6xl">
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.2 }}
-                className="motion-reveal mb-10 sm:mb-14"
-              >
-                <p className="proof-label mb-2">§ The Pipeline</p>
-                <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
-                  Three steps, one compile.
-                </h2>
-              </motion.div>
+        {/* How It Works — a real 3-step sequence */}
+        <section className="section-y">
+          <div className="mx-auto max-w-content px-4 sm:px-6">
+            <FadeIn className="mb-12 md:mb-16 text-center">
+              <p className="mb-3 text-caption uppercase tracking-wider text-fog-deep">
+                The Pipeline
+              </p>
+              <h2 className="text-3xl sm:text-4xl font-light tracking-tight text-aubergine">
+                Three steps, one compile.
+              </h2>
+            </FadeIn>
 
-              <div className="grid md:grid-cols-3 gap-8 sm:gap-10">
-                {[
-                  {
-                    icon: Target,
-                    title: 'Paste the JD',
-                    description: 'We parse requirements and keywords from the role.',
-                  },
-                  {
-                    icon: Bot,
-                    title: 'AI composes',
-                    description: 'Your background is tailored and scored against the job.',
-                  },
-                  {
-                    icon: Download,
-                    title: 'Download PDF',
-                    description: 'A typeset, recruiter-ready resume — compiled in seconds.',
-                  },
-                ].map((step, idx) => (
-                  <motion.div
-                    key={idx}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, amount: 0.2 }}
-                    transition={{ delay: idx * 0.1 }}
-                    className="motion-reveal"
-                  >
-                    <CropFrame className="h-full rounded-xl border-2 border-black bg-white p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] transition-all duration-200 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px]">
-                      <div className="mb-4 flex items-center justify-between">
-                        <span className="font-mono text-2xl font-bold text-foreground">
-                          {String(idx + 1).padStart(2, '0')}
-                        </span>
-                        <div className="flex h-11 w-11 items-center justify-center rounded-lg border-2 border-black bg-primary">
-                          <step.icon className="h-5 w-5 text-white" />
-                        </div>
+            <div className="grid gap-6 md:grid-cols-3 md:gap-8">
+              {[
+                {
+                  icon: Target,
+                  title: 'Paste the JD',
+                  description: 'We parse requirements and keywords from the role.',
+                },
+                {
+                  icon: Bot,
+                  title: 'AI composes',
+                  description: 'Your background is tailored and scored against the job.',
+                },
+                {
+                  icon: Download,
+                  title: 'Download PDF',
+                  description: 'A typeset, recruiter-ready resume — compiled in seconds.',
+                },
+              ].map((step, idx) => (
+                <FadeIn key={idx} delay={idx * 0.06}>
+                  <div className="h-full rounded-3xl border border-ash bg-white p-8">
+                    <div className="mb-5 flex items-center justify-between">
+                      <span className="text-2xl font-light text-fog">
+                        {String(idx + 1).padStart(2, '0')}
+                      </span>
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-periwinkle">
+                        <step.icon className="h-5 w-5 text-aubergine" />
                       </div>
-                      <h3 className="text-xl font-black mb-2">{step.title}</h3>
-                      <p className="text-muted-foreground font-medium">
-                        {step.description}
-                      </p>
-                    </CropFrame>
-                  </motion.div>
-                ))}
-              </div>
-
-              {/* Or skip the browser — same pipeline, from the terminal or an AI assistant. */}
-              <motion.p
-                initial={{ opacity: 0, y: 12 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.2 }}
-                className="motion-reveal mt-8 text-center text-sm font-medium text-muted-foreground"
-              >
-                Or skip the browser —{' '}
-                <span className="font-mono font-bold text-foreground">npx vitex-cli</span>{' '}
-                or the MCP connector. Same pipeline, same PDF.
-              </motion.p>
+                    </div>
+                    <h3 className="mb-2 text-xl font-medium text-aubergine">{step.title}</h3>
+                    <p className="text-muted-foreground">{step.description}</p>
+                  </div>
+                </FadeIn>
+              ))}
             </div>
-          </section>
 
-          {/* Agent access — "the API is the UI": drive the same pipeline from a
-              terminal or an AI assistant. */}
-          <section className="section-y">
-            <div className="container mx-auto px-4 max-w-6xl">
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.2 }}
-                className="motion-reveal mb-8 sm:mb-10"
-              >
-                <p className="proof-label mb-2">§ The API is the UI</p>
-                <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
-                  Prefer your terminal — or your AI assistant?
-                </h2>
-                <p className="mt-4 max-w-2xl text-base sm:text-lg text-muted-foreground font-medium">
-                  Drive the exact same pipeline from the{' '}
-                  <span className="font-mono font-bold text-foreground">vitex</span>{' '}
-                  CLI, or connect Vitex to ChatGPT or Claude over MCP. LinkedIn is
-                  for humans; a Vitex endpoint is for AIs.
-                </p>
-              </motion.div>
+            {/* Or skip the browser — same pipeline, from the terminal or an AI assistant. */}
+            <p className="mt-10 text-center text-body-sm text-muted-foreground">
+              Or skip the browser —{' '}
+              <span className="font-mono text-aubergine">npx vitex-cli</span>{' '}
+              or the MCP connector. Same pipeline, same PDF.
+            </p>
+          </div>
+        </section>
 
-              <div className="grid md:grid-cols-2 gap-6 sm:gap-8">
-                <motion.a
+        {/* Agent access — the one dark band: drive the same pipeline from a
+            terminal or an AI assistant. */}
+        <section className="section-dark">
+          <div className="mx-auto max-w-content px-4 sm:px-6 py-16 md:py-24">
+            <FadeIn className="mb-10 md:mb-12">
+              <p className="mb-3 text-caption uppercase tracking-wider text-periwinkle">
+                The API is the UI
+              </p>
+              <h2 className="text-3xl sm:text-4xl font-light tracking-tight">
+                Prefer your terminal — or your AI assistant?
+              </h2>
+              <p className="mt-4 max-w-2xl text-lead text-white/70">
+                Drive the exact same pipeline from the{' '}
+                <span className="font-mono text-white">vitex</span> CLI, or connect
+                Vitex to ChatGPT or Claude over MCP. LinkedIn is for humans; a
+                Vitex endpoint is for AIs.
+              </p>
+            </FadeIn>
+
+            <FadeIn delay={0.06}>
+              <div className="grid gap-6 md:grid-cols-2 md:gap-8">
+                <a
                   href="https://www.npmjs.com/package/vitex-cli"
                   target="_blank"
                   rel="noopener noreferrer"
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.2 }}
-                  className="motion-reveal block rounded-xl border-2 border-black bg-white p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] transition-all duration-200 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px]"
+                  className="block rounded-3xl border border-white/10 bg-white/5 p-8 transition-colors hover:bg-white/10"
                 >
-                  <div className="mb-4 flex items-center justify-between">
-                    <span className="proof-label">CLI</span>
-                    <div className="flex h-11 w-11 items-center justify-center rounded-lg border-2 border-black bg-primary">
+                  <div className="mb-5 flex items-center justify-between">
+                    <span className="text-caption uppercase tracking-wider text-periwinkle">CLI</span>
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10">
                       <Terminal className="h-5 w-5 text-white" />
                     </div>
                   </div>
-                  <h3 className="text-xl font-black mb-2">Run it from your terminal</h3>
-                  <p className="text-muted-foreground font-medium mb-3">
+                  <h3 className="mb-2 text-xl font-medium">Run it from your terminal</h3>
+                  <p className="mb-4 text-white/70">
                     Compile a tailored resume without leaving your shell.
                   </p>
-                  <code className="inline-block rounded-lg border-2 border-black bg-gray-50 px-3 py-1.5 font-mono text-sm font-bold">
+                  <code className="inline-block rounded-2xl border border-white/10 bg-white/5 px-3 py-1.5 font-mono text-sm text-white/90">
                     npx vitex-cli
                   </code>
-                </motion.a>
+                </a>
 
-                <motion.a
-                  href="https://github.com/ChanMeng666/easy-resume/blob/master/docs/connectors/claude.md"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.2 }}
-                  transition={{ delay: 0.1 }}
-                  className="motion-reveal block rounded-xl border-2 border-black bg-white p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] transition-all duration-200 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.9)] hover:translate-x-[-2px] hover:translate-y-[-2px]"
-                >
-                  <div className="mb-4 flex items-center justify-between">
-                    <span className="proof-label">MCP Connector</span>
-                    <div className="flex h-11 w-11 items-center justify-center rounded-lg border-2 border-black bg-primary">
+                <div className="rounded-3xl border border-white/10 bg-white/5 p-8">
+                  <div className="mb-5 flex items-center justify-between">
+                    <span className="text-caption uppercase tracking-wider text-periwinkle">MCP Connector</span>
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10">
                       <Plug className="h-5 w-5 text-white" />
                     </div>
                   </div>
-                  <h3 className="text-xl font-black mb-2">Connect your AI assistant</h3>
-                  <p className="text-muted-foreground font-medium mb-3">
+                  <h3 className="mb-2 text-xl font-medium">Connect your AI assistant</h3>
+                  <p className="mb-4 text-white/70">
                     Wire Vitex into{' '}
                     <a
                       href="https://github.com/ChanMeng666/easy-resume/blob/master/docs/connectors/chatgpt.md"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="font-bold text-primary underline-offset-2 hover:underline"
+                      className="text-white underline underline-offset-2 hover:text-white/80"
                     >
                       ChatGPT
                     </a>{' '}
-                    or Claude over MCP and let it build for you.
+                    or{' '}
+                    <a
+                      href="https://github.com/ChanMeng666/easy-resume/blob/master/docs/connectors/claude.md"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-white underline underline-offset-2 hover:text-white/80"
+                    >
+                      Claude
+                    </a>{' '}
+                    over MCP and let it build for you.
                   </p>
-                  <span className="inline-block rounded-lg border-2 border-black bg-cyan-100 px-3 py-1.5 font-mono text-sm font-bold">
+                  <span className="inline-block rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white/90">
                     ChatGPT &amp; Claude
                   </span>
-                </motion.a>
+                </div>
               </div>
-            </div>
-          </section>
-        </main>
+            </FadeIn>
+          </div>
+        </section>
+      </main>
 
-        <Footer />
-      </div>
+      <Footer />
     </div>
   );
 }

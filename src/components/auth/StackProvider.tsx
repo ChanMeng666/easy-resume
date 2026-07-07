@@ -5,20 +5,20 @@ import { useMemo } from "react";
 
 /**
  * Stack Auth theme — aligns the hosted sign-in / sign-up / account UI with
- * Vitex's "typeset proof" palette (purple primary, ink borders, paper bg) so
- * the delegated auth pages don't look foreign.
+ * the Phantom palette (aubergine primary, ash borders, paper bg) so the
+ * delegated auth pages don't look foreign.
  */
 const vitexAuthTheme = {
   light: {
-    primary: "#6C3CE9",
-    primaryForeground: "#ffffff",
-    background: "#ffffff",
-    foreground: "#1a1a1a",
-    accent: "#00D4AA",
-    border: "#0a0a0a",
-    ring: "#6C3CE9",
+    primary: "#3c315b",
+    primaryForeground: "#fdfcfe",
+    background: "#fdfcfe",
+    foreground: "#1c1c1c",
+    accent: "#ab9ff2",
+    border: "#e9e8ea",
+    ring: "#ab9ff2",
   },
-  radius: "0.75rem",
+  radius: "1rem",
 };
 
 /**
