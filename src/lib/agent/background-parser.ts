@@ -1,6 +1,6 @@
 import { generateObject } from "ai";
 import { resumeDataSchema, type ResumeData } from "@/lib/validation/schema";
-import { reasonModel, WRITING_TEMPERATURE } from "./models";
+import { reasonModel, WRITING_TEMPERATURE, reasonSampling } from "./models";
 import { aiTelemetry } from "./telemetry";
 import { PROMPT_VERSIONS } from "./prompt-registry";
 
@@ -22,7 +22,7 @@ export async function parseBackground(
     // they don't compound (outer × SDK) on a persistently failing step.
     maxRetries: 0,
     schema: resumeDataSchema,
-    temperature: WRITING_TEMPERATURE,
+    ...reasonSampling(WRITING_TEMPERATURE),
     providerOptions: { openai: { strictJsonSchema: false } },
     experimental_telemetry: aiTelemetry("parse-background", { promptVersion: PROMPT_VERSIONS["parse-background"] }),
     prompt: `You are an expert resume writer. Convert the following free-text background description into structured resume data.

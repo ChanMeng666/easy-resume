@@ -2,7 +2,7 @@ import { generateObject } from "ai";
 import { z } from "zod";
 import { ResumeData } from "@/lib/validation/schema";
 import { ParsedJD } from "./jd-parser";
-import { reasonModel, WRITING_TEMPERATURE } from "./models";
+import { reasonModel, WRITING_TEMPERATURE, reasonSampling } from "./models";
 import { aiTelemetry } from "./telemetry";
 import { PROMPT_VERSIONS } from "./prompt-registry";
 
@@ -118,7 +118,7 @@ export async function generateCoverLetter(
     // they don't compound (outer × SDK) on a persistently failing step.
     maxRetries: 0,
     schema: coverLetterSchema,
-    temperature: WRITING_TEMPERATURE,
+    ...reasonSampling(WRITING_TEMPERATURE),
     providerOptions: { openai: { strictJsonSchema: false } },
     experimental_telemetry: aiTelemetry("cover-letter", { promptVersion: PROMPT_VERSIONS["cover-letter"] }),
     prompt: buildCoverLetterPrompt(resume, jd, voiceSample),

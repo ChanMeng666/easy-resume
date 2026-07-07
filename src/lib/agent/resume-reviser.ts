@@ -1,7 +1,7 @@
 import { generateObject } from "ai";
 import { ResumeData, resumeDataSchema } from "@/lib/validation/schema";
 import { ParsedJD } from "./jd-parser";
-import { reasonModel, WRITING_TEMPERATURE } from "./models";
+import { reasonModel, WRITING_TEMPERATURE, reasonSampling } from "./models";
 import { aiTelemetry } from "./telemetry";
 import { PROMPT_VERSIONS } from "./prompt-registry";
 
@@ -41,7 +41,7 @@ export async function reviseResume(
     // they don't compound (outer × SDK) on a persistently failing step.
     maxRetries: 0,
     schema: resumeDataSchema,
-    temperature: WRITING_TEMPERATURE,
+    ...reasonSampling(WRITING_TEMPERATURE),
     providerOptions: { openai: { strictJsonSchema: false } },
     experimental_telemetry: aiTelemetry("revise-resume", {
       promptVersion: PROMPT_VERSIONS["revise-resume"],

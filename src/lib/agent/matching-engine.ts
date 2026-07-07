@@ -2,7 +2,7 @@ import { generateObject } from "ai";
 import { z } from "zod";
 import { ResumeData } from "@/lib/validation/schema";
 import { ParsedJD } from "./jd-parser";
-import { reasonModel, EXTRACT_TEMPERATURE } from "./models";
+import { reasonModel, EXTRACT_TEMPERATURE, reasonSampling } from "./models";
 import { computeSkillOverlap } from "./keyword-coverage";
 import { aiTelemetry } from "./telemetry";
 import { PROMPT_VERSIONS } from "./prompt-registry";
@@ -53,7 +53,7 @@ export async function analyzeMatch(
     // they don't compound (outer × SDK) on a persistently failing step.
     maxRetries: 0,
     schema: matchAnalysisSchema,
-    temperature: EXTRACT_TEMPERATURE,
+    ...reasonSampling(EXTRACT_TEMPERATURE),
     experimental_telemetry: aiTelemetry("analyze-match", { promptVersion: PROMPT_VERSIONS["analyze-match"] }),
     prompt: `Analyze how well this resume matches the job description.
 
