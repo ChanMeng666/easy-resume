@@ -1,0 +1,20 @@
+<svg width="640" height="640" viewBox="0 0 640 640" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true">
+  <!-- 404 — a tilted empty sheet where a page should be, with a soft periwinkle
+       question mark. Gentle, not cartoonish. Paper canvas, Phantom palette. -->
+  <rect width="640" height="640" fill="#fdfcfe"/>
+
+  <!-- Dotted outline: the slot the missing page would occupy. -->
+  <g transform="rotate(-8 320 320)">
+    <rect x="196" y="150" width="248" height="330" rx="22" fill="none" stroke="#e9e8ea" stroke-width="2" stroke-dasharray="4 12" stroke-linecap="round"/>
+  </g>
+
+  <!-- The tilted empty sheet. -->
+  <g transform="rotate(6 330 328)">
+    <rect x="212" y="164" width="248" height="330" rx="22" fill="#f4f2f4" stroke="#e9e8ea" stroke-width="2"/>
+  </g>
+
+  <!-- Soft periwinkle question mark. -->
+  <path d="M296 286 C296 256 322 242 346 253 C368 263 369 292 349 306 C333 317 324 326 324 346"
+        fill="none" stroke="#ab9ff2" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="323" cy="382" r="9" fill="#ab9ff2"/>
+</svg>

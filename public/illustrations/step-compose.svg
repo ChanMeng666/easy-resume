@@ -1,0 +1,26 @@
+<svg width="640" height="640" viewBox="0 0 640 640" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true">
+  <!-- Step 2 — AI composes. Two sheets being aligned, with a periwinkle spark.
+       Same stroke weight and corner radii as the sibling step tiles. -->
+  <rect width="640" height="640" fill="#f4f2f4"/>
+
+  <!-- Back sheet, gently rotated (lavender tint). -->
+  <g transform="rotate(7 330 330)">
+    <rect x="216" y="164" width="240" height="312" rx="22" fill="#e2dffe"/>
+  </g>
+
+  <!-- Front sheet aligning over it. -->
+  <rect x="176" y="150" width="240" height="312" rx="22" fill="#fdfcfe" stroke="#e9e8ea" stroke-width="2"/>
+
+  <!-- Composed content lines. -->
+  <rect x="206" y="192" width="104" height="13" rx="6.5" fill="#3c315b"/>
+  <rect x="206" y="224" width="180" height="8" rx="4" fill="#86848d"/>
+  <rect x="206" y="246" width="164" height="8" rx="4" fill="#86848d"/>
+  <rect x="206" y="278" width="72" height="9" rx="4.5" fill="#ab9ff2"/>
+  <rect x="206" y="304" width="180" height="8" rx="4" fill="#86848d"/>
+  <rect x="206" y="326" width="150" height="8" rx="4" fill="#86848d"/>
+  <rect x="206" y="358" width="180" height="8" rx="4" fill="#86848d"/>
+  <rect x="206" y="380" width="128" height="8" rx="4" fill="#86848d"/>
+
+  <!-- Periwinkle spark: a four-point star marking the alignment. -->
+  <path d="M452 150 C458 176 468 186 494 192 C468 198 458 208 452 234 C446 208 436 198 410 192 C436 186 446 176 452 150 Z" fill="#ab9ff2"/>
+</svg>

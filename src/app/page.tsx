@@ -1,15 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@stackframe/stack';
-import { Sparkles, Target, Bot, Download, User, Terminal, Plug } from 'lucide-react';
+import { Sparkles, User, Terminal, Plug } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Navbar } from '@/components/shared/Navbar';
 import { Footer } from '@/components/shared/Footer';
 import { FadeIn } from '@/components/shared/FadeIn';
+import { ILLUSTRATIONS } from '@/lib/illustrations';
 
 declare global {
   interface Window {
@@ -286,6 +288,20 @@ export default function HomePage() {
               </div>
             </div>
           </FadeIn>
+
+          {/* A quiet piece of art: the pipeline's output, composed. */}
+          <FadeIn delay={0.12} className="mx-auto mt-16 max-w-content">
+            <div className="overflow-hidden rounded-3xl border border-ash bg-paper">
+              <Image
+                src={ILLUSTRATIONS.hero.src}
+                width={ILLUSTRATIONS.hero.width}
+                height={ILLUSTRATIONS.hero.height}
+                alt={ILLUSTRATIONS.hero.alt}
+                priority={false}
+                className="h-auto w-full"
+              />
+            </div>
+          </FadeIn>
         </section>
 
         {/* How It Works — a real 3-step sequence */}
@@ -303,32 +319,38 @@ export default function HomePage() {
             <div className="grid gap-6 md:grid-cols-3 md:gap-8">
               {[
                 {
-                  icon: Target,
+                  illustration: ILLUSTRATIONS.stepPaste,
                   title: 'Paste the JD',
                   description: 'We parse requirements and keywords from the role.',
                 },
                 {
-                  icon: Bot,
+                  illustration: ILLUSTRATIONS.stepCompose,
                   title: 'AI composes',
                   description: 'Your background is tailored and scored against the job.',
                 },
                 {
-                  icon: Download,
+                  illustration: ILLUSTRATIONS.stepDownload,
                   title: 'Download PDF',
                   description: 'A typeset, recruiter-ready resume — compiled in seconds.',
                 },
               ].map((step, idx) => (
                 <FadeIn key={idx} delay={idx * 0.06}>
                   <div className="h-full rounded-3xl border border-ash bg-white p-8">
-                    <div className="mb-5 flex items-center justify-between">
+                    <div className="mb-6 overflow-hidden rounded-2xl bg-bone">
+                      <Image
+                        src={step.illustration.src}
+                        width={step.illustration.width}
+                        height={step.illustration.height}
+                        alt={step.illustration.alt}
+                        className="h-auto w-full"
+                      />
+                    </div>
+                    <div className="mb-3 flex items-center gap-3">
                       <span className="text-2xl font-light text-fog">
                         {String(idx + 1).padStart(2, '0')}
                       </span>
-                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-periwinkle">
-                        <step.icon className="h-5 w-5 text-aubergine" />
-                      </div>
+                      <h3 className="text-xl font-medium text-aubergine">{step.title}</h3>
                     </div>
-                    <h3 className="mb-2 text-xl font-medium text-aubergine">{step.title}</h3>
                     <p className="text-muted-foreground">{step.description}</p>
                   </div>
                 </FadeIn>
