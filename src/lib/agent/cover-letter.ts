@@ -2,7 +2,7 @@ import { generateObject } from "ai";
 import { z } from "zod";
 import { ResumeData } from "@/lib/validation/schema";
 import { ParsedJD } from "./jd-parser";
-import { reasonModel, WRITING_TEMPERATURE, reasonSampling } from "./models";
+import { reasonModel, WRITING_TEMPERATURE, reasonSampling, reasonReasoning } from "./models";
 import { aiTelemetry } from "./telemetry";
 import { PROMPT_VERSIONS } from "./prompt-registry";
 
@@ -119,7 +119,7 @@ export async function generateCoverLetter(
     maxRetries: 0,
     schema: coverLetterSchema,
     ...reasonSampling(WRITING_TEMPERATURE),
-    providerOptions: { openai: { strictJsonSchema: false } },
+    providerOptions: { openai: { strictJsonSchema: false, ...reasonReasoning() } },
     experimental_telemetry: aiTelemetry("cover-letter", { promptVersion: PROMPT_VERSIONS["cover-letter"] }),
     prompt: buildCoverLetterPrompt(resume, jd, voiceSample),
   });

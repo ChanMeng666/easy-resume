@@ -1,6 +1,6 @@
 import { generateObject } from "ai";
 import { z } from "zod";
-import { extractModel, EXTRACT_TEMPERATURE, extractSampling } from "./models";
+import { extractModel, EXTRACT_TEMPERATURE, extractSampling, extractReasoning } from "./models";
 import { aiTelemetry } from "./telemetry";
 import { PROMPT_VERSIONS } from "./prompt-registry";
 
@@ -38,7 +38,7 @@ export async function parseJobDescription(rawText: string): Promise<ParsedJD> {
     maxRetries: 0,
     schema: parsedJDSchema,
     ...extractSampling(EXTRACT_TEMPERATURE),
-    providerOptions: { openai: { strictJsonSchema: false } },
+    providerOptions: { openai: { strictJsonSchema: false, ...extractReasoning() } },
     experimental_telemetry: aiTelemetry("parse-jd", { promptVersion: PROMPT_VERSIONS["parse-jd"] }),
     prompt: `Parse the following job description into structured data.
 Extract all relevant information including skills, keywords, requirements, and responsibilities.

@@ -2,7 +2,7 @@ import { generateObject } from "ai";
 import { z } from "zod";
 import { ResumeData } from "@/lib/validation/schema";
 import { ParsedJD } from "./jd-parser";
-import { reasonModel, EXTRACT_TEMPERATURE, reasonSampling } from "./models";
+import { reasonModel, EXTRACT_TEMPERATURE, reasonSampling, reasonReasoning } from "./models";
 import { computeSkillOverlap } from "./keyword-coverage";
 import { aiTelemetry } from "./telemetry";
 import { PROMPT_VERSIONS } from "./prompt-registry";
@@ -54,6 +54,7 @@ export async function analyzeMatch(
     maxRetries: 0,
     schema: matchAnalysisSchema,
     ...reasonSampling(EXTRACT_TEMPERATURE),
+    providerOptions: { openai: { ...reasonReasoning() } },
     experimental_telemetry: aiTelemetry("analyze-match", { promptVersion: PROMPT_VERSIONS["analyze-match"] }),
     prompt: `Analyze how well this resume matches the job description.
 

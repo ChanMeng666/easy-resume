@@ -49,29 +49,65 @@ export const WRITING_TEMPERATURE = envFloat("AI_TEMPERATURE_WRITING", 0.5);
 
 /**
  * Reasoning models (the gpt-5 family except the `-chat` variant, and the
- * o-series) reject a custom `temperature`: the OpenAI API 400s on anything but
- * the default. gpt-5-chat-* and gpt-4.x accept it. We detect the reasoning
- * family so the tuned temperature is OMITTED for them (they get the default)
- * rather than breaking every LLM call the moment the model is upgraded.
+ * o-series) behave differently from classic chat models:
+ *  - they REJECT a custom `temperature` (the API 400s on anything but default), and
+ *  - they ACCEPT a `reasoningEffort` knob that classic models reject.
+ * We detect the family once so both traits are handled consistently rather than
+ * breaking every LLM call the moment the model is upgraded.
  */
 function isReasoningModel(id: string): boolean {
   return /^o[0-9]/.test(id) || (/^gpt-5/.test(id) && !/chat/.test(id));
 }
 
-export const EXTRACT_SUPPORTS_TEMPERATURE = !isReasoningModel(EXTRACT_MODEL_ID);
-export const REASON_SUPPORTS_TEMPERATURE = !isReasoningModel(REASON_MODEL_ID);
+export const EXTRACT_IS_REASONING = isReasoningModel(EXTRACT_MODEL_ID);
+export const REASON_IS_REASONING = isReasoningModel(REASON_MODEL_ID);
+
+/**
+ * Reasoning effort per tier (only sent to reasoning models). Lower = faster +
+ * cheaper. The pipeline runs the reason tier across the heavy writing steps, so
+ * a lower default keeps end-to-end latency in check while gpt-5.x at "low" still
+ * far outwrites gpt-4o. Tune per-deployment:
+ *  - AI_REASONING_EFFORT_EXTRACT (default "minimal": JD parse is pure extraction)
+ *  - AI_REASONING_EFFORT_REASON  (default "low": quality writing, but not slow)
+ * Accepted: none | minimal | low | medium | high | xhigh.
+ */
+export type ReasoningEffort = 'none' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh';
+
+function envEffort(name: string, fallback: ReasoningEffort): ReasoningEffort {
+  const raw = process.env[name]?.trim().toLowerCase();
+  const allowed: ReasoningEffort[] = ['none', 'minimal', 'low', 'medium', 'high', 'xhigh'];
+  return (allowed as string[]).includes(raw ?? '') ? (raw as ReasoningEffort) : fallback;
+}
+
+const EXTRACT_EFFORT = envEffort('AI_REASONING_EFFORT_EXTRACT', 'minimal');
+const REASON_EFFORT = envEffort('AI_REASONING_EFFORT_REASON', 'low');
 
 /**
  * Build the sampling params for a call on the REASON-tier model: pass the given
- * temperature only when the configured model supports it, else omit it (spread
- * `{}` so the SDK uses the model default). Callers spread the result:
+ * temperature only when the model is NOT a reasoning model (reasoning models
+ * reject it), else omit it (spread `{}` so the SDK uses the model default).
  *   `generateText({ model: reasonModel, ...reasonSampling(WRITING_TEMPERATURE) })`
  */
 export function reasonSampling(temperature: number): { temperature?: number } {
-  return REASON_SUPPORTS_TEMPERATURE ? { temperature } : {};
+  return REASON_IS_REASONING ? {} : { temperature };
 }
 
 /** Same as {@link reasonSampling}, for the EXTRACT-tier model. */
 export function extractSampling(temperature: number): { temperature?: number } {
-  return EXTRACT_SUPPORTS_TEMPERATURE ? { temperature } : {};
+  return EXTRACT_IS_REASONING ? {} : { temperature };
+}
+
+/**
+ * OpenAI `providerOptions.openai` fragment carrying `reasoningEffort` — emitted
+ * ONLY for reasoning models (classic chat models reject it). Spread into the
+ * existing openai options object:
+ *   `providerOptions: { openai: { strictJsonSchema: false, ...reasonReasoning() } }`
+ */
+export function reasonReasoning(): { reasoningEffort?: ReasoningEffort } {
+  return REASON_IS_REASONING ? { reasoningEffort: REASON_EFFORT } : {};
+}
+
+/** Same as {@link reasonReasoning}, for the EXTRACT-tier model. */
+export function extractReasoning(): { reasoningEffort?: ReasoningEffort } {
+  return EXTRACT_IS_REASONING ? { reasoningEffort: EXTRACT_EFFORT } : {};
 }

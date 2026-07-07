@@ -1,7 +1,7 @@
 import { generateObject } from "ai";
 import { ResumeData } from "@/lib/validation/schema";
 import { ParsedJD } from "./jd-parser";
-import { reasonModel, WRITING_TEMPERATURE, reasonSampling } from "./models";
+import { reasonModel, WRITING_TEMPERATURE, reasonSampling, reasonReasoning } from "./models";
 import { aiTelemetry } from "./telemetry";
 import { PROMPT_VERSIONS } from "./prompt-registry";
 import { coverLetterSchema, stripPlaceholders } from "./cover-letter";
@@ -97,7 +97,7 @@ export async function reviseCoverLetter(
     maxRetries: 0,
     schema: coverLetterSchema,
     ...reasonSampling(WRITING_TEMPERATURE),
-    providerOptions: { openai: { strictJsonSchema: false } },
+    providerOptions: { openai: { strictJsonSchema: false, ...reasonReasoning() } },
     experimental_telemetry: aiTelemetry("revise-cover-letter", {
       promptVersion: PROMPT_VERSIONS["revise-cover-letter"],
     }),

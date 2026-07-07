@@ -2,7 +2,7 @@ import { generateObject } from "ai";
 import { ResumeData, resumeDataSchema } from "@/lib/validation/schema";
 import { ParsedJD } from "./jd-parser";
 import { MatchAnalysis } from "./matching-engine";
-import { reasonModel, WRITING_TEMPERATURE, reasonSampling } from "./models";
+import { reasonModel, WRITING_TEMPERATURE, reasonSampling, reasonReasoning } from "./models";
 import { aiTelemetry } from "./telemetry";
 import { PROMPT_VERSIONS } from "./prompt-registry";
 
@@ -32,7 +32,7 @@ export async function tailorResume(
     maxRetries: 0,
     schema: resumeDataSchema,
     ...reasonSampling(WRITING_TEMPERATURE),
-    providerOptions: { openai: { strictJsonSchema: false } },
+    providerOptions: { openai: { strictJsonSchema: false, ...reasonReasoning() } },
     experimental_telemetry: aiTelemetry("tailor-resume", { promptVersion: PROMPT_VERSIONS["tailor-resume"] }),
     prompt: `You are an expert resume writer. Tailor this resume for the target job.
 
