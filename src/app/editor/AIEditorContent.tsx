@@ -162,6 +162,14 @@ type ErrorKind = 'timeout' | 'server' | 'network' | 'credits' | 'auth' | 'other'
 interface GenerationError {
   kind: ErrorKind;
   message: string;
+  /**
+   * The full machine-readable error envelope from the server (code, step,
+   * retriable, requestId, and the unwound `details.cause` chain — i.e. the real
+   * underlying failure). Surfaced verbatim in the error UI so it can be copied
+   * one-click for debugging. Absent for purely client-side errors (timeout,
+   * network) that never reached the server.
+   */
+  debug?: unknown;
 }
 
 interface StreamCallbacks {
@@ -366,7 +374,7 @@ async function runRefineStream(
         : code === 'UNAUTHENTICATED'
           ? 'auth'
           : 'server';
-    throw Object.assign(new Error(message), { kind, message });
+    throw Object.assign(new Error(message), { kind, message, debug: envelope });
   }
 
   const reader = response.body?.getReader();
@@ -430,7 +438,7 @@ async function runRefineStream(
                   : event.error?.retriable
                     ? 'server'
                     : 'other';
-            throw Object.assign(new Error(message), { kind, message });
+            throw Object.assign(new Error(message), { kind, message, debug: event.error });
           }
           // 'heartbeat', 'saved', and 'done' events fall through silently.
         } catch (parseErr) {
@@ -448,11 +456,11 @@ async function runRefineStream(
   }
 }
 
-/** Pull the (kind, message) tuple out of an unknown thrown value. */
+/** Pull the (kind, message, debug) tuple out of an unknown thrown value. */
 function classifyError(err: unknown): GenerationError {
   if (err && typeof err === 'object' && 'kind' in err && 'message' in err) {
     const e = err as Partial<GenerationError>;
-    if (e.kind && e.message) return { kind: e.kind, message: e.message };
+    if (e.kind && e.message) return { kind: e.kind, message: e.message, debug: e.debug };
   }
   if (err instanceof Error && err.name === 'AbortError') {
     return { kind: 'other', message: 'Request was aborted.' };
@@ -477,6 +485,8 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
   const effBg = jobInput?.bg ?? bg;
   const [refinementText, setRefinementText] = useState('');
   const [copySuccess, setCopySuccess] = useState(false);
+  // One-click copy of the full error/debug envelope from the error state.
+  const [debugCopied, setDebugCopied] = useState(false);
   const [coverLetterCopied, setCoverLetterCopied] = useState(false);
   const [coverLetterCodeCopied, setCoverLetterCodeCopied] = useState(false);
   // The persisted job id of the CURRENT result — set from the `jobId` prop (job
@@ -1027,6 +1037,31 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
       other: 'Generation failed',
     }[error.kind];
 
+    // Full, copyable diagnostic payload. Built here (client-only render path) so
+    // navigator/timestamp never run during SSR. The `error.debug` envelope
+    // carries the server's real failure reason (code, step, requestId, and the
+    // unwound cause chain) — the useful part for debugging.
+    const debugPayload = {
+      message: error.message,
+      kind: error.kind,
+      error: error.debug ?? null,
+      page: typeof window !== 'undefined' ? window.location.href : undefined,
+    };
+    const debugText = JSON.stringify(debugPayload, null, 2);
+    const copyDebug = async () => {
+      const enriched =
+        `${debugText}\n\n` +
+        `when: ${new Date().toISOString()}\n` +
+        `userAgent: ${typeof navigator !== 'undefined' ? navigator.userAgent : ''}`;
+      try {
+        await navigator.clipboard.writeText(enriched);
+      } catch {
+        // Clipboard blocked — the <pre> below is selectable as a fallback.
+      }
+      setDebugCopied(true);
+      setTimeout(() => setDebugCopied(false), 2000);
+    };
+
     return (
       <main className="mx-auto max-w-2xl px-4 sm:px-6 pt-12 md:pt-16 pb-16">
         <div className="rounded-3xl border border-ash bg-white p-8 sm:p-10">
@@ -1046,6 +1081,29 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
               connection. Keep this page in the foreground until it finishes.
             </p>
           )}
+
+          {/* Copyable debug log — the full server error envelope (code, step,
+              requestId, and the unwound cause chain). One-click copy so it can be
+              pasted straight into a bug report. */}
+          <div className="mb-6 rounded-2xl border border-ash bg-bone p-4">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <span className="text-caption uppercase tracking-wider text-fog-deep">
+                Debug log
+              </span>
+              <Button size="sm" variant="outline" onClick={copyDebug}>
+                {debugCopied ? (
+                  <Check className="mr-2 h-4 w-4 text-mint" />
+                ) : (
+                  <Copy className="mr-2 h-4 w-4" />
+                )}
+                {debugCopied ? 'Copied!' : 'Copy log'}
+              </Button>
+            </div>
+            <pre className="max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-xl bg-white p-3 text-xs leading-relaxed text-foreground">
+              {debugText}
+            </pre>
+          </div>
+
           <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
             {error.kind === 'credits' ? (
               <Button onClick={() => (window.location.href = '/pricing')} size="lg" className="w-full sm:w-auto">
