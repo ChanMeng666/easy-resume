@@ -1,9 +1,37 @@
 import { z } from 'zod';
 
+/**
+ * Normalize a user/LLM-supplied URL so a bare domain validates and renders as a
+ * clickable link. The background parser very commonly emits scheme-less URLs
+ * (e.g. "www.vitex.org.nz/", "glama.ai/mcp/...") because that is exactly how
+ * people write them in free text — but `z.string().url()` requires a scheme, so
+ * a TRUTHFUL model response failed validation and killed the whole run at
+ * parse_background. Prepending "https://" is a safe normalization (not
+ * fabrication — the user did provide the URL), and the Typst generator strips
+ * the scheme for display anyway (see cleanURL). Empty stays empty; an explicit
+ * scheme (https://, mailto:, tel:) is preserved as-is.
+ */
+function normalizeUrl(raw: string): string {
+  const s = raw.trim();
+  if (!s) return '';
+  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(s)) return s; // already has scheme://
+  if (/^(mailto|tel):/i.test(s)) return s; // other explicit schemes
+  return `https://${s}`;
+}
+
+/**
+ * Wrap a URL validator with scheme normalization applied BEFORE validation.
+ * `z.preprocess` keeps the inner schema's JSON-schema shape (so structured
+ * output still hints `format: uri` to the model) while fixing scheme-less URLs
+ * the model returns.
+ */
+const normalizedUrl = <T extends z.ZodTypeAny>(schema: T) =>
+  z.preprocess((v) => (typeof v === 'string' ? normalizeUrl(v) : v), schema);
+
 // Profile schema (e.g., LinkedIn, GitHub, Portfolio)
 export const profileSchema = z.object({
   network: z.string().min(1, 'Network is required'),
-  url: z.string().url('Must be a valid URL'),
+  url: normalizedUrl(z.string().url('Must be a valid URL')),
   label: z.string().optional(),
 });
 
@@ -61,7 +89,9 @@ export const projectSchema = z.object({
   name: z.string().min(1, 'Project name is required'),
   description: z.string(),
   highlights: z.array(z.string()),
-  url: z.string().url('Must be a valid URL').optional().or(z.literal('')),
+  // Scheme-normalized (see normalizedUrl): a bare domain from the parser is
+  // coerced to https:// rather than failing the whole generation; empty allowed.
+  url: normalizedUrl(z.string().url('Must be a valid URL').or(z.literal(''))).optional(),
 });
 
 // Skills schema
