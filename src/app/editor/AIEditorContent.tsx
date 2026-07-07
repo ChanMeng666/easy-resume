@@ -239,7 +239,7 @@ async function runGenerationStream(
         : code === 'UNAUTHENTICATED'
           ? 'auth'
           : 'server';
-    throw Object.assign(new Error(message), { kind, message });
+    throw Object.assign(new Error(message), { kind, message, debug: envelope });
   }
 
   const reader = response.body?.getReader();
@@ -304,7 +304,7 @@ async function runGenerationStream(
                   : event.error?.retriable
                     ? 'server'
                     : 'other';
-            throw Object.assign(new Error(message), { kind, message });
+            throw Object.assign(new Error(message), { kind, message, debug: event.error });
           }
           // 'heartbeat', 'saved', and 'done' events fall through silently.
         } catch (parseErr) {
