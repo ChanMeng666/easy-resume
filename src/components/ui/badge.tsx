@@ -21,7 +21,7 @@ const badgeVariants = cva(
         success:
           "bg-mint/15 text-mint-ink",
         warning:
-          "bg-buttercream text-[#6b5d13]",
+          "bg-buttercream text-buttercream-ink",
         destructive:
           "bg-blush text-rose-ink",
         outline:

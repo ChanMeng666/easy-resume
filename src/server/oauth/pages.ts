@@ -3,7 +3,7 @@
  *
  * These are pure string builders (kept out of the route so the route stays thin
  * and the markup is reviewable in one place). The pages are NOT wrapped in the
- * Next app layout, so all styling is inline — a self-contained Neobrutalism look.
+ * Next app layout, so all styling is inline — a self-contained Phantom look.
  * Every interpolated value (client name, email, param echoes) is HTML-escaped:
  * client_name and redirect_uri are attacker-controllable via open DCR, so this is
  * the XSS boundary.

@@ -14,9 +14,9 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-lavender text-aubergine shadow-glow hover:bg-[#d6d2fd]",
+          "bg-lavender text-aubergine shadow-glow hover:bg-lavender-deep",
         secondary:
-          "bg-ash text-obsidian hover:bg-[#dedde0]",
+          "bg-ash text-obsidian hover:bg-ash-deep",
         outline:
           "border border-ash bg-paper text-aubergine hover:bg-bone",
         ghost:
@@ -24,13 +24,13 @@ const buttonVariants = cva(
         link:
           "text-aubergine underline-offset-4 hover:underline",
         destructive:
-          "bg-blush text-rose-ink hover:bg-[#ffcecf]",
+          "bg-blush text-rose-ink hover:bg-blush-deep",
         accent:
-          "bg-periwinkle text-aubergine hover:bg-[#9d8ff0]",
+          "bg-periwinkle text-aubergine hover:bg-periwinkle-deep",
         pop:
-          "bg-cornflower text-white hover:bg-[#3f7ae8]",
+          "bg-cornflower text-white hover:bg-cornflower-deep",
         cream:
-          "bg-buttercream text-obsidian hover:bg-[#f7f7b0]",
+          "bg-buttercream text-obsidian hover:bg-buttercream-deep",
       },
       size: {
         default: "h-10 px-5 py-2",
