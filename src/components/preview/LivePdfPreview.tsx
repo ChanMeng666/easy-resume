@@ -114,7 +114,11 @@ export function LivePdfPreview({
   // Compiling state
   if (isCompiling && !pdfUrl) {
     return (
-      <div className="flex h-[40vh] min-h-[280px] md:h-[500px] flex-col items-center justify-center rounded-3xl border border-ash bg-bone px-4">
+      <div
+        className={`flex h-[40vh] min-h-[280px] md:h-[500px] flex-col items-center justify-center rounded-3xl border border-ash bg-bone px-4 ${
+          fillViewport ? 'lg:h-[calc(100vh-9.5rem)]' : ''
+        }`}
+      >
         <Loader2 className="h-10 w-10 sm:h-12 sm:w-12 animate-spin text-periwinkle" />
         <h3 className="mt-3 sm:mt-4 text-base sm:text-lg font-medium text-aubergine">
           Compiling...
@@ -133,7 +137,11 @@ export function LivePdfPreview({
   // Error state
   if (error && !pdfUrl) {
     return (
-      <div className="flex h-[40vh] min-h-[280px] md:h-[500px] flex-col items-center justify-center rounded-3xl border border-ash bg-blush/30 px-4">
+      <div
+        className={`flex h-[40vh] min-h-[280px] md:h-[500px] flex-col items-center justify-center rounded-3xl border border-ash bg-blush/30 px-4 ${
+          fillViewport ? 'lg:h-[calc(100vh-9.5rem)]' : ''
+        }`}
+      >
         <AlertCircle className="h-10 w-10 sm:h-12 sm:w-12 text-rose-ink" />
         <h3 className="mt-3 sm:mt-4 text-base sm:text-lg font-medium text-rose-ink">
           Compilation Failed
@@ -166,8 +174,15 @@ export function LivePdfPreview({
   // Success state - show PDF
   return (
     <div className="space-y-2">
-      {/* Status bar */}
-      <div className="flex items-center justify-between rounded-full border border-ash bg-white px-3 sm:px-4 py-1.5">
+      {/* Status bar. In fillViewport mode it is hidden on lg+ — every pixel of
+          vertical space goes to the document (the compiling/error states still
+          take over the frame, and compilation is automatic), while mobile keeps
+          the "Updating preview…" indicator above the canvas. */}
+      <div
+        className={`flex items-center justify-between rounded-full border border-ash bg-white px-3 sm:px-4 py-1.5 ${
+          fillViewport ? 'lg:hidden' : ''
+        }`}
+      >
         <div className="flex items-center gap-2">
           {isCompiling ? (
             <>
@@ -199,12 +214,12 @@ export function LivePdfPreview({
         <>
           {/* Desktop: plain embedded preview. The browser's built-in PDF
               viewer already provides zoom/download/print — no custom toolbar.
-              13.5rem ≈ floating nav + sticky gap + tabs row + status bar. */}
+              9.5rem ≈ floating nav + sticky gap + tabs row + bottom margin. */}
           <iframe
             src={pdfUrl}
             title="PDF preview"
             className={`hidden h-[70vh] min-h-[420px] w-full rounded-3xl border border-ash bg-white md:block ${
-              fillViewport ? 'lg:h-[calc(100vh-13.5rem)]' : ''
+              fillViewport ? 'lg:h-[calc(100vh-9.5rem)]' : ''
             }`}
           />
 

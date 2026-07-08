@@ -1353,7 +1353,7 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
       <div className="grid gap-8 lg:grid-cols-[7fr_5fr]">
         {/* Left: the PDF preview as the hero artifact — sticky on lg, minimal
             chrome (LivePdfPreview already carries its own frame). */}
-        <FadeIn className="self-start lg:sticky lg:top-24">
+        <FadeIn className="self-start lg:sticky lg:top-20">
           {/* Mobile-only ATS summary — the score lives in the right rail on lg,
               which stacks below the preview on small screens, so surface it here. */}
           <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl bg-bone px-4 py-3 lg:hidden">
@@ -1370,19 +1370,21 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
             value={previewTab}
             onValueChange={(v) => setPreviewTab(v as 'resume' | 'cover_letter')}
           >
-            <TabsList className="mb-4">
+            {/* Single mt-3 gap comes from TabsContent — no extra mb here, so
+                the preview keeps as much viewport height as possible. */}
+            <TabsList>
               <TabsTrigger value="resume">Resume</TabsTrigger>
               {result.coverLetter && (
                 <TabsTrigger value="cover_letter">Cover letter</TabsTrigger>
               )}
             </TabsList>
 
-            <TabsContent value="resume">
+            <TabsContent value="resume" className="mt-3">
               <LivePdfPreview typstCode={typstCode} filename={filename} fillViewport />
             </TabsContent>
 
             {result.coverLetter && (
-              <TabsContent value="cover_letter">
+              <TabsContent value="cover_letter" className="mt-3">
                 {result.coverLetterTypst ? (
                   <LivePdfPreview
                     typstCode={result.coverLetterTypst}
