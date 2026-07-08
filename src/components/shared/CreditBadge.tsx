@@ -48,7 +48,7 @@ export function CreditBadge() {
     <Link
       href="/dashboard"
       title="View credits & billing"
-      className={`hidden sm:flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-full transition-colors ${
+      className={`flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-full transition-colors ${
         isLow ? 'bg-blush text-rose-ink' : 'bg-periwinkle/20 text-aubergine hover:bg-periwinkle/30'
       }`}
     >

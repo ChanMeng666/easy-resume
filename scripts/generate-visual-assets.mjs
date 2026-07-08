@@ -13,8 +13,8 @@
  * set it manually parses `.env.local` for them.
  *
  * Usage:
- *   node scripts/generate-visual-assets.mjs            # regenerate all 6 assets
- *   node scripts/generate-visual-assets.mjs --only hero
+ *   node scripts/generate-visual-assets.mjs            # regenerate all assets
+ *   node scripts/generate-visual-assets.mjs --only consoleBand
  *   node scripts/generate-visual-assets.mjs --dry-run  # print prompts, no calls
  */
 
@@ -51,16 +51,32 @@ const STYLE_PREFIX =
  */
 const ASSETS = [
   {
-    name: 'hero',
-    outfile: join(ILLUSTRATIONS_DIR, 'hero-composition.png'),
-    size: '1536x640',
+    name: 'consoleBand',
+    outfile: join(ILLUSTRATIONS_DIR, 'console-band.png'),
+    // Extreme 3:1 letterbox so it can be cropped vertically as a card top-band.
+    size: '1536x512',
     quality: 'high',
     prompt:
-      'three or four overlapping rounded-corner portrait paper sheets fanned ' +
-      'across a wide canvas, one periwinkle accent sheet slightly rotated ' +
-      'behind, the front sheet suggesting a typeset resume through a few thin ' +
-      'horizontal aubergine and grey bars standing in for lines of text. ' +
-      'Centered composition with wide empty margins.',
+      'an extremely wide horizontal band composition, a quiet frieze of small ' +
+      'overlapping rounded-corner paper sheets arranged along the horizontal ' +
+      'axis, drifting from dense and clustered on the left to sparse and widely ' +
+      'spaced on the right, one or two pale lavender and periwinkle accent ' +
+      'sheets among them. Enormous empty negative space along the top and bottom ' +
+      'edges so the band is safe to crop vertically. Objects only floating in ' +
+      'space: no hands, no people, no human figures. Frieze-like, calm, spacious.',
+  },
+  {
+    name: 'connections',
+    outfile: join(ILLUSTRATIONS_DIR, 'connections.png'),
+    size: '1024x1024',
+    quality: 'medium',
+    prompt:
+      'two rounded-corner paper sheets standing side by side with a gap between ' +
+      'them, joined by exactly ONE single thin straight periwinkle line running ' +
+      'horizontally between them, with a small periwinkle four-point spark node ' +
+      'at the midpoint of that line — two systems linking together. Objects only, ' +
+      'centered, with wide empty margins: absolutely no plugs, no cables, no ' +
+      'hands, no people, no human figures, no icons.',
   },
   {
     name: 'stepPaste',

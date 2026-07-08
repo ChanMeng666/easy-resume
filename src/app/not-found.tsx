@@ -3,7 +3,6 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Navbar } from '@/components/shared/Navbar';
 import { Footer } from '@/components/shared/Footer';
-import { ArrowLeft } from 'lucide-react';
 import { ILLUSTRATIONS } from '@/lib/illustrations';
 
 /**
@@ -34,10 +33,7 @@ export default function NotFound() {
           </p>
           <div className="mt-8 flex justify-center">
             <Link href="/">
-              <Button size="lg" className="gap-2">
-                <ArrowLeft className="h-4 w-4" />
-                Back to home
-              </Button>
+              <Button size="lg">Back to home</Button>
             </Link>
           </div>
         </div>

@@ -68,12 +68,15 @@ export default {
   				'5': 'hsl(var(--chart-5))'
   			},
   			// Literal Phantom palette (use directly: bg-lavender, text-aubergine, border-ash…)
+  			// `deep` = the color-only hover shade of its surface; `ink` = the AA-safe
+  			// text color on that pastel surface. Formalized from previously shipped
+  			// raw hexes — these are NOT new colors.
   			aubergine: '#3c315b',
-  			lavender: '#e2dffe',
-  			periwinkle: '#ab9ff2',
-  			cornflower: '#4a87f2',
-  			buttercream: '#ffffc4',
-  			blush: '#ffdadc',
+  			lavender: { DEFAULT: '#e2dffe', deep: '#d6d2fd' },
+  			periwinkle: { DEFAULT: '#ab9ff2', deep: '#9d8ff0' },
+  			cornflower: { DEFAULT: '#4a87f2', deep: '#3f7ae8' },
+  			buttercream: { DEFAULT: '#ffffc4', deep: '#f7f7b0', ink: '#6b5d13' },
+  			blush: { DEFAULT: '#ffdadc', deep: '#ffcecf' },
   			mint: {
   				DEFAULT: '#2ec08b',
   				ink: '#157f5c'
@@ -84,7 +87,7 @@ export default {
   				DEFAULT: '#86848d',
   				deep: '#5f5d67'
   			},
-  			ash: '#e9e8ea',
+  			ash: { DEFAULT: '#e9e8ea', deep: '#dedde0' },
   			bone: '#f4f2f4',
   			rosewood: '#b23a48',
   			'rose-ink': '#9f2936'

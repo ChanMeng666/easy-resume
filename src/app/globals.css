@@ -161,6 +161,39 @@ body {
     }
   }
 
+  /* Interactive pill — same visual pill as before on fine pointers, but
+     guarantees a ≥44px hit target on touch devices (coarse pointers). Apply to
+     every small pill-shaped control (example chips, version pills, filters). */
+  .pill-interactive {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 9999px;
+  }
+  @media (pointer: coarse) {
+    .pill-interactive {
+      min-height: 2.75rem; /* 44px touch target */
+    }
+  }
+
+  /* Mobile action bar — the one sanctioned fixed bottom bar (max one per page,
+     ≤2 actions). Flat: bg-paper + 1px ash top border, never shadowed. Hidden on
+     lg+ where the full action rail is visible. Pair with `pb-24 lg:pb-0` on the
+     page container so content clears the bar. */
+  .action-bar-mobile {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 40;
+    border-top: 1px solid var(--color-ash);
+    background-color: var(--color-paper);
+    padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
+  }
+  @media (min-width: 1024px) {
+    .action-bar-mobile {
+      display: none;
+    }
+  }
+
   /* Dark aubergine band — used sparingly (homepage CLI band + Footer only). */
   .section-dark {
     background-color: var(--color-aubergine);

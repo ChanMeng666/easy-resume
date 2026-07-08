@@ -4,10 +4,11 @@ import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Navbar } from '@/components/shared/Navbar';
 import { Footer } from '@/components/shared/Footer';
+import { PageShell } from '@/components/shared/PageShell';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { FadeIn } from '@/components/shared/FadeIn';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Sparkles, Zap, Crown, Info } from 'lucide-react';
 
 const plans = [
   {
@@ -15,7 +16,6 @@ const plans = [
     price: '$0',
     period: 'forever',
     description: 'AI resume generation to get you started',
-    icon: Sparkles,
     features: [
       'AI resume generation from a job description',
       '7 professional Typst templates',
@@ -33,7 +33,6 @@ const plans = [
     price: '$29',
     period: '/month',
     description: '20 builds a month for an active search',
-    icon: Zap,
     popular: true,
     features: [
       'Everything in Free',
@@ -53,7 +52,6 @@ const plans = [
     price: '$49',
     period: '/month',
     description: 'Unlimited everything for power users',
-    icon: Crown,
     features: [
       'Everything in Pro',
       'Unlimited credits',
@@ -131,26 +129,16 @@ function PricingContent() {
     <div className="min-h-screen bg-background">
       <Navbar currentPath="/pricing" />
 
-      <main className="page-shell page-pad-b container mx-auto px-4">
+      <PageShell as="main">
         {/* Hero */}
-        <FadeIn className="text-center max-w-2xl mx-auto mb-16">
-          <p className="text-caption uppercase tracking-wider text-fog-deep mb-3">
-            Pricing — Pay per result
-          </p>
-          <h1 className="text-4xl md:text-5xl mb-4">
-            Sell results, not tools.
-          </h1>
-          <p className="text-lead text-muted-foreground">
-            Free to build. You&apos;re only charged when a real PDF is composed —
-            failed builds are free, and every resume downloads as editable{' '}
-            <span className="font-mono">.typ</span> source, so there&apos;s zero
-            lock-in.
-          </p>
-        </FadeIn>
+        <PageHeader
+          eyebrow="Pricing — Pay per result"
+          title="Sell results, not tools."
+          lede="Free to build. You're only charged when a real PDF is composed — failed builds are free, and every resume downloads as editable .typ source, so there's zero lock-in."
+        />
 
         {cancelled && (
-          <div className="max-w-2xl mx-auto mb-8 flex items-start gap-3 bg-buttercream text-[#6b5d13] rounded-2xl p-4">
-            <Info className="h-5 w-5 flex-shrink-0 mt-0.5" />
+          <div className="max-w-2xl mx-auto mb-8 flex items-start gap-3 bg-buttercream text-buttercream-ink rounded-2xl p-4">
             <p className="flex-1 text-sm">
               Checkout cancelled — no charge was made. You can pick a plan whenever
               you&apos;re ready.
@@ -186,10 +174,6 @@ function PricingContent() {
                   </div>
                 )}
 
-                <div className="inline-flex p-3 rounded-full bg-bone mb-4">
-                  <plan.icon className="h-6 w-6 text-periwinkle" />
-                </div>
-
                 <h2 className="text-2xl">{plan.name}</h2>
                 <div className="flex items-baseline gap-1 mt-2 mb-2">
                   <span className="text-4xl font-light">{plan.price}</span>
@@ -201,29 +185,29 @@ function PricingContent() {
                   variant={plan.ctaVariant}
                   className="w-full mb-6"
                   disabled={isLoading !== null}
-                  onClick={() => (plan.priceType ? handlePurchase(plan.priceType) : router.push('/'))}
+                  onClick={() => (plan.priceType ? handlePurchase(plan.priceType) : router.push('/#start'))}
                 >
                   {plan.priceType && isLoading === plan.priceType ? 'Redirecting...' : plan.cta}
                 </Button>
 
-                <ul className="space-y-3">
+                <ul className="space-y-3 list-disc pl-5">
                   {plan.features.map((feature) => {
                     const soon = COMING_SOON_FEATURES.has(feature);
                     return (
-                      <li key={feature} className="flex items-start gap-2 text-sm">
-                        <CheckCircle
-                          className={`h-4 w-4 flex-shrink-0 mt-0.5 ${
-                            soon ? 'text-fog' : 'text-periwinkle'
-                          }`}
-                        />
-                        <span className={soon ? 'text-muted-foreground' : ''}>
-                          {feature}
-                          {soon && (
-                            <Badge variant="default" className="ml-2 align-middle">
-                              Coming soon
-                            </Badge>
-                          )}
-                        </span>
+                      <li
+                        key={feature}
+                        className={`text-sm ${
+                          soon
+                            ? 'marker:text-fog text-muted-foreground'
+                            : 'marker:text-periwinkle'
+                        }`}
+                      >
+                        {feature}
+                        {soon && (
+                          <Badge variant="default" className="ml-2 align-middle">
+                            Coming soon
+                          </Badge>
+                        )}
                       </li>
                     );
                   })}
@@ -321,7 +305,7 @@ function PricingContent() {
             );
           })()}
         </FadeIn>
-      </main>
+      </PageShell>
 
       <Footer />
     </div>

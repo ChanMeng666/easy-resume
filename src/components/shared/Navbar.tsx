@@ -8,7 +8,7 @@ import { CreditBadge } from '@/components/shared/CreditBadge';
 import { ReactNode, Suspense, useState } from 'react';
 import { useScrollDirection } from '@/lib/hooks/useScrollDirection';
 import { useUser } from "@stackframe/stack";
-import { Sparkles, Menu, X, LayoutDashboard, CreditCard, Files, User, Briefcase } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 
 interface NavbarProps {
   currentPath?: string;
@@ -41,55 +41,42 @@ function isActivePath(currentPath: string, targetPath: string): boolean {
  */
 function getNavLinkStyles(currentPath: string, targetPath: string): string {
   const isActive = isActivePath(currentPath, targetPath);
-  return `text-sm text-aubergine transition-colors px-3 py-2 rounded-full flex items-center gap-2 ${
+  return `text-sm text-aubergine transition-colors px-3 py-2 rounded-full ${
     isActive ? 'bg-bone' : 'hover:bg-bone'
   }`;
 }
 
 /**
- * Inner navigation links component that shows contextual links.
+ * Inner navigation links + primary CTA — auth-aware, text-only.
+ *
+ * Logged-in surfaces the two high-frequency destinations (My Resumes,
+ * Applications); the rest (Profiles, Credits & Billing, Pricing) live in the
+ * UserButton menu. Logged-out surfaces Pricing. The CTA always deep-links to
+ * the homepage input console (`/#start`).
  */
 function NavLinksInner({ currentPath }: { currentPath: string }) {
   const user = useUser();
 
   return (
     <>
-      {/* My Resumes - Only show for logged-in users */}
-      {user && (
-        <Link href="/resumes" className={getNavLinkStyles(currentPath, '/resumes')}>
-          <Files className="w-4 h-4" />
-          My Resumes
+      {user ? (
+        <>
+          <Link href="/resumes" className={getNavLinkStyles(currentPath, '/resumes')}>
+            My Resumes
+          </Link>
+          <Link href="/applications" className={getNavLinkStyles(currentPath, '/applications')}>
+            Applications
+          </Link>
+        </>
+      ) : (
+        <Link href="/pricing" className={getNavLinkStyles(currentPath, '/pricing')}>
+          Pricing
         </Link>
       )}
 
-      {/* Profiles - Only show for logged-in users */}
-      {user && (
-        <Link href="/profiles" className={getNavLinkStyles(currentPath, '/profiles')}>
-          <User className="w-4 h-4" />
-          Profiles
-        </Link>
-      )}
-
-      {/* Applications - Only show for logged-in users */}
-      {user && (
-        <Link href="/applications" className={getNavLinkStyles(currentPath, '/applications')}>
-          <Briefcase className="w-4 h-4" />
-          Applications
-        </Link>
-      )}
-
-      {/* Dashboard - Only show for logged-in users */}
-      {user && (
-        <Link href="/dashboard" className={getNavLinkStyles(currentPath, '/dashboard')}>
-          <LayoutDashboard className="w-4 h-4" />
-          Dashboard
-        </Link>
-      )}
-
-      {/* Pricing */}
-      <Link href="/pricing" className={getNavLinkStyles(currentPath, '/pricing')}>
-        <CreditCard className="w-4 h-4" />
-        Pricing
+      {/* Primary CTA — lavender glow button to the homepage input console */}
+      <Link href="/#start">
+        <Button size="sm">{user ? 'New resume' : 'Get Started'}</Button>
       </Link>
     </>
   );
@@ -124,6 +111,7 @@ function MobileMenu({
         <div className="flex justify-end mb-6">
           <button
             onClick={onClose}
+            aria-label="Close menu"
             className="p-2 rounded-full text-aubergine hover:bg-bone transition-colors"
           >
             <X className="w-5 h-5" />
@@ -131,69 +119,67 @@ function MobileMenu({
         </div>
 
         <nav className="flex flex-col gap-3">
-          {/* My Resumes - Only for logged-in users */}
+          {/* Credits row — balance + a route into Credits & Billing */}
           {user && (
+            <div className="flex items-center gap-2 pb-2 mb-1 border-b border-ash">
+              <Suspense fallback={null}>
+                <CreditBadge />
+              </Suspense>
+              <Link
+                href="/dashboard"
+                onClick={onClose}
+                className={`${getNavLinkStyles(currentPath, '/dashboard')} flex-1`}
+              >
+                Credits &amp; Billing
+              </Link>
+            </div>
+          )}
+
+          {user ? (
+            <>
+              <Link
+                href="/resumes"
+                onClick={onClose}
+                className={`${getNavLinkStyles(currentPath, '/resumes')} w-full`}
+              >
+                My Resumes
+              </Link>
+              <Link
+                href="/applications"
+                onClick={onClose}
+                className={`${getNavLinkStyles(currentPath, '/applications')} w-full`}
+              >
+                Applications
+              </Link>
+              <Link
+                href="/profiles"
+                onClick={onClose}
+                className={`${getNavLinkStyles(currentPath, '/profiles')} w-full`}
+              >
+                Profiles
+              </Link>
+              <Link
+                href="/pricing"
+                onClick={onClose}
+                className={`${getNavLinkStyles(currentPath, '/pricing')} w-full`}
+              >
+                Pricing
+              </Link>
+            </>
+          ) : (
             <Link
-              href="/resumes"
+              href="/pricing"
               onClick={onClose}
-              className={`${getNavLinkStyles(currentPath, '/resumes')} w-full`}
+              className={`${getNavLinkStyles(currentPath, '/pricing')} w-full`}
             >
-              <Files className="w-4 h-4" />
-              My Resumes
+              Pricing
             </Link>
           )}
 
-          {/* Profiles - Only for logged-in users */}
-          {user && (
-            <Link
-              href="/profiles"
-              onClick={onClose}
-              className={`${getNavLinkStyles(currentPath, '/profiles')} w-full`}
-            >
-              <User className="w-4 h-4" />
-              Profiles
-            </Link>
-          )}
-
-          {/* Applications - Only for logged-in users */}
-          {user && (
-            <Link
-              href="/applications"
-              onClick={onClose}
-              className={`${getNavLinkStyles(currentPath, '/applications')} w-full`}
-            >
-              <Briefcase className="w-4 h-4" />
-              Applications
-            </Link>
-          )}
-
-          {/* Dashboard - Only for logged-in users */}
-          {user && (
-            <Link
-              href="/dashboard"
-              onClick={onClose}
-              className={`${getNavLinkStyles(currentPath, '/dashboard')} w-full`}
-            >
-              <LayoutDashboard className="w-4 h-4" />
-              Dashboard
-            </Link>
-          )}
-
-          {/* Pricing */}
-          <Link
-            href="/pricing"
-            onClick={onClose}
-            className={`${getNavLinkStyles(currentPath, '/pricing')} w-full`}
-          >
-            <CreditCard className="w-4 h-4" />
-            Pricing
-          </Link>
-
-          {/* Get Started - Primary CTA */}
-          <Link href="/" onClick={onClose}>
-            <Button className="w-full gap-2 mt-2">
-              <Sparkles className="w-4 h-4" />
-              Get Started
+          {/* Primary CTA */}
+          <Link href="/#start" onClick={onClose}>
+            <Button className="w-full mt-2">
+              {user ? 'New resume' : 'Get Started'}
             </Button>
           </Link>
         </nav>
@@ -257,22 +243,13 @@ export function Navbar({ currentPath = '/', rightContent, position, fixed, exter
                   <Suspense fallback={
                     <Link
                       href="/pricing"
-                      className="text-sm text-aubergine transition-colors hover:bg-bone px-3 py-2 rounded-full flex items-center gap-2"
+                      className="text-sm text-aubergine transition-colors hover:bg-bone px-3 py-2 rounded-full"
                     >
-                      <CreditCard className="w-4 h-4" />
                       Pricing
                     </Link>
                   }>
                     <NavLinksInner currentPath={currentPath} />
                   </Suspense>
-
-                  {/* Get Started - Primary CTA */}
-                  <Link href="/">
-                    <Button size="sm" className="gap-1">
-                      <Sparkles className="w-4 h-4" />
-                      Get Started
-                    </Button>
-                  </Link>
 
                   <Suspense fallback={null}>
                     <CreditBadge />
@@ -288,6 +265,7 @@ export function Navbar({ currentPath = '/', rightContent, position, fixed, exter
                   <UserButton />
                   <button
                     onClick={() => setIsMobileMenuOpen(true)}
+                    aria-label="Open menu"
                     className="p-2 rounded-full text-aubergine hover:bg-bone transition-colors"
                   >
                     <Menu className="w-5 h-5" />

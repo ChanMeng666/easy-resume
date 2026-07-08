@@ -7,7 +7,7 @@ import { Navbar } from '@/components/shared/Navbar';
 import { Footer } from '@/components/shared/Footer';
 import { Button } from '@/components/ui/button';
 import { useElementScrollDirection } from '@/lib/hooks/useScrollDirection';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { AIEditorContent } from './AIEditorContent';
 
 /**
@@ -80,8 +80,7 @@ function AIEditorPageContent() {
                 private browsing mode, or the inputs were too large to store.
               </p>
               <Link href="/">
-                <Button size="lg" className="w-full sm:w-auto gap-2">
-                  <ArrowLeft className="h-4 w-4" />
+                <Button size="lg" className="w-full sm:w-auto">
                   Back to home
                 </Button>
               </Link>

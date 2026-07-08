@@ -12,11 +12,20 @@
  * metadata only and is deliberately NOT part of this map.
  */
 export const ILLUSTRATIONS = {
-  hero: {
-    src: '/illustrations/hero-composition.png',
+  /** Wide, croppable frieze used as the top band INSIDE the homepage input
+      console card (decoration lives in the content layer, never standalone). */
+  consoleBand: {
+    src: '/illustrations/console-band.png',
     width: 1536,
+    height: 512,
+    alt: 'A quiet frieze of overlapping resume sheets drifting apart.',
+  },
+  /** Two linked sheets — heads the /connect page and connection empty states. */
+  connections: {
+    src: '/illustrations/connections.png',
+    width: 640,
     height: 640,
-    alt: 'Overlapping resume sheets composed into a single typeset page.',
+    alt: 'Two resume sheets joined by a single thin line.',
   },
   stepPaste: {
     src: '/illustrations/step-paste.png',

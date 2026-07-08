@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@stackframe/stack';
-import { Sparkles, User, Terminal, Plug } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -60,6 +60,9 @@ export default function HomePage() {
   // first generation reuses the parsed data instead of re-parsing it.
   const [profiles, setProfiles] = useState<ProfileSummary[]>([]);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
+  // Inline, field-scoped validation replaces native alert() dialogs. Cleared as
+  // the user types into the offending field.
+  const [errors, setErrors] = useState<{ jd?: string; bg?: string }>({});
 
   // Load the user's saved profiles once they're signed in.
   useEffect(() => {
@@ -111,6 +114,13 @@ export default function HomePage() {
   function handleBackgroundChange(value: string) {
     setBackground(value);
     if (selectedProfileId) setSelectedProfileId(null);
+    if (errors.bg) setErrors((prev) => ({ ...prev, bg: undefined }));
+  }
+
+  /** Update the JD field and clear any pending validation error on it. */
+  function handleJdChange(value: string) {
+    setJobDescription(value);
+    if (errors.jd) setErrors((prev) => ({ ...prev, jd: undefined }));
   }
 
   /** Prefill both fields from a starter example (and clear any pinned profile). */
@@ -131,18 +141,19 @@ export default function HomePage() {
     const jd = jobDescription.trim();
     const bg = background.trim();
 
-    if (!jd || !bg) {
-      alert('Please fill in both the job description and your background.');
-      return;
-    }
-
+    const nextErrors: { jd?: string; bg?: string } = {};
+    if (!jd) nextErrors.jd = 'Please paste the job description.';
+    if (!bg) nextErrors.bg = 'Please describe your background.';
     if (jd.length + bg.length > MAX_INPUT_BYTES) {
-      alert(
-        `Inputs are too long (${jd.length + bg.length} chars). ` +
-          `Please keep them under ${MAX_INPUT_BYTES.toLocaleString()} characters total.`
-      );
+      nextErrors.bg = `Inputs are too long (${(
+        jd.length + bg.length
+      ).toLocaleString()} chars). Keep them under ${MAX_INPUT_BYTES.toLocaleString()} characters total.`;
+    }
+    if (nextErrors.jd || nextErrors.bg) {
+      setErrors(nextErrors);
       return;
     }
+    setErrors({});
 
     const profileId = selectedProfileId ?? undefined;
     window.__vitexInputs = { jd, bg, profileId };
@@ -175,7 +186,7 @@ export default function HomePage() {
 
       <main className="flex-grow page-shell page-pad-b">
         {/* Hero — centered pitch + the input console */}
-        <section className="mx-auto max-w-content px-4 sm:px-6 py-16 md:py-24">
+        <section id="start" className="scroll-mt-24 mx-auto max-w-content px-4 sm:px-6 py-16 md:py-24">
           <FadeIn className="mx-auto max-w-3xl text-center">
             <p className="mb-5 text-caption uppercase tracking-wider text-fog-deep">
               Career as Code
@@ -193,6 +204,17 @@ export default function HomePage() {
 
           <FadeIn delay={0.06} className="mx-auto mt-12 max-w-2xl">
             <div className="rounded-3xl border border-ash bg-white p-6 sm:p-8">
+              {/* Decorative frieze — lives inside the console, never standalone */}
+              <div className="relative -mx-6 -mt-6 mb-6 h-24 overflow-hidden rounded-t-3xl bg-bone sm:-mx-8 sm:-mt-8 sm:h-32">
+                <Image
+                  src={ILLUSTRATIONS.consoleBand.src}
+                  alt={ILLUSTRATIONS.consoleBand.alt}
+                  fill
+                  sizes="(max-width: 640px) 100vw, 672px"
+                  className="object-cover"
+                />
+              </div>
+
               <div className="space-y-5">
                 {/* Onboarding: one-click examples to prefill both fields. */}
                 <div className="flex flex-wrap items-center gap-2">
@@ -202,7 +224,7 @@ export default function HomePage() {
                       key={ex.label}
                       type="button"
                       onClick={() => applyExample(ex)}
-                      className="rounded-full border border-ash bg-bone px-3 py-1 text-caption text-aubergine transition-colors hover:bg-ash"
+                      className="pill-interactive rounded-full border border-ash bg-bone px-3 py-1 text-caption text-aubergine transition-colors hover:bg-ash"
                     >
                       {ex.label}
                     </button>
@@ -218,9 +240,11 @@ export default function HomePage() {
                     rows={5}
                     placeholder="Paste the job description here…"
                     value={jobDescription}
-                    onChange={(e) => setJobDescription(e.target.value)}
+                    onChange={(e) => handleJdChange(e.target.value)}
+                    aria-invalid={!!errors.jd}
                     className="min-h-[120px]"
                   />
+                  {errors.jd && <p className="text-sm text-rose-ink">{errors.jd}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -232,8 +256,7 @@ export default function HomePage() {
                       fills the background below; you can still edit it. */}
                   {profiles.length > 0 && (
                     <div className="flex flex-wrap items-center gap-2 pb-1">
-                      <span className="inline-flex items-center gap-1 text-caption text-muted-foreground">
-                        <User className="h-3.5 w-3.5" />
+                      <span className="text-caption text-muted-foreground">
                         Use a saved profile:
                       </span>
                       {profiles.map((p) => {
@@ -243,7 +266,7 @@ export default function HomePage() {
                             key={p.id}
                             type="button"
                             onClick={() => handleSelectProfile(p.id)}
-                            className={`rounded-full border px-3 py-1 text-caption transition-colors ${
+                            className={`pill-interactive rounded-full border px-3 py-1 text-caption transition-colors ${
                               active
                                 ? 'border-periwinkle bg-periwinkle text-aubergine'
                                 : 'border-ash bg-bone text-aubergine hover:bg-ash'
@@ -263,13 +286,28 @@ export default function HomePage() {
                     placeholder="Briefly describe your experience, skills, and education…"
                     value={background}
                     onChange={(e) => handleBackgroundChange(e.target.value)}
+                    aria-invalid={!!errors.bg}
                     className="min-h-[120px]"
                   />
-                  {selectedProfileId && (
-                    <p className="text-caption text-fog-deep">
-                      Using saved profile — generation skips re-parsing.
+                  {errors.bg && <p className="text-sm text-rose-ink">{errors.bg}</p>}
+                  <div className="flex items-center justify-between gap-2">
+                    {selectedProfileId ? (
+                      <p className="text-caption text-fog-deep">
+                        Using saved profile — generation skips re-parsing.
+                      </p>
+                    ) : (
+                      <span />
+                    )}
+                    <p
+                      className={`text-caption ${
+                        jobDescription.length + background.length > 95_000
+                          ? 'text-rose-ink'
+                          : 'text-muted-foreground'
+                      }`}
+                    >
+                      {(jobDescription.length + background.length).toLocaleString()} / 100,000
                     </p>
-                  )}
+                  </div>
                 </div>
               </div>
 
@@ -280,26 +318,11 @@ export default function HomePage() {
                 <Button
                   size="lg"
                   onClick={handleGenerate}
-                  className="w-full gap-2 sm:w-auto"
+                  className="w-full sm:w-auto"
                 >
-                  <Sparkles className="h-5 w-5" />
                   Generate My Resume
                 </Button>
               </div>
-            </div>
-          </FadeIn>
-
-          {/* A quiet piece of art: the pipeline's output, composed. */}
-          <FadeIn delay={0.12} className="mx-auto mt-16 max-w-content">
-            <div className="overflow-hidden rounded-3xl border border-ash bg-paper">
-              <Image
-                src={ILLUSTRATIONS.hero.src}
-                width={ILLUSTRATIONS.hero.width}
-                height={ILLUSTRATIONS.hero.height}
-                alt={ILLUSTRATIONS.hero.alt}
-                priority={false}
-                className="h-auto w-full"
-              />
             </div>
           </FadeIn>
         </section>
@@ -356,13 +379,6 @@ export default function HomePage() {
                 </FadeIn>
               ))}
             </div>
-
-            {/* Or skip the browser — same pipeline, from the terminal or an AI assistant. */}
-            <p className="mt-10 text-center text-body-sm text-muted-foreground">
-              Or skip the browser —{' '}
-              <span className="font-mono text-aubergine">npx vitex-cli</span>{' '}
-              or the MCP connector. Same pipeline, same PDF.
-            </p>
           </div>
         </section>
 
@@ -393,11 +409,8 @@ export default function HomePage() {
                   rel="noopener noreferrer"
                   className="block rounded-3xl border border-white/10 bg-white/5 p-8 transition-colors hover:bg-white/10"
                 >
-                  <div className="mb-5 flex items-center justify-between">
+                  <div className="mb-5">
                     <span className="text-caption uppercase tracking-wider text-periwinkle">CLI</span>
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10">
-                      <Terminal className="h-5 w-5 text-white" />
-                    </div>
                   </div>
                   <h3 className="mb-2 text-xl font-medium">Run it from your terminal</h3>
                   <p className="mb-4 text-white/70">
@@ -409,37 +422,20 @@ export default function HomePage() {
                 </a>
 
                 <div className="rounded-3xl border border-white/10 bg-white/5 p-8">
-                  <div className="mb-5 flex items-center justify-between">
+                  <div className="mb-5">
                     <span className="text-caption uppercase tracking-wider text-periwinkle">MCP Connector</span>
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10">
-                      <Plug className="h-5 w-5 text-white" />
-                    </div>
                   </div>
                   <h3 className="mb-2 text-xl font-medium">Connect your AI assistant</h3>
                   <p className="mb-4 text-white/70">
-                    Wire Vitex into{' '}
-                    <a
-                      href="https://github.com/ChanMeng666/easy-resume/blob/master/docs/connectors/chatgpt.md"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-white underline underline-offset-2 hover:text-white/80"
-                    >
-                      ChatGPT
-                    </a>{' '}
-                    or{' '}
-                    <a
-                      href="https://github.com/ChanMeng666/easy-resume/blob/master/docs/connectors/claude.md"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-white underline underline-offset-2 hover:text-white/80"
-                    >
-                      Claude
-                    </a>{' '}
-                    over MCP and let it build for you.
+                    Wire Vitex into ChatGPT or Claude over MCP and let it build for
+                    you.
                   </p>
-                  <span className="inline-block rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white/90">
-                    ChatGPT &amp; Claude
-                  </span>
+                  <Link
+                    href="/connect"
+                    className="text-white underline underline-offset-2 hover:text-white/80"
+                  >
+                    Set up in minutes →
+                  </Link>
                 </div>
               </div>
             </FadeIn>
