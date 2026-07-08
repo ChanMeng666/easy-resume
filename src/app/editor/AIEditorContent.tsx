@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -38,30 +39,24 @@ import { DEFAULT_TOKENS, type DesignTokens } from '@/lib/design/tokens';
 import { ResumeData } from '@/lib/validation/schema';
 import { StructuredEditor } from './StructuredEditor';
 import {
-  Download,
-  FileCode,
-  Copy,
+  // State indicators (spinner / success / error) and the two sanctioned
+  // icon-only controls (X close, ChevronDown dropdown caret). Search, UserCheck,
+  // FileText, Printer, BarChart3, Mail and Wand2 are retained ONLY as the
+  // per-step glyphs of the progress gallery below (a pending→active→completed
+  // state-machine display) — their decorative on-label usages were removed.
   Loader2,
   CheckCircle2,
   Search,
   UserCheck,
   FileText,
   Printer,
-  Send,
   Check,
   AlertCircle,
   BarChart3,
   Mail,
-  RefreshCw,
-  CreditCard,
-  BookmarkPlus,
-  Pencil,
-  History,
   X,
-  Columns2,
   Wand2,
   ChevronDown,
-  SlidersHorizontal,
 } from 'lucide-react';
 
 /**
@@ -474,6 +469,7 @@ function classifyError(err: unknown): GenerationError {
  * then displays the compiled PDF with export actions and refinement.
  */
 export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditorContentProps) {
+  const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
   const [isGenerating, setIsGenerating] = useState(true);
   const [error, setError] = useState<GenerationError | null>(null);
@@ -536,6 +532,8 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
   const generationStarted = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
   const isGeneratingRef = useRef(true);
+  // The refine section, so the mobile action bar's "Refine" can scroll to it.
+  const refineSectionRef = useRef<HTMLDivElement | null>(null);
   // Stable idempotency key for the current generation intent. A retry of the
   // same intent reuses it (so a completed-but-lost run isn't re-charged); a new
   // run or a refine mints a fresh key.
@@ -912,20 +910,20 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
 
     // No unsaved edits — the persisted resume already matches; navigate directly.
     if (!editsDirty) {
-      window.location.href = `/resumes/${currentJobId}/assistant`;
+      router.push(`/resumes/${currentJobId}/assistant`);
       return;
     }
 
     setSavingVersion(true);
     try {
       const newId = await persistVersion(result.resumeData);
-      window.location.href = `/resumes/${newId}/assistant`;
+      router.push(`/resumes/${newId}/assistant`);
     } catch (err) {
       console.error('Failed to persist edits before Edit with AI:', err);
       setAdvancedEditError('Could not save your edits. Please try again before editing with AI.');
       setSavingVersion(false);
     }
-  }, [currentJobId, result, editsDirty, persistVersion]);
+  }, [currentJobId, result, editsDirty, persistVersion, router]);
 
   /** Persist a rename of the current version's label (owner-scoped PATCH). */
   const handleRenameVersion = useCallback(async () => {
@@ -1006,6 +1004,26 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
     setSaveProfileState('idle');
     setSaveProfileOpen(true);
   }, [result]);
+
+  /**
+   * Cancel an in-flight generation/refine. Aborting the fetch makes the SSE
+   * reader reject with an AbortError, which both stream catch-paths already
+   * swallow quietly (no error card). The abort keeps `signal.aborted` true so
+   * the `.finally` skips its reset — so we reset `isGenerating` here.
+   * A cancelled refine still has its saved parent job, so restore it via the
+   * free `?job=` re-open (full load — the job-load effect is guarded by a
+   * one-shot ref, like the version pills). A cancelled first generation has
+   * nothing to show, so step back instead of leaving a blank editor.
+   */
+  const handleCancelGeneration = useCallback(() => {
+    abortRef.current?.abort();
+    setIsGenerating(false);
+    if (currentJobId) {
+      window.location.href = `/editor?job=${currentJobId}`;
+    } else {
+      router.back();
+    }
+  }, [router, currentJobId]);
 
   /** Retry from the current error state with the original inputs. */
   const handleRetry = useCallback(() => {
@@ -1106,15 +1124,11 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
                   Debug log (dev)
                 </span>
                 <Button size="sm" variant="outline" onClick={copyDebug}>
-                  {debugCopied ? (
-                    <Check className="mr-2 h-4 w-4 text-mint" />
-                  ) : (
-                    <Copy className="mr-2 h-4 w-4" />
-                  )}
+                  {debugCopied && <Check className="mr-2 h-4 w-4 text-mint" />}
                   {debugCopied ? 'Copied!' : 'Copy log'}
                 </Button>
               </div>
-              <pre className="max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-xl bg-white p-3 text-xs leading-relaxed text-foreground">
+              <pre className="max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-2xl bg-white p-3 text-xs leading-relaxed text-foreground">
                 {debugText}
               </pre>
             </div>
@@ -1130,11 +1144,7 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
                 <p className="truncate font-mono text-xs text-muted-foreground">{requestId}</p>
               </div>
               <Button size="sm" variant="outline" onClick={copyDebug}>
-                {debugCopied ? (
-                  <Check className="mr-2 h-4 w-4 text-mint" />
-                ) : (
-                  <Copy className="mr-2 h-4 w-4" />
-                )}
+                {debugCopied && <Check className="mr-2 h-4 w-4 text-mint" />}
                 {debugCopied ? 'Copied!' : 'Copy'}
               </Button>
             </div>
@@ -1142,24 +1152,24 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
 
           <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
             {error.kind === 'credits' ? (
-              <Button onClick={() => (window.location.href = '/pricing')} size="lg" className="w-full sm:w-auto">
-                <CreditCard className="h-4 w-4" />
+              <Button onClick={() => router.push('/pricing')} size="lg" className="w-full sm:w-auto">
                 Buy Credits
               </Button>
             ) : error.kind === 'auth' ? (
               <Button
                 onClick={() =>
+                  // Full reload (not router.push): the Stack Auth handler route
+                  // needs a fresh document load so the sign-in flow re-initializes
+                  // and honors the after_auth_return_to redirect / auth cookies.
                   (window.location.href = '/handler/sign-in?after_auth_return_to=/editor')
                 }
                 size="lg"
                 className="w-full sm:w-auto"
               >
-                <UserCheck className="h-4 w-4" />
                 Sign in
               </Button>
             ) : (
               <Button onClick={handleRetry} size="lg" className="w-full sm:w-auto">
-                <RefreshCw className="h-4 w-4" />
                 Try again
               </Button>
             )}
@@ -1231,11 +1241,21 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
               })}
             </div>
 
-            {/* Footer advisory */}
-            <p className="mt-6 text-xs text-muted-foreground">
-              Keep this page open until generation completes — closing or backgrounding
-              the tab on mobile can interrupt the stream.
-            </p>
+            {/* Footer advisory + cancel */}
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs text-muted-foreground">
+                Keep this page open until generation completes — closing or backgrounding
+                the tab on mobile can interrupt the stream.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCancelGeneration}
+                className="w-full sm:w-auto sm:flex-shrink-0"
+              >
+                Cancel
+              </Button>
+            </div>
           </div>
         </FadeIn>
       </main>
@@ -1246,7 +1266,9 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
 
   // --- Result State ---
   return (
-    <main className="mx-auto max-w-content px-4 sm:px-6 pt-10 md:pt-14 pb-16">
+    // pb-24 on mobile clears the fixed .action-bar-mobile; lg keeps the original
+    // bottom padding since the bar is hidden there.
+    <main className="mx-auto max-w-content px-4 sm:px-6 pt-10 md:pt-14 pb-24 lg:pb-16">
       {/* Header */}
       <div className="mb-8">
         <p className="mb-2 text-caption uppercase tracking-wider text-fog-deep">
@@ -1261,10 +1283,7 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
       <Dialog open={compareOpen} onOpenChange={setCompareOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="inline-flex items-center gap-2">
-              <Columns2 className="h-5 w-5" />
-              Compare versions
-            </DialogTitle>
+            <DialogTitle>Compare versions</DialogTitle>
             <DialogDescription>
               Side-by-side ATS score and skill coverage. Read-only — no credit used.
             </DialogDescription>
@@ -1295,7 +1314,7 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
               <Loader2 className="h-5 w-5 animate-spin text-periwinkle" />
             </div>
           ) : compareData ? (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {[compareData.b, compareData.a].map((d, idx) => (
                 <div key={d.id} className="rounded-2xl bg-bone p-4">
                   <p className="mb-1 text-caption text-muted-foreground">
@@ -1335,20 +1354,26 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
         {/* Left: the PDF preview as the hero artifact — sticky on lg, minimal
             chrome (LivePdfPreview already carries its own frame). */}
         <FadeIn className="self-start lg:sticky lg:top-24">
+          {/* Mobile-only ATS summary — the score lives in the right rail on lg,
+              which stacks below the preview on small screens, so surface it here. */}
+          <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl bg-bone px-4 py-3 lg:hidden">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-2xl font-light tracking-tight text-aubergine">
+                {result.atsScore}
+              </span>
+              <span className="text-sm text-muted-foreground">/100 ATS</span>
+            </div>
+            <Badge variant={scoreBadge(result.atsScore)}>{scoreLabel(result.atsScore)}</Badge>
+          </div>
+
           <Tabs
             value={previewTab}
             onValueChange={(v) => setPreviewTab(v as 'resume' | 'cover_letter')}
           >
             <TabsList className="mb-4">
-              <TabsTrigger value="resume">
-                <FileText className="mr-2 h-4 w-4" />
-                Resume
-              </TabsTrigger>
+              <TabsTrigger value="resume">Resume</TabsTrigger>
               {result.coverLetter && (
-                <TabsTrigger value="cover_letter">
-                  <Mail className="mr-2 h-4 w-4" />
-                  Cover letter
-                </TabsTrigger>
+                <TabsTrigger value="cover_letter">Cover letter</TabsTrigger>
               )}
             </TabsList>
 
@@ -1455,7 +1480,6 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
             {/* Actions */}
             <div className="space-y-2 border-t border-ash p-6 sm:p-8">
               <Button size="lg" className="w-full" onClick={handleDownloadPdf}>
-                <Download className="mr-2 h-4 w-4" />
                 Download PDF
               </Button>
 
@@ -1465,23 +1489,15 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="w-full">
-                    <Download className="mr-2 h-4 w-4" />
                     Export
                     <ChevronDown className="ml-2 h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>Resume</DropdownMenuLabel>
-                  <DropdownMenuItem onClick={handleDownloadTyp}>
-                    <FileCode className="mr-2 h-4 w-4" />
-                    Download .typ
-                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleDownloadTyp}>Download .typ</DropdownMenuItem>
                   <DropdownMenuItem onClick={handleCopy}>
-                    {copySuccess ? (
-                      <Check className="mr-2 h-4 w-4 text-mint" />
-                    ) : (
-                      <Copy className="mr-2 h-4 w-4" />
-                    )}
+                    {copySuccess && <Check className="mr-2 h-4 w-4 text-mint" />}
                     {copySuccess ? 'Copied!' : 'Copy code'}
                   </DropdownMenuItem>
 
@@ -1493,33 +1509,23 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
                         onClick={handleDownloadCoverLetterPdf}
                         disabled={!result.coverLetterTypst}
                       >
-                        <Download className="mr-2 h-4 w-4" />
                         Download PDF
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={handleDownloadCoverLetterTyp}
                         disabled={!result.coverLetterTypst}
                       >
-                        <FileCode className="mr-2 h-4 w-4" />
                         Download .typ
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={handleCopyCoverLetterCode}
                         disabled={!result.coverLetterTypst}
                       >
-                        {coverLetterCodeCopied ? (
-                          <Check className="mr-2 h-4 w-4 text-mint" />
-                        ) : (
-                          <Copy className="mr-2 h-4 w-4" />
-                        )}
+                        {coverLetterCodeCopied && <Check className="mr-2 h-4 w-4 text-mint" />}
                         {coverLetterCodeCopied ? 'Copied!' : 'Copy code'}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={handleCopyCoverLetter}>
-                        {coverLetterCopied ? (
-                          <Check className="mr-2 h-4 w-4 text-mint" />
-                        ) : (
-                          <Copy className="mr-2 h-4 w-4" />
-                        )}
+                        {coverLetterCopied && <Check className="mr-2 h-4 w-4 text-mint" />}
                         {coverLetterCopied ? 'Copied!' : 'Copy text'}
                       </DropdownMenuItem>
                     </>
@@ -1530,7 +1536,6 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
               {/* Save the background for reuse across future job descriptions. */}
               {effBg.trim() && (
                 <Button variant="outline" className="w-full" onClick={openSaveProfile}>
-                  <BookmarkPlus className="mr-2 h-4 w-4" />
                   Save as profile
                 </Button>
               )}
@@ -1538,7 +1543,7 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
 
             {/* Refinement — the calm, primary edit surface. A single natural-language
                 box; the server infers scope from the feedback text. Free. */}
-            <div className="border-t border-ash p-6 sm:p-8">
+            <div ref={refineSectionRef} className="border-t border-ash p-6 sm:p-8">
               <div className="mb-2 flex items-center gap-2">
                 <h3 className="text-base font-medium text-aubergine">Refine your resume</h3>
                 <Badge variant="success">Free</Badge>
@@ -1565,7 +1570,6 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
                   disabled={!refinementText.trim() || !currentJobId}
                   className="w-full sm:w-auto"
                 >
-                  <Send className="mr-2 h-4 w-4" />
                   Refine
                 </Button>
               </div>
@@ -1583,12 +1587,7 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
               <Accordion type="multiple">
                 {versions.length > 1 && (
                   <AccordionItem value="history">
-                    <AccordionTrigger>
-                      <span className="inline-flex items-center gap-2">
-                        <History className="h-4 w-4" />
-                        History ({versions.length})
-                      </span>
-                    </AccordionTrigger>
+                    <AccordionTrigger>History ({versions.length})</AccordionTrigger>
                     <AccordionContent>
                       <div className="flex flex-wrap items-center gap-2">
                         {versions.map((v) => {
@@ -1640,20 +1639,24 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
                                   setRenameValue(v.versionLabel ?? '');
                                   setRenaming(true);
                                 }}
-                                className="inline-flex items-center gap-1 rounded-full bg-periwinkle/30 px-3 py-1 text-xs font-medium text-aubergine transition-colors hover:bg-periwinkle/40"
+                                className="pill-interactive gap-1 bg-periwinkle/30 px-3 py-1 text-xs font-medium text-aubergine transition-colors hover:bg-periwinkle/40"
                                 title="Rename this version"
                               >
                                 {labelText}
-                                {ats} · current
-                                <Pencil className="ml-1 h-3 w-3" />
+                                {ats} · current (rename)
                               </button>
                             );
                           }
+                          // Kept as a full-page <a> (not next/link) on purpose: the
+                          // mount effect that loads a job from ?job= is guarded by a
+                          // one-shot `generationStarted` ref, so a client-side
+                          // query-only navigation would NOT reload state (it stays
+                          // stale). A full document load re-runs the effect cleanly.
                           return (
                             <a
                               key={v.id}
                               href={`/editor?job=${v.id}`}
-                              className="rounded-full border border-ash px-3 py-1 text-xs font-medium text-aubergine transition-colors hover:bg-bone"
+                              className="pill-interactive border border-ash px-3 py-1 text-xs font-medium text-aubergine transition-colors hover:bg-bone"
                               title={v.title}
                             >
                               {labelText}
@@ -1671,7 +1674,6 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
                             if (others.length > 0) openCompare(others[others.length - 1].id);
                           }}
                         >
-                          <Columns2 className="h-4 w-4" />
                           Compare
                         </Button>
                       </div>
@@ -1680,12 +1682,7 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
                 )}
 
                 <AccordionItem value="advanced" className="border-b-0">
-                  <AccordionTrigger>
-                    <span className="inline-flex items-center gap-2">
-                      <SlidersHorizontal className="h-4 w-4" />
-                      Advanced edit
-                    </span>
-                  </AccordionTrigger>
+                  <AccordionTrigger>Advanced edit</AccordionTrigger>
                   <AccordionContent>
                     <div className="space-y-2">
                       {/* Free, client-side structured field editing — no LLM, no credit. */}
@@ -1694,7 +1691,6 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
                         className="w-full justify-start"
                         onClick={() => setEditMode((v) => !v)}
                       >
-                        <Pencil className="mr-2 h-4 w-4" />
                         {editMode ? 'Hide field editor' : 'Edit fields'}
                         <Badge variant="success" className="ml-auto">
                           Free
@@ -1713,11 +1709,7 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
                           className="w-full justify-start"
                           onClick={handleEditWithAI}
                         >
-                          {savingVersion ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          ) : (
-                            <Wand2 className="mr-2 h-4 w-4" />
-                          )}
+                          {savingVersion && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                           {savingVersion ? 'Saving edits…' : 'Edit with AI'}
                           <Badge variant="success" className="ml-auto">
                             Free
@@ -1790,18 +1782,30 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
               onClick={handleSaveProfile}
               disabled={saveProfileState === 'saving' || saveProfileState === 'saved' || !effBg.trim()}
             >
-              {saveProfileState === 'saving' ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : saveProfileState === 'saved' ? (
-                <Check className="mr-2 h-4 w-4" />
-              ) : (
-                <BookmarkPlus className="mr-2 h-4 w-4" />
-              )}
+              {saveProfileState === 'saving' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {saveProfileState === 'saved' && <Check className="mr-2 h-4 w-4" />}
               {saveProfileState === 'saved' ? 'Saved!' : 'Save profile'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Mobile action bar (hidden ≥lg) — the two most important result actions,
+          mirroring the desktop rail's primary Download PDF plus a jump to Refine. */}
+      <div className="action-bar-mobile flex gap-2">
+        <Button className="flex-1" onClick={handleDownloadPdf}>
+          Download PDF
+        </Button>
+        <Button
+          variant="outline"
+          className="flex-1"
+          onClick={() =>
+            refineSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          }
+        >
+          Refine
+        </Button>
+      </div>
     </main>
   );
 }

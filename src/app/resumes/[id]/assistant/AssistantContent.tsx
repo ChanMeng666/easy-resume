@@ -3,16 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@stackframe/stack';
-import {
-  AlertCircle,
-  ArrowLeft,
-  Loader2,
-  Save,
-  Send,
-  Sparkles,
-  Wand2,
-  CheckCircle2,
-} from 'lucide-react';
+import { AlertCircle, Loader2, Send, CheckCircle2 } from 'lucide-react';
 import { Navbar } from '@/components/shared/Navbar';
 import { FadeIn } from '@/components/shared/FadeIn';
 import { Button } from '@/components/ui/button';
@@ -95,6 +86,10 @@ export function AssistantContent({ jobId }: { jobId: string }) {
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savedId, setSavedId] = useState<string | null>(null);
+  // Below lg the chat and preview stack; this segmented control picks which one
+  // is visible. Both regions stay mounted (hidden via CSS) so chat state and
+  // scroll survive a toggle.
+  const [mobileView, setMobileView] = useState<'chat' | 'preview'>('chat');
 
   const idRef = useRef(0);
   const nextId = () => `e${(idRef.current += 1)}`;
@@ -382,20 +377,21 @@ export function AssistantContent({ jobId }: { jobId: string }) {
         {/* Header */}
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="flex items-center gap-2 text-3xl font-light tracking-tight text-aubergine">
-              <Wand2 className="h-6 w-6 text-periwinkle" />
+            <h1 className="text-3xl font-light tracking-tight text-aubergine">
               Edit with AI
             </h1>
             <p className="mt-2 text-muted-foreground">
               Describe a change and watch your resume update — chatting and edits are free.
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <Badge variant="success">Free · no credit</Badge>
-            <Button variant="outline" size="sm" className="gap-2" onClick={() => router.push('/resumes')}>
-              <ArrowLeft className="h-4 w-4" />
+            <button
+              onClick={() => router.push('/resumes')}
+              className="text-sm text-aubergine underline underline-offset-4 transition-colors hover:text-periwinkle"
+            >
               Back
-            </Button>
+            </button>
           </div>
         </div>
 
@@ -410,9 +406,28 @@ export function AssistantContent({ jobId }: { jobId: string }) {
             </Button>
           </div>
         ) : (
-          <div className="grid gap-8 lg:grid-cols-2">
+          <>
+            {/* Mobile-only Chat / Preview segmented control (both regions stay
+                mounted; hidden via CSS so chat state and scroll are preserved). */}
+            <div className="mb-4 flex lg:hidden">
+              <div className="inline-flex rounded-full bg-bone p-1">
+                {(['chat', 'preview'] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setMobileView(tab)}
+                    className={`pill-interactive rounded-full px-4 py-1.5 text-caption capitalize transition-colors ${
+                      mobileView === tab ? 'bg-white text-aubergine' : 'text-muted-foreground hover:text-aubergine'
+                    }`}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid gap-8 lg:grid-cols-2">
             {/* Chat column */}
-            <FadeIn className="flex h-[70vh] flex-col overflow-hidden rounded-3xl border border-ash bg-white">
+            <FadeIn className={`${mobileView === 'chat' ? 'flex' : 'hidden'} h-[70vh] flex-col overflow-hidden rounded-3xl border border-ash bg-white lg:flex`}>
               <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto p-6">
                 {phase === 'init' ? (
                   <div className="flex items-center gap-2 text-muted-foreground">
@@ -421,7 +436,6 @@ export function AssistantContent({ jobId }: { jobId: string }) {
                   </div>
                 ) : entries.length === 0 ? (
                   <div className="py-8 text-center">
-                    <Sparkles className="mx-auto mb-3 h-8 w-8 text-periwinkle" />
                     <p className="mb-1 font-medium text-aubergine">Ask for an edit</p>
                     <p className="mb-4 text-sm text-muted-foreground">
                       Try one of these to get started:
@@ -518,7 +532,7 @@ export function AssistantContent({ jobId }: { jobId: string }) {
                       disabled={streaming || phase !== 'ready' || !input.trim()}
                       size="icon"
                       className="flex-shrink-0"
-                      aria-label="Send"
+                      aria-label="Send message"
                     >
                       {streaming ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                     </Button>
@@ -528,7 +542,7 @@ export function AssistantContent({ jobId }: { jobId: string }) {
             </FadeIn>
 
             {/* Live PDF column */}
-            <FadeIn delay={0.06} className="flex flex-col gap-4">
+            <FadeIn delay={0.06} className={`${mobileView === 'preview' ? 'flex' : 'hidden'} min-h-[70vh] flex-col gap-4 lg:flex`}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-3">
                   <span className="text-caption text-muted-foreground">Live preview</span>
@@ -539,7 +553,7 @@ export function AssistantContent({ jobId }: { jobId: string }) {
                         <button
                           key={tab}
                           onClick={() => setPreview(tab)}
-                          className={`rounded-full px-3 py-1 text-caption capitalize transition-colors ${
+                          className={`pill-interactive rounded-full px-3 py-1 text-caption capitalize transition-colors ${
                             preview === tab ? 'bg-white text-aubergine' : 'text-muted-foreground hover:text-aubergine'
                           }`}
                         >
@@ -556,7 +570,7 @@ export function AssistantContent({ jobId }: { jobId: string }) {
                   onClick={saveVersion}
                   disabled={!dirty || saving || !resumeData}
                 >
-                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                   Save as new version · Free
                 </Button>
               </div>
@@ -565,7 +579,8 @@ export function AssistantContent({ jobId }: { jobId: string }) {
                 filename={preview === 'letter' ? 'cover-letter' : 'resume'}
               />
             </FadeIn>
-          </div>
+            </div>
+          </>
         )}
       </main>
     </div>

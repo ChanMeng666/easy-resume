@@ -457,15 +457,17 @@ pattern.
 - Subscription tiers and credit packs
 
 ### Preview Components
-- **LivePdfPreview** (`src/components/preview/LivePdfPreview.tsx`): Compiles Typst and displays PDF in iframe
-- **ExportButtons** (`src/components/preview/ExportButtons.tsx`): Download .typ and Copy Code actions
-- **PdfViewer** (`src/components/preview/PdfViewer.tsx`): PDF rendering helper used by the preview
+- **LivePdfPreview** (`src/components/preview/LivePdfPreview.tsx`): Compiles Typst; iframe viewer on md+, pdfjs canvas preview below md
+- **PdfViewer** (`src/components/preview/PdfViewer.tsx`): desktop iframe viewer with icon-only zoom toolbar
+- **PdfCanvasPreview** (`src/components/preview/PdfCanvasPreview.tsx`): mobile in-page preview — lazy-loads `pdfjs-dist` (legacy build) and rasterizes every page to canvas (iOS Safari can't iframe blob PDFs); mounted only under `md` via matchMedia
 - **LatexPreview** (`src/components/preview/LatexPreview.tsx`): unused legacy component (stale "Latex" name — no importer in `src/`; kept for reference only)
 
 ### UI Library
 - **shadcn/ui**: Pre-built components in `src/components/ui/` restyled for Phantom
 - **Styling**: Tailwind CSS (light mode only, no dark mode)
-- **Icons**: Lucide React icon library
+- **Layout primitives**: every route composes `PageShell` (width `content` 1200px | `narrow` 672px centered) + `PageHeader` (eyebrow/title/lede/actions) — see DESIGN-SYSTEM.md "Page anatomy"
+- **Icons**: Lucide React, POLICY-RESTRICTED (DESIGN-SYSTEM.md "Icons"): only state indicators (Loader2/AlertCircle/CheckCircle2) or icon-only controls with aria-label; never an icon beside a text label
+- **List rows**: `RowActions` (≤2 visible buttons + overflow menu, destructive last); copyable commands use `CopyBlock`
 - **Animation**: Framer Motion via the single `<FadeIn>` entrance pattern only (never for hover)
 
 ### Component Styling Quick Reference
@@ -512,6 +514,8 @@ src/
 │   ├── resumes/page.tsx      # "My Resumes" history (list/search/open/download/delete)
 │   ├── dashboard/page.tsx    # Credits & billing
 │   ├── pricing/page.tsx      # Pricing tiers
+│   ├── connect/page.tsx      # "Connect your AI" — in-app ChatGPT/Claude/CLI/stdio-MCP setup guide
+│   ├── sitemap.ts            # sitemap.xml (robots.txt points here); manifest.ts + icon/apple-icon.png alongside
 │   └── handler/[...stack]/   # Neon Auth (Stack Auth) pages
 ├── server/                   # ← transport-agnostic backend core (see "Backend Architecture")
 │   ├── core/                 # pipeline.ts, refine.ts, refineScope.ts, step.ts, compile.ts, jdParseCache.ts, sanitize.ts, deps.ts, *.types.ts

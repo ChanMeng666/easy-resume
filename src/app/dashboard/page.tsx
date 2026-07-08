@@ -3,9 +3,11 @@
 import { Suspense, useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useUser } from "@stackframe/stack";
+import Link from "next/link";
 import { CheckCircle2, AlertCircle } from "lucide-react";
 import { Navbar } from "@/components/shared/Navbar";
-import { FadeIn } from "@/components/shared/FadeIn";
+import { PageShell } from "@/components/shared/PageShell";
+import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -140,11 +142,11 @@ function DashboardContent() {
     return (
       <div className="min-h-screen bg-background">
         <Navbar currentPath="/dashboard" />
-        <div className="page-shell container mx-auto px-4">
+        <PageShell width="narrow">
           <div className="flex items-center justify-center h-[60vh]">
             <p className="text-muted-foreground animate-pulse">Loading…</p>
           </div>
-        </div>
+        </PageShell>
       </div>
     );
   }
@@ -158,18 +160,14 @@ function DashboardContent() {
     <div className="min-h-screen bg-background">
       <Navbar currentPath="/dashboard" />
 
-      <main className="page-shell page-pad-b container mx-auto px-4">
-        <FadeIn className="mb-8">
-          <p className="text-caption uppercase tracking-wider text-fog-deep mb-2">
-            Account — Credits &amp; Billing
-          </p>
-          <h1 className="text-3xl">Credits &amp; Billing</h1>
-          <p className="text-muted-foreground mt-1">
-            Manage your credit balance and subscription.
-          </p>
-        </FadeIn>
+      <PageShell width="narrow" as="main">
+        <PageHeader
+          eyebrow="Account"
+          title="Credits & Billing"
+          lede="Manage your credit balance and subscription."
+        />
 
-        <div className="max-w-2xl">
+        <div>
           {/* Payment success confirmation */}
           {showSuccess && (
             <div className="mb-6 flex items-start gap-3 bg-mint/15 text-mint-ink rounded-2xl p-4">
@@ -302,9 +300,15 @@ function DashboardContent() {
               </div>
               {apiKeys.filter((k) => !k.revokedAt).length === 0 ? (
                 <p className="text-sm text-muted-foreground py-2">
-                  No active keys. Connect Vitex to ChatGPT or Claude as an MCP
-                  connector, or mint a key via the API, and it will appear here so
-                  you can revoke it anytime.
+                  No active keys. Mint a key via the API, or{" "}
+                  <Link
+                    href="/connect"
+                    className="text-aubergine underline underline-offset-2 hover:text-periwinkle"
+                  >
+                    connect ChatGPT or Claude
+                  </Link>{" "}
+                  as an MCP connector, and it will appear here so you can revoke it
+                  anytime.
                 </p>
               ) : (
                 <div>
@@ -350,7 +354,7 @@ function DashboardContent() {
             </div>
           )}
         </div>
-      </main>
+      </PageShell>
     </div>
   );
 }
@@ -364,9 +368,9 @@ export default function DashboardPage() {
       fallback={
         <div className="min-h-screen bg-background">
           <Navbar currentPath="/dashboard" />
-          <div className="page-shell container mx-auto px-4">
-            <Skeleton className="h-[200px] w-full max-w-2xl rounded-3xl" />
-          </div>
+          <PageShell width="narrow">
+            <Skeleton className="h-[200px] w-full rounded-3xl" />
+          </PageShell>
         </div>
       }
     >

@@ -3,21 +3,15 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useUser } from "@stackframe/stack";
-import {
-  AlertCircle,
-  Briefcase,
-  ExternalLink,
-  Loader2,
-  Plus,
-  Sparkles,
-  Trash2,
-} from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 import { Navbar } from "@/components/shared/Navbar";
 import { Button } from "@/components/ui/button";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FadeIn } from "@/components/shared/FadeIn";
+import { PageShell } from "@/components/shared/PageShell";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { RowActions } from "@/components/shared/RowActions";
 import { APPLICATION_STATUSES, type ApplicationStatus } from "@/lib/validation/schema";
 
 interface ApplicationItem {
@@ -188,19 +182,17 @@ function ApplicationsContent() {
     <div className="min-h-screen bg-background">
       <Navbar currentPath="/applications" />
 
-      <main className="page-shell page-pad-b mx-auto max-w-content px-4 sm:px-6">
-        <FadeIn className="mb-10 flex items-end justify-between gap-4">
-          <div>
-            <h1 className="text-3xl md:text-4xl">Applications</h1>
-            <p className="text-muted-foreground mt-2">
-              Track where each resume went and how far it got.
-            </p>
-          </div>
-          <Button onClick={() => router.push("/")} className="flex-shrink-0">
-            <Sparkles className="w-4 h-4" />
-            New Resume
-          </Button>
-        </FadeIn>
+      <PageShell>
+        <PageHeader
+          eyebrow="Workspace"
+          title="Applications"
+          lede="Track where each resume went and how far it got."
+          actions={
+            <Button onClick={() => router.push("/")} className="flex-shrink-0">
+              New Resume
+            </Button>
+          }
+        />
 
         <div className="max-w-3xl">
           {/* Add form */}
@@ -231,7 +223,7 @@ function ApplicationsContent() {
                 onClick={handleCreate}
                 disabled={creating || !company.trim() || !position.trim()}
               >
-                {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                {creating && <Loader2 className="w-4 h-4 animate-spin" />}
                 Add
               </Button>
             </div>
@@ -248,7 +240,7 @@ function ApplicationsContent() {
               <button
                 key={s}
                 onClick={() => setFilter(s)}
-                className={`rounded-full px-4 py-1.5 text-caption capitalize transition-colors ${
+                className={`pill-interactive px-4 py-1.5 text-caption capitalize transition-colors ${
                   filter === s
                     ? "bg-aubergine text-paper"
                     : "bg-bone text-fog-deep hover:bg-ash"
@@ -277,7 +269,6 @@ function ApplicationsContent() {
             </div>
           ) : visible.length === 0 ? (
             <div className="rounded-3xl border border-ash bg-card p-12 text-center">
-              <Briefcase className="h-8 w-8 mx-auto mb-4 text-muted-foreground" />
               <p className="text-lead text-aubergine mb-1">
                 {filter === "all" ? "No applications yet" : `No ${filter} applications`}
               </p>
@@ -305,7 +296,7 @@ function ApplicationsContent() {
                     </Badge>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2 mt-5 pt-5 border-t border-ash">
+                  <div className="flex flex-wrap items-center justify-between gap-3 mt-5 pt-5 border-t border-ash">
                     {/* Status state machine: any transition allowed. */}
                     <label className="text-caption text-muted-foreground inline-flex items-center gap-2">
                       Status
@@ -324,56 +315,54 @@ function ApplicationsContent() {
                       </select>
                     </label>
 
-                    {item.generationJobId && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => router.push(`/editor?job=${item.generationJobId}`)}
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                        Resume
-                      </Button>
-                    )}
-
-                    <div className="ml-auto">
-                      {confirmingId === item.id ? (
-                        <div className="flex items-center gap-2">
-                          <span className="text-caption text-muted-foreground">Delete?</span>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleDelete(item.id)}
-                            disabled={deletingId === item.id}
-                          >
-                            {deletingId === item.id ? "Deleting…" : "Yes"}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => setConfirmingId(null)}
-                            disabled={deletingId === item.id}
-                          >
-                            No
-                          </Button>
-                        </div>
-                      ) : (
+                    {confirmingId === item.id ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-caption text-muted-foreground">Delete?</span>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDelete(item.id)}
+                          disabled={deletingId === item.id}
+                        >
+                          {deletingId === item.id ? "Deleting…" : "Yes"}
+                        </Button>
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => setConfirmingId(item.id)}
-                          aria-label="Delete application"
+                          onClick={() => setConfirmingId(null)}
+                          disabled={deletingId === item.id}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          No
                         </Button>
-                      )}
-                    </div>
+                      </div>
+                    ) : (
+                      <RowActions
+                        more={[
+                          {
+                            label: "Delete",
+                            destructive: true,
+                            onClick: () => setConfirmingId(item.id),
+                          },
+                        ]}
+                      >
+                        {item.generationJobId && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => router.push(`/editor?job=${item.generationJobId}`)}
+                          >
+                            Open resume
+                          </Button>
+                        )}
+                      </RowActions>
+                    )}
                   </div>
                 </div>
               ))}
             </div>
           )}
         </div>
-      </main>
+      </PageShell>
     </div>
   );
 }

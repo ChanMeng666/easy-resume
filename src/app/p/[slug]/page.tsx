@@ -105,7 +105,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
               {profile.profiles.map((p, i) => {
                 const href = safePublicUrl(p.url);
                 const pillClass =
-                  'inline-flex items-center rounded-full border border-ash px-3 py-1 text-caption text-aubergine transition-colors';
+                  'pill-interactive border border-ash px-3 py-1 text-caption text-aubergine transition-colors';
                 return (
                   <li key={i}>
                     {href ? (

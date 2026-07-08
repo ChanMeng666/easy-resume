@@ -17,11 +17,9 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://www.vitex.org.nz"),
   title: "Vitex — Career as Code",
   description: "Compile a job-ready resume PDF from a job description and your background — from the web, a CLI, or your AI assistant (ChatGPT / Claude via MCP). Pay only when a real PDF is built; refines and edits are free.",
-  icons: {
-    icon: '/logo/vitex-logo-white-with-bg.svg',
-    shortcut: '/logo/vitex-logo-white-with-bg.svg',
-    apple: '/logo/vitex-logo-white-with-bg.svg',
-  },
+  // Icons are served via Next.js file conventions: src/app/icon.png (512×512),
+  // src/app/apple-icon.png (180×180), and src/app/favicon.ico. No manual metadata
+  // needed — Next auto-injects the correct <link> tags.
   openGraph: {
     title: "Vitex — Career as Code",
     description: "Your career is source code. Vitex compiles a tailored, ATS-scored resume PDF on demand — from the web or straight from your AI assistant.",

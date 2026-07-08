@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Check, X, Save, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import type { ResumeData } from '@/lib/validation/schema';
 
 interface StructuredEditorProps {
@@ -137,10 +137,7 @@ export function StructuredEditor({ resume, onApply, onCancel, onSaveAsVersion, s
       </div>
 
       <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-        <Button onClick={() => onApply(draft)}>
-          <Check className="mr-2 h-4 w-4" />
-          Apply changes
-        </Button>
+        <Button onClick={() => onApply(draft)}>Apply changes</Button>
         {onSaveAsVersion && (
           <Button
             variant="outline"
@@ -148,12 +145,11 @@ export function StructuredEditor({ resume, onApply, onCancel, onSaveAsVersion, s
             disabled={saving}
             title="Save these edits as a new version — free, no AI"
           >
-            {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save as new version
           </Button>
         )}
         <Button variant="ghost" onClick={onCancel}>
-          <X className="mr-2 h-4 w-4" />
           Cancel
         </Button>
       </div>

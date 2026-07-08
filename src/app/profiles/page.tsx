@@ -3,14 +3,16 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@stackframe/stack";
-import { AlertCircle, User, Trash2, Sparkles, Pencil, Check, X, Loader2, Globe, Link2, Copy, Mic } from "lucide-react";
+import { AlertCircle, Check, X, Loader2 } from "lucide-react";
 import { Navbar } from "@/components/shared/Navbar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FadeIn } from "@/components/shared/FadeIn";
+import { PageShell } from "@/components/shared/PageShell";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { RowActions } from "@/components/shared/RowActions";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -265,19 +267,17 @@ function ProfilesContent() {
     <div className="min-h-screen bg-background">
       <Navbar currentPath="/profiles" />
 
-      <main className="page-shell page-pad-b mx-auto max-w-content px-4 sm:px-6">
-        <FadeIn className="mb-10 flex items-end justify-between gap-4">
-          <div>
-            <h1 className="text-3xl md:text-4xl">Profiles</h1>
-            <p className="text-muted-foreground mt-2">
-              Reusable backgrounds — enter once, reuse across every job description.
-            </p>
-          </div>
-          <Button onClick={() => router.push("/")} className="flex-shrink-0">
-            <Sparkles className="w-4 h-4" />
-            New Resume
-          </Button>
-        </FadeIn>
+      <PageShell>
+        <PageHeader
+          eyebrow="Workspace"
+          title="Profiles"
+          lede="Reusable backgrounds — enter once, reuse across every job description."
+          actions={
+            <Button onClick={() => router.push("/")} className="flex-shrink-0">
+              New Resume
+            </Button>
+          }
+        />
 
         <div className="max-w-3xl">
           {loadError ? (
@@ -301,16 +301,12 @@ function ProfilesContent() {
             </div>
           ) : items.length === 0 ? (
             <div className="rounded-3xl border border-ash bg-card p-12 text-center">
-              <User className="h-8 w-8 mx-auto mb-4 text-muted-foreground" />
               <p className="text-lead text-aubergine mb-1">No saved profiles yet</p>
               <p className="text-sm text-muted-foreground mb-6">
                 Generate a resume, then use &ldquo;Save as profile&rdquo; to store your
                 background for reuse.
               </p>
-              <Button onClick={() => router.push("/")}>
-                <Sparkles className="w-4 h-4" />
-                Generate a Resume
-              </Button>
+              <Button onClick={() => router.push("/")}>Generate a Resume</Button>
             </div>
           ) : (
             <div className="space-y-4">
@@ -361,104 +357,20 @@ function ProfilesContent() {
                       </p>
                       <div className="flex flex-wrap items-center gap-2 mt-3">
                         {item.publishedAt && item.publicSlug && (
-                          <Badge variant="success" className="gap-1">
-                            <Globe className="w-3 h-3" />
-                            Public
-                          </Badge>
+                          <Badge variant="success">Public</Badge>
                         )}
                         {item.hasVoiceSample && (
-                          <Badge variant="accent" className="gap-1">
-                            <Mic className="w-3 h-3" />
-                            Voice sample
-                          </Badge>
+                          <Badge variant="accent">Voice sample</Badge>
                         )}
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2 mt-5 pt-5 border-t border-ash">
-                    {editingId !== item.id && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setEditingId(item.id);
-                          setEditLabel(item.label);
-                        }}
-                      >
-                        <Pencil className="w-4 h-4" />
-                        Rename
-                      </Button>
-                    )}
-                    {editingId !== item.id && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => openVoiceDialog(item.id)}
-                        aria-label="Edit voice sample"
-                      >
-                        <Mic className="w-4 h-4" />
-                        Voice
-                      </Button>
-                    )}
-                    {editingId !== item.id &&
-                      (item.publishedAt && item.publicSlug ? (
-                        <>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleCopyLink(item.publicSlug!, item.id)}
-                            aria-label="Copy public link"
-                          >
-                            {copiedId === item.id ? (
-                              <>
-                                <Check className="w-4 h-4" />
-                                Copied
-                              </>
-                            ) : (
-                              <>
-                                <Copy className="w-4 h-4" />
-                                Copy link
-                              </>
-                            )}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleUnpublish(item.id)}
-                            disabled={publishingId === item.id}
-                            aria-label="Unpublish profile"
-                          >
-                            {publishingId === item.id ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <Globe className="w-4 h-4" />
-                            )}
-                            Unpublish
-                          </Button>
-                        </>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setPublishConfirmId(item.id)}
-                          disabled={publishingId === item.id}
-                          aria-label="Publish profile"
-                        >
-                          {publishingId === item.id ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Link2 className="w-4 h-4" />
-                          )}
-                          Publish
-                        </Button>
-                      ))}
-                    <div className="ml-auto">
+                  {editingId !== item.id && (
+                    <div className="mt-5 pt-5 border-t border-ash">
                       {confirmingId === item.id ? (
-                        <div className="flex items-center gap-2">
-                          <span className="text-caption text-muted-foreground">
-                            Delete?
-                          </span>
+                        <div className="flex items-center justify-end gap-2">
+                          <span className="text-caption text-muted-foreground">Delete?</span>
                           <Button
                             size="sm"
                             variant="destructive"
@@ -477,23 +389,62 @@ function ProfilesContent() {
                           </Button>
                         </div>
                       ) : (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setConfirmingId(item.id)}
-                          aria-label="Delete profile"
+                        <RowActions
+                          more={[
+                            {
+                              label: "Rename",
+                              onClick: () => {
+                                setEditingId(item.id);
+                                setEditLabel(item.label);
+                              },
+                            },
+                            {
+                              label: "Voice sample",
+                              onClick: () => openVoiceDialog(item.id),
+                            },
+                            ...(item.publishedAt && item.publicSlug
+                              ? [
+                                  {
+                                    label: copiedId === item.id ? "Copied" : "Copy link",
+                                    onClick: () => handleCopyLink(item.publicSlug!, item.id),
+                                  },
+                                ]
+                              : []),
+                            {
+                              label: "Delete",
+                              destructive: true,
+                              onClick: () => setConfirmingId(item.id),
+                            },
+                          ]}
                         >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                          {item.publishedAt && item.publicSlug ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleUnpublish(item.id)}
+                              disabled={publishingId === item.id}
+                            >
+                              {publishingId === item.id ? "Unpublishing…" : "Unpublish"}
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              onClick={() => setPublishConfirmId(item.id)}
+                              disabled={publishingId === item.id}
+                            >
+                              {publishingId === item.id ? "Publishing…" : "Publish"}
+                            </Button>
+                          )}
+                        </RowActions>
                       )}
                     </div>
-                  </div>
+                  )}
                 </div>
               ))}
             </div>
           )}
         </div>
-      </main>
+      </PageShell>
 
       <AlertDialog
         open={publishConfirmId !== null}
@@ -569,14 +520,13 @@ function ProfilesContent() {
               onClick={() => voiceProfileId && handleSaveVoice(voiceProfileId, "")}
               disabled={voiceSaving || voiceLoading || voiceLoadError || voiceText.trim().length === 0}
             >
-              <Trash2 className="w-4 h-4" />
               Clear
             </Button>
             <Button
               onClick={() => voiceProfileId && handleSaveVoice(voiceProfileId, voiceText)}
               disabled={voiceSaving || voiceLoading || voiceLoadError}
             >
-              {voiceSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+              {voiceSaving && <Loader2 className="w-4 h-4 animate-spin" />}
               Save
             </Button>
           </DialogFooter>

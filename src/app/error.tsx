@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, ArrowLeft } from 'lucide-react';
 
 /**
  * Root error boundary — a calm, centered recovery state. Errors are stated
@@ -31,17 +30,14 @@ export default function Error({
           happening, head back home and start over.
         </p>
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Button size="lg" className="gap-2" onClick={reset}>
-            <RefreshCw className="h-4 w-4" />
+          <Button size="lg" onClick={reset}>
             Try again
           </Button>
           <Button
             size="lg"
             variant="outline"
-            className="gap-2"
             onClick={() => (window.location.href = '/')}
           >
-            <ArrowLeft className="h-4 w-4" />
             Back to home
           </Button>
         </div>

@@ -11,18 +11,10 @@
 import { useEffect, useCallback, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { PdfViewer } from './PdfViewer';
+import { PdfCanvasPreview } from './PdfCanvasPreview';
 import { usePdfCompilation } from '@/hooks/usePdfCompilation';
 import { downloadPdfFromUrl, openPdfInNewTab } from '@/lib/pdf/download';
-import {
-  Loader2,
-  AlertCircle,
-  RefreshCw,
-  Zap,
-  CheckCircle2,
-  Download,
-  ExternalLink,
-  FileText,
-} from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 interface LivePdfPreviewProps {
   /** Typst code to compile */
@@ -51,6 +43,17 @@ export function LivePdfPreview({
   } = usePdfCompilation({ debounceMs: 1000 });
 
   const [hasCompiled, setHasCompiled] = useState(false);
+
+  // Track whether we're on a mobile viewport so the canvas preview (and its
+  // pdfjs bundle) only mounts there — desktop keeps the lightweight iframe path.
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mql = window.matchMedia('(max-width: 767px)');
+    const update = () => setIsMobile(mql.matches);
+    update();
+    mql.addEventListener('change', update);
+    return () => mql.removeEventListener('change', update);
+  }, []);
 
   /**
    * Trigger compilation when Typst code changes
@@ -85,8 +88,7 @@ export function LivePdfPreview({
   if (!hasCompiled && !isCompiling) {
     return (
       <div className="flex h-[40vh] min-h-[280px] md:h-[500px] flex-col items-center justify-center rounded-3xl border border-ash bg-bone px-4">
-        <Zap className="h-10 w-10 sm:h-12 sm:w-12 text-periwinkle" />
-        <h3 className="mt-3 sm:mt-4 text-base sm:text-lg font-medium text-aubergine">
+        <h3 className="text-base sm:text-lg font-medium text-aubergine">
           Live PDF Preview
         </h3>
         <p className="mt-2 max-w-sm text-center text-xs sm:text-sm text-muted-foreground">
@@ -97,7 +99,6 @@ export function LivePdfPreview({
           className="mt-4"
           onClick={handleRetry}
         >
-          <RefreshCw className="mr-2 h-4 w-4" />
           Generate Preview
         </Button>
       </div>
@@ -149,7 +150,6 @@ export function LivePdfPreview({
 
         <div className="mt-6 flex gap-3">
           <Button variant="outline" onClick={handleRetry}>
-            <RefreshCw className="mr-2 h-4 w-4" />
             Retry
           </Button>
         </div>
@@ -185,8 +185,7 @@ export function LivePdfPreview({
           disabled={isCompiling}
           className="h-8"
         >
-          <RefreshCw className={`mr-1 sm:mr-2 h-3 w-3 ${isCompiling ? 'animate-spin' : ''}`} />
-          <span className="hidden sm:inline">Refresh</span>
+          Refresh
         </Button>
       </div>
 
@@ -201,28 +200,17 @@ export function LivePdfPreview({
             />
           </div>
 
-          {/* Mobile: collapsed download card.
-              iOS Safari blob-URL iframes are unreliable, so we surface
-              "Open in new tab" + "Download" instead of an empty preview. */}
-          <div className="md:hidden rounded-3xl border border-ash bg-white p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-lavender">
-                <FileText className="h-5 w-5 text-aubergine" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-aubergine truncate">{filename}.pdf</p>
-                <p className="text-xs text-muted-foreground">
-                  Ready to download
-                </p>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
+          {/* Mobile: real in-page canvas preview. iOS Safari blob-URL iframes
+              are unreliable, so we rasterize the PDF with pdfjs. Mounted only
+              on mobile viewports so desktop never loads the pdfjs bundle. */}
+          <div className="md:hidden rounded-3xl border border-ash bg-white p-4">
+            {isMobile && <PdfCanvasPreview url={pdfUrl} />}
+            <div className="mt-4 grid grid-cols-2 gap-2">
               <Button
                 size="lg"
                 className="w-full text-sm"
                 onClick={() => downloadPdfFromUrl(pdfUrl, filename)}
               >
-                <Download className="mr-2 h-4 w-4" />
                 Download
               </Button>
               <Button
@@ -231,13 +219,9 @@ export function LivePdfPreview({
                 className="w-full text-sm"
                 onClick={() => openPdfInNewTab(pdfUrl)}
               >
-                <ExternalLink className="mr-2 h-4 w-4" />
                 Open
               </Button>
             </div>
-            <p className="mt-3 text-xs text-muted-foreground text-center">
-              For best results, view on a tablet or desktop.
-            </p>
           </div>
         </>
       )}

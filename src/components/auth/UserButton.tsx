@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
 import { Suspense } from "react";
-import { LayoutDashboard, Settings, LogOut, User } from "lucide-react";
 
 /**
  * Inner component that uses useUser hook.
@@ -58,23 +57,30 @@ function UserButtonInner() {
           </div>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
-            <Link href="/dashboard" className="cursor-pointer">
-              <LayoutDashboard className="mr-2 h-4 w-4" />
-              Dashboard
+            <Link href="/profiles" className="cursor-pointer">
+              Profiles
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link href="/dashboard?tab=settings" className="cursor-pointer">
-              <Settings className="mr-2 h-4 w-4" />
-              Account Settings
+            <Link href="/dashboard" className="cursor-pointer">
+              Credits &amp; Billing
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href="/pricing" className="cursor-pointer">
+              Pricing
             </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
+          <DropdownMenuItem asChild>
+            <Link href="/handler/account-settings" className="cursor-pointer">
+              Account Settings
+            </Link>
+          </DropdownMenuItem>
           <DropdownMenuItem
             className="cursor-pointer text-destructive focus:text-destructive"
             onClick={() => app.signOut()}
           >
-            <LogOut className="mr-2 h-4 w-4" />
             Sign Out
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -85,8 +91,7 @@ function UserButtonInner() {
   return (
     <Link href="/handler/sign-in">
       <Button variant="outline" size="sm">
-        <User className="mr-2 h-4 w-4" />
-        Sign In
+        Sign in
       </Button>
     </Link>
   );

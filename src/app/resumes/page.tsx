@@ -4,13 +4,15 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@stackframe/stack";
 import { useDebounce } from "use-debounce";
-import { AlertCircle, FileText, Download, Trash2, Sparkles, Mail, Search, Loader2, Briefcase, Wand2 } from "lucide-react";
+import { AlertCircle, Search, Loader2 } from "lucide-react";
 import { Navbar } from "@/components/shared/Navbar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FadeIn } from "@/components/shared/FadeIn";
+import { PageShell } from "@/components/shared/PageShell";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { RowActions } from "@/components/shared/RowActions";
 
 interface ResumeListItem {
   id: string;
@@ -145,19 +147,17 @@ function ResumesContent() {
     <div className="min-h-screen bg-background">
       <Navbar currentPath="/resumes" />
 
-      <main className="page-shell page-pad-b mx-auto max-w-content px-4 sm:px-6">
-        <FadeIn className="mb-10 flex items-end justify-between gap-4">
-          <div>
-            <h1 className="text-3xl md:text-4xl">My Resumes</h1>
-            <p className="text-muted-foreground mt-2">
-              Re-open, re-download, or remove resumes you&apos;ve generated.
-            </p>
-          </div>
-          <Button onClick={() => router.push("/")} className="flex-shrink-0">
-            <Sparkles className="w-4 h-4" />
-            New Resume
-          </Button>
-        </FadeIn>
+      <PageShell>
+        <PageHeader
+          eyebrow="Workspace"
+          title="My Resumes"
+          lede="Re-open, re-download, or remove resumes you've generated."
+          actions={
+            <Button onClick={() => router.push("/")} className="flex-shrink-0">
+              New Resume
+            </Button>
+          }
+        />
 
         <div className="max-w-3xl">
           {/* Search + count */}
@@ -202,7 +202,6 @@ function ResumesContent() {
           ) : items.length === 0 ? (
             debouncedQuery ? (
               <div className="rounded-3xl border border-ash bg-card p-12 text-center">
-                <Search className="h-8 w-8 mx-auto mb-4 text-muted-foreground" />
                 <p className="text-lead text-aubergine mb-1">No matches</p>
                 <p className="text-sm text-muted-foreground">
                   No resumes match &ldquo;{debouncedQuery}&rdquo;. Try a different search.
@@ -210,15 +209,11 @@ function ResumesContent() {
               </div>
             ) : (
               <div className="rounded-3xl border border-ash bg-card p-12 text-center">
-                <FileText className="h-8 w-8 mx-auto mb-4 text-muted-foreground" />
                 <p className="text-lead text-aubergine mb-1">No resumes yet</p>
                 <p className="text-sm text-muted-foreground mb-6">
                   Generate your first tailored resume and it&apos;ll show up here.
                 </p>
-                <Button onClick={() => router.push("/")}>
-                  <Sparkles className="w-4 h-4" />
-                  Generate a Resume
-                </Button>
+                <Button onClick={() => router.push("/")}>Generate a Resume</Button>
               </div>
             )
           ) : (
@@ -237,105 +232,110 @@ function ResumesContent() {
                           {formatDate(item.createdAt)}
                           {item.templateId ? ` · ${item.templateId}` : ""}
                         </p>
-                        <div className="flex flex-wrap items-center gap-2 mt-3">
-                          {!isSucceeded && (
-                            <Badge variant="warning" className="capitalize">
-                              {item.status}
-                            </Badge>
-                          )}
-                          {typeof item.atsScore === "number" && (
+                        {typeof item.atsScore === "number" && (
+                          <div className="flex flex-wrap items-center gap-2 mt-3">
                             <Badge variant={atsVariant(item.atsScore)}>ATS {item.atsScore}</Badge>
-                          )}
-                        </div>
+                          </div>
+                        )}
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2 mt-5 pt-5 border-t border-ash">
-                      <Button
-                        size="sm"
-                        onClick={() => router.push(`/editor?job=${item.id}`)}
-                        disabled={!isSucceeded}
-                      >
-                        Open
-                      </Button>
-                      {isSucceeded && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => router.push(`/resumes/${item.id}/assistant`)}
-                        >
-                          <Wand2 className="w-4 h-4" />
-                          Edit with AI
-                        </Button>
-                      )}
-                      {isSucceeded && item.pdfUrl && (
-                        <a href={item.pdfUrl} target="_blank" rel="noopener noreferrer">
-                          <Button size="sm" variant="outline">
-                            <Download className="w-4 h-4" />
-                            PDF
+                    <div className="mt-5 pt-5 border-t border-ash">
+                      {confirmingId === item.id ? (
+                        <div className="flex items-center justify-end gap-2">
+                          <span className="text-caption text-muted-foreground">Delete?</span>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleDelete(item.id)}
+                            disabled={deletingId === item.id}
+                          >
+                            {deletingId === item.id ? "Deleting…" : "Yes"}
                           </Button>
-                        </a>
-                      )}
-                      {isSucceeded && item.hasCoverLetter && (
-                        <a
-                          href={`/api/resumes/${item.id}/cover-letter/pdf`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <Button size="sm" variant="outline">
-                            <Mail className="w-4 h-4" />
-                            Cover Letter
-                          </Button>
-                        </a>
-                      )}
-                      {isSucceeded && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() =>
-                            router.push(
-                              `/applications?jobId=${item.id}&position=${encodeURIComponent(item.title ?? "")}`
-                            )
-                          }
-                        >
-                          <Briefcase className="w-4 h-4" />
-                          Track
-                        </Button>
-                      )}
-                      <div className="ml-auto">
-                        {confirmingId === item.id ? (
-                          <div className="flex items-center gap-2">
-                            <span className="text-caption text-muted-foreground">
-                              Delete?
-                            </span>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleDelete(item.id)}
-                              disabled={deletingId === item.id}
-                            >
-                              {deletingId === item.id ? "Deleting…" : "Yes"}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => setConfirmingId(null)}
-                              disabled={deletingId === item.id}
-                            >
-                              No
-                            </Button>
-                          </div>
-                        ) : (
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => setConfirmingId(item.id)}
-                            aria-label="Delete resume"
+                            onClick={() => setConfirmingId(null)}
+                            disabled={deletingId === item.id}
                           >
-                            <Trash2 className="w-4 h-4" />
+                            No
                           </Button>
-                        )}
-                      </div>
+                        </div>
+                      ) : isSucceeded ? (
+                        <RowActions
+                          more={[
+                            {
+                              label: "Edit with AI",
+                              onClick: () => router.push(`/resumes/${item.id}/assistant`),
+                            },
+                            ...(item.hasCoverLetter
+                              ? [
+                                  {
+                                    label: "Cover letter",
+                                    onClick: () =>
+                                      window.open(
+                                        `/api/resumes/${item.id}/cover-letter/pdf`,
+                                        "_blank",
+                                        "noopener,noreferrer"
+                                      ),
+                                  },
+                                ]
+                              : []),
+                            {
+                              label: "Track application",
+                              onClick: () =>
+                                router.push(
+                                  `/applications?jobId=${item.id}&position=${encodeURIComponent(item.title ?? "")}`
+                                ),
+                            },
+                            {
+                              label: "Delete",
+                              destructive: true,
+                              onClick: () => setConfirmingId(item.id),
+                            },
+                          ]}
+                        >
+                          <Button size="sm" onClick={() => router.push(`/editor?job=${item.id}`)}>
+                            Open
+                          </Button>
+                          {item.pdfUrl && (
+                            <Button size="sm" variant="outline" asChild>
+                              <a href={item.pdfUrl} target="_blank" rel="noopener noreferrer">
+                                Download PDF
+                              </a>
+                            </Button>
+                          )}
+                        </RowActions>
+                      ) : (
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex flex-wrap items-center gap-2">
+                            {item.status === "failed" ? (
+                              <>
+                                <Badge variant="destructive">Failed</Badge>
+                                <span className="text-caption text-muted-foreground">
+                                  Generation failed — no charge was made.
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <Badge>Generating</Badge>
+                                <span className="text-caption text-muted-foreground">
+                                  Still generating — check back shortly.
+                                </span>
+                              </>
+                            )}
+                          </div>
+                          <RowActions
+                            more={[
+                              {
+                                label: "Delete",
+                                destructive: true,
+                                onClick: () => setConfirmingId(item.id),
+                              },
+                            ]}
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -362,7 +362,7 @@ function ResumesContent() {
             </div>
           )}
         </div>
-      </main>
+      </PageShell>
     </div>
   );
 }
