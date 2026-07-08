@@ -457,8 +457,7 @@ pattern.
 - Subscription tiers and credit packs
 
 ### Preview Components
-- **LivePdfPreview** (`src/components/preview/LivePdfPreview.tsx`): Compiles Typst; iframe viewer on md+, pdfjs canvas preview below md
-- **PdfViewer** (`src/components/preview/PdfViewer.tsx`): desktop iframe viewer with icon-only zoom toolbar
+- **LivePdfPreview** (`src/components/preview/LivePdfPreview.tsx`): Compiles Typst; on md+ a PLAIN iframe (the browser's native PDF viewer supplies zoom/download/print — no custom toolbar), pdfjs canvas preview below md
 - **PdfCanvasPreview** (`src/components/preview/PdfCanvasPreview.tsx`): mobile in-page preview — lazy-loads `pdfjs-dist` (legacy build) and rasterizes every page to canvas (iOS Safari can't iframe blob PDFs); mounted only under `md` via matchMedia
 - **LatexPreview** (`src/components/preview/LatexPreview.tsx`): unused legacy component (stale "Latex" name — no importer in `src/`; kept for reference only)
 

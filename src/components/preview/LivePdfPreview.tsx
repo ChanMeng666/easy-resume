@@ -10,7 +10,6 @@
 
 import { useEffect, useCallback, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { PdfViewer } from './PdfViewer';
 import { PdfCanvasPreview } from './PdfCanvasPreview';
 import { usePdfCompilation } from '@/hooks/usePdfCompilation';
 import { downloadPdfFromUrl, openPdfInNewTab } from '@/lib/pdf/download';
@@ -191,14 +190,13 @@ export function LivePdfPreview({
 
       {pdfUrl && (
         <>
-          {/* Desktop: full embedded preview */}
-          <div className="hidden md:block">
-            <PdfViewer
-              url={pdfUrl}
-              filename={filename}
-              showToolbar={true}
-            />
-          </div>
+          {/* Desktop: plain embedded preview. The browser's built-in PDF
+              viewer already provides zoom/download/print — no custom toolbar. */}
+          <iframe
+            src={pdfUrl}
+            title="PDF preview"
+            className="hidden h-[70vh] min-h-[420px] w-full rounded-3xl border border-ash bg-white md:block"
+          />
 
           {/* Mobile: real in-page canvas preview. iOS Safari blob-URL iframes
               are unreliable, so we rasterize the PDF with pdfjs. Mounted only

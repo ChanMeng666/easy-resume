@@ -69,15 +69,17 @@ function NavLinksInner({ currentPath }: { currentPath: string }) {
           </Link>
         </>
       ) : (
-        <Link href="/pricing" className={getNavLinkStyles(currentPath, '/pricing')}>
-          Pricing
-        </Link>
+        <>
+          <Link href="/pricing" className={getNavLinkStyles(currentPath, '/pricing')}>
+            Pricing
+          </Link>
+          {/* Conversion CTA for visitors only — the logo already links home,
+              so signed-in users get no duplicate entry point. */}
+          <Link href="/#start">
+            <Button size="sm">Get Started</Button>
+          </Link>
+        </>
       )}
-
-      {/* Primary CTA — lavender glow button to the homepage input console */}
-      <Link href="/#start">
-        <Button size="sm">{user ? 'New resume' : 'Get Started'}</Button>
-      </Link>
     </>
   );
 }
@@ -176,12 +178,12 @@ function MobileMenu({
             </Link>
           )}
 
-          {/* Primary CTA */}
-          <Link href="/#start" onClick={onClose}>
-            <Button className="w-full mt-2">
-              {user ? 'New resume' : 'Get Started'}
-            </Button>
-          </Link>
+          {/* Conversion CTA for visitors only (logo already links home) */}
+          {!user && (
+            <Link href="/#start" onClick={onClose}>
+              <Button className="w-full mt-2">Get Started</Button>
+            </Link>
+          )}
         </nav>
       </div>
     </div>
