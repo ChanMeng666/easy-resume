@@ -1378,7 +1378,7 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
             </TabsList>
 
             <TabsContent value="resume">
-              <LivePdfPreview typstCode={typstCode} filename={filename} />
+              <LivePdfPreview typstCode={typstCode} filename={filename} fillViewport />
             </TabsContent>
 
             {result.coverLetter && (
@@ -1387,6 +1387,7 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
                   <LivePdfPreview
                     typstCode={result.coverLetterTypst}
                     filename={`${filename}_cover_letter`}
+                    fillViewport
                   />
                 ) : (
                   <div className="whitespace-pre-wrap rounded-3xl border border-ash bg-bone p-6 text-sm leading-relaxed text-foreground">

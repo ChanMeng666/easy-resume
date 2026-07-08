@@ -1,9 +1,9 @@
 /**
  * LivePdfPreview component
  * Orchestrates real-time Typst compilation and PDF preview.
- * On md+ viewports it renders the full PdfViewer with iframe preview.
- * On smaller screens it collapses to a download card, since iOS Safari
- * has long-standing issues rendering blob-URL PDFs inside iframes.
+ * On md+ viewports it renders a plain iframe (the browser's native PDF viewer
+ * supplies zoom/download/print). On smaller screens it renders a pdfjs canvas
+ * preview, since iOS Safari can't render blob-URL PDFs inside iframes.
  */
 
 'use client';
@@ -22,6 +22,12 @@ interface LivePdfPreviewProps {
   filename?: string;
   /** Called when compilation error occurs */
   onError?: (error: string) => void;
+  /**
+   * Desktop only: stretch the preview to fill the viewport below the sticky
+   * header instead of the default 70vh. Use where the document is the page's
+   * hero artifact (the editor's result view).
+   */
+  fillViewport?: boolean;
 }
 
 /**
@@ -31,6 +37,7 @@ export function LivePdfPreview({
   typstCode,
   filename = 'resume',
   onError,
+  fillViewport = false,
 }: LivePdfPreviewProps) {
   const {
     pdfUrl,
@@ -191,11 +198,14 @@ export function LivePdfPreview({
       {pdfUrl && (
         <>
           {/* Desktop: plain embedded preview. The browser's built-in PDF
-              viewer already provides zoom/download/print — no custom toolbar. */}
+              viewer already provides zoom/download/print — no custom toolbar.
+              13.5rem ≈ floating nav + sticky gap + tabs row + status bar. */}
           <iframe
             src={pdfUrl}
             title="PDF preview"
-            className="hidden h-[70vh] min-h-[420px] w-full rounded-3xl border border-ash bg-white md:block"
+            className={`hidden h-[70vh] min-h-[420px] w-full rounded-3xl border border-ash bg-white md:block ${
+              fillViewport ? 'lg:h-[calc(100vh-13.5rem)]' : ''
+            }`}
           />
 
           {/* Mobile: real in-page canvas preview. iOS Safari blob-URL iframes
