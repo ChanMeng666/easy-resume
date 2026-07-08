@@ -184,7 +184,9 @@ export default function HomePage() {
     <div className="relative flex min-h-screen flex-col bg-background text-foreground">
       <Navbar currentPath="/" />
 
-      <main className="flex-grow page-shell page-pad-b">
+      {/* No page-pad-b here: the page ends with the dark agent band, which
+          should meet the dark footer seamlessly (no paper gap between them). */}
+      <main className="flex-grow page-shell">
         {/* Hero — centered pitch + the input console */}
         <section id="start" className="scroll-mt-24 mx-auto max-w-content px-4 sm:px-6 py-16 md:py-24">
           <FadeIn className="mx-auto max-w-3xl text-center">

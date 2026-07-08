@@ -1,6 +1,5 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { Github } from 'lucide-react';
 
 /** Shared link style for footer entries — understated white, color-only hover. */
 const linkClass = 'text-sm text-white/70 transition-colors hover:text-white';
@@ -117,30 +116,8 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Bottom Section: maker credit + copyright */}
-        <div className="flex flex-col items-center gap-6 border-t border-white/10 pt-8 sm:flex-row sm:justify-between">
-          <div className="flex items-center gap-3">
-            <Image
-              src="/chan_logo.svg"
-              alt="Chan Meng"
-              width={40}
-              height={40}
-              className="h-10 w-10 rounded-full"
-            />
-            <div>
-              <p className="text-sm text-white">Chan Meng</p>
-              <p className="text-caption text-white/60">Full-Stack Developer</p>
-            </div>
-            <a
-              href="https://github.com/ChanMeng666"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="GitHub"
-              className="ml-1 rounded-full p-2 text-white/70 transition-colors hover:text-white"
-            >
-              <Github className="h-4 w-4" />
-            </a>
-          </div>
+        {/* Bottom Section: one copyright line (the maker credit lives here) */}
+        <div className="border-t border-white/10 pt-8 text-center">
           <p className="text-sm text-white/60">
             © {new Date().getFullYear()} Vitex by{' '}
             <a
