@@ -115,7 +115,7 @@ function PricingContent() {
       if (data.url) {
         window.location.href = data.url;
       } else {
-        setError(data.error || 'Could not start checkout. Please try again.');
+        setError(data.error?.message || 'Could not start checkout. Please try again.');
       }
     } catch (err) {
       console.error('Purchase error:', err);
