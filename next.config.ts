@@ -21,7 +21,12 @@ const isProd = process.env.NODE_ENV === "production";
  */
 const cspDirectives = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  // 'unsafe-eval' is required by @stackframe/stack — its stack-shared
+  // browser-compat shim runs a snippet through indirect eval at startup
+  // ((0, eval)(snippet) in @stackframe/stack-shared/dist/esm/utils/
+  // browser-compat.js), and the Stack provider wraps every page. Without it
+  // the whole app crashes at hydration. Remove when Stack Auth drops the shim.
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self' data:",
