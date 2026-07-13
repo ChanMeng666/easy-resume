@@ -14,7 +14,7 @@
 
 import 'server-only';
 import { execFile } from 'child_process';
-import { writeFile, readFile, unlink, mkdir } from 'fs/promises';
+import { writeFile, readFile, mkdir, rm } from 'fs/promises';
 import { existsSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -70,17 +70,57 @@ function evictOldest(): void {
   }
 }
 
+/**
+ * Build the `typst compile` argument vector.
+ *
+ * Pure and exported so it can be unit-tested without spawning a subprocess.
+ * `--root` confines Typst's filesystem access to the per-request directory, so
+ * user source can never `read()`/`include` outside its own sandbox. The
+ * font-path flag is included only when a font directory is resolved.
+ */
+export function buildTypstArgs(
+  inputPath: string,
+  outputPath: string,
+  rootDir: string,
+  fontPath?: string
+): string[] {
+  return [
+    'compile',
+    '--root',
+    rootDir,
+    ...(fontPath ? ['--font-path', fontPath] : []),
+    inputPath,
+    outputPath,
+  ];
+}
+
 /** Run the Typst binary, rejecting with the raw exec error for translation. */
-function runTypst(inputPath: string, outputPath: string): Promise<void> {
-  const args = ['compile'];
-  if (TYPST_FONT_PATH) args.push('--font-path', TYPST_FONT_PATH);
-  args.push(inputPath, outputPath);
+function runTypst(inputPath: string, outputPath: string, rootDir: string): Promise<void> {
+  const args = buildTypstArgs(inputPath, outputPath, rootDir, TYPST_FONT_PATH);
 
   return new Promise((resolve, reject) => {
-    execFile(TYPST_BIN, args, { timeout: COMPILE_TIMEOUT }, (error, _stdout, stderr) => {
-      if (error) reject({ error, stderr });
-      else resolve();
-    });
+    execFile(
+      TYPST_BIN,
+      args,
+      {
+        timeout: COMPILE_TIMEOUT,
+        // Offline enforcement: point every proxy var at a dead local address so
+        // the ureq-based typst subprocess cannot fetch packages over the
+        // network. The bundled `@preview/fontawesome` still resolves from the
+        // local package cache (TYPST_PACKAGE_CACHE_PATH, set in the prod image).
+        env: {
+          ...process.env,
+          HTTP_PROXY: 'http://127.0.0.1:1',
+          HTTPS_PROXY: 'http://127.0.0.1:1',
+          http_proxy: 'http://127.0.0.1:1',
+          https_proxy: 'http://127.0.0.1:1',
+        },
+      },
+      (error, _stdout, stderr) => {
+        if (error) reject({ error, stderr });
+        else resolve();
+      }
+    );
   });
 }
 
@@ -113,17 +153,20 @@ export async function compileTypstToPdf(typstCode: string): Promise<CompileResul
     return { pdf: new Uint8Array(cached.pdf), cached: true };
   }
 
+  // Each request gets its own directory, used as the Typst `--root` sandbox and
+  // torn down whole in `finally`. Isolating per request means concurrent
+  // compiles can never see or clobber each other's files.
   const id = crypto.randomUUID();
-  const tempDir = join(tmpdir(), 'vitex-typst');
-  const inputPath = join(tempDir, `${id}.typ`);
-  const outputPath = join(tempDir, `${id}.pdf`);
+  const reqDir = join(tmpdir(), 'vitex-typst', id);
+  const inputPath = join(reqDir, 'main.typ');
+  const outputPath = join(reqDir, 'main.pdf');
 
   try {
-    await mkdir(tempDir, { recursive: true });
+    await mkdir(reqDir, { recursive: true });
     await writeFile(inputPath, typstCode, 'utf-8');
 
     try {
-      await runTypst(inputPath, outputPath);
+      await runTypst(inputPath, outputPath, reqDir);
     } catch (compileError: unknown) {
       const { error, stderr } = compileError as { error: Error & { killed?: boolean }; stderr?: string };
       if (error && error.killed) {
@@ -140,6 +183,7 @@ export async function compileTypstToPdf(typstCode: string): Promise<CompileResul
     pdfCache.set(cacheKey, { pdf: Buffer.from(pdfBuffer), timestamp: Date.now() });
     return { pdf: new Uint8Array(pdfBuffer), cached: false };
   } finally {
-    await Promise.allSettled([unlink(inputPath), unlink(outputPath)]);
+    // Remove the whole per-request dir (source + output) in one shot.
+    await rm(reqDir, { recursive: true, force: true });
   }
 }
