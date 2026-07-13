@@ -77,7 +77,7 @@ jobs:
           fetch-depth: 0
 
       - name: Scan for secrets
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@v3
         env:
           # Required by gitleaks-action to enumerate PR commits on pull_request
           # events (the auto-provisioned token; no PAT needed).
