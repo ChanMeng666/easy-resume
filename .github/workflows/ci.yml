@@ -43,6 +43,11 @@ jobs:
         # different esbuild tree than the lockfile records.
         run: npm ci --legacy-peer-deps
 
+      - name: Audit production dependencies
+        # Gate on high/critical advisories in runtime deps only (dev tooling is
+        # not shipped). Dependabot (see .github/dependabot.yml) keeps this green.
+        run: npm audit --omit=dev --audit-level=high
+
       - name: Unit tests
         run: npm test
 

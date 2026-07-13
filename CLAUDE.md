@@ -57,7 +57,12 @@ npm run test:watch   # Vitest in watch mode
 npx tsx scripts/migrate.ts   # Create/upgrade Neon tables; safe to re-run
 
 # Docker / VPS Deployment
-# Docker build and GitHub Actions CI/CD deploy to DigitalOcean VPS
+# Docker build + GitHub Actions CI/CD deploy to a DigitalOcean VPS.
+# Flow: checks -> build-and-push -> migrate (npx tsx scripts/migrate.ts) ->
+# health-gated rolling swap. The new container starts alongside the old one with
+# the SAME Traefik labels (Traefik round-robins both = zero downtime), and the
+# old one is retired only after the new container's HEALTHCHECK (/api/health)
+# reports healthy; a failed gate removes the new container and keeps the old one.
 # See .github/workflows/deploy.yml and Dockerfile
 
 # Package management
@@ -256,10 +261,13 @@ session-gated + CSRF-protected rather than rate-limited.)
   only for `drizzle-kit studio` / type introspection. **Do NOT use `drizzle-kit
   generate`** to produce migrations — `scripts/migrate.ts` is authoritative; add
   idempotent DDL there when you add a table/column.
-- **⚠️ Deploy does NOT run migrations.** `.github/workflows/deploy.yml` builds and
-  ships the container but never runs `scripts/migrate.ts` — after ANY DDL change
-  you MUST run `npm run db:migrate` manually against the prod `DATABASE_URL`
-  before/around the deploy, or the new code hits missing columns/tables.
+- **Deploy runs migrations automatically.** `.github/workflows/deploy.yml` has a
+  dedicated `migrate` job that runs `npx tsx scripts/migrate.ts` on the GitHub
+  runner (Neon is publicly reachable) after the image build and BEFORE the
+  container swap; the `deploy` job `needs: [build-and-push, migrate]`, so a failed
+  migration aborts the deploy and the old container keeps serving. It runs on
+  every deploy (the SQL is idempotent). Manual `npm run db:migrate` against the
+  prod `DATABASE_URL` remains available for out-of-band changes.
 - **Active tables**: `generation_jobs` (the single persistence model for ALL
   generations AND refinements — web + v1 API; columns include `title`, `input`,
   `result` JSONB — which now also carries `parsedJD` and design `tokens` —,
