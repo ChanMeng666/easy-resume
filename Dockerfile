@@ -75,8 +75,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     xz-utils fonts-liberation fonts-dejavu-core && \
     rm -rf /var/lib/apt/lists/*
 
-# Install Typst binary
-ADD https://github.com/typst/typst/releases/download/v0.13.1/typst-x86_64-unknown-linux-musl.tar.xz /tmp/typst.tar.xz
+# Install Typst binary (checksum-pinned so a tampered/reuploaded artifact fails the build)
+ADD --checksum=sha256:7d214bfeffc2e585dc422d1a09d2b144969421281e8c7f5d784b65fc69b5673f \
+    https://github.com/typst/typst/releases/download/v0.13.1/typst-x86_64-unknown-linux-musl.tar.xz /tmp/typst.tar.xz
 RUN tar xJf /tmp/typst.tar.xz --strip-components=1 -C /usr/local/bin typst-x86_64-unknown-linux-musl/typst && \
     rm /tmp/typst.tar.xz && \
     typst --version
@@ -93,7 +94,8 @@ ENV TYPST_FONT_PATH=/app/fonts
 # (the VPS has been returning OpenSSL/TLS errors when the typst binary tries
 # to negotiate TLS there). Docker's ADD directive uses the host daemon's
 # TLS stack, so it works regardless of CA certs inside the image.
-ADD https://packages.typst.org/preview/fontawesome-0.5.0.tar.gz /tmp/fa-pkg.tar.gz
+ADD --checksum=sha256:be58301b1aac00e31075e53c944cfc50aa6c1f8ff670c8e29c6ec21e94a2c07a \
+    https://packages.typst.org/preview/fontawesome-0.5.0.tar.gz /tmp/fa-pkg.tar.gz
 RUN mkdir -p /app/typst-cache/preview/fontawesome/0.5.0 && \
     tar xzf /tmp/fa-pkg.tar.gz -C /app/typst-cache/preview/fontawesome/0.5.0 && \
     rm /tmp/fa-pkg.tar.gz && \
@@ -113,7 +115,7 @@ USER nextjs
 
 EXPOSE 3000
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD node -e "fetch('http://localhost:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+HEALTHCHECK --interval=10s --timeout=3s --start-period=15s --retries=3 \
+  CMD node -e "fetch('http://localhost:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
 CMD ["node", "server.js"]

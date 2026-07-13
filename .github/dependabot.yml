@@ -1,0 +1,42 @@
+# Dependabot — weekly dependency updates.
+# Minor + patch bumps are grouped into a single PR per ecosystem to cut review
+# noise; majors still open individually so breaking changes get scrutiny.
+version: 2
+updates:
+  # Root Next.js app
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  # The separately published vitex-cli package (its own lockfile)
+  - package-ecosystem: npm
+    directory: "/cli"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  # GitHub Actions used by the workflows
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  # Base images referenced in the Dockerfile
+  - package-ecosystem: docker
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
