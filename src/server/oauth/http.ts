@@ -8,16 +8,16 @@
 
 import type { NextResponse } from 'next/server';
 import { checkRateLimit } from '@/server/ratelimit';
+import { clientIp as resolveClientIp } from '@/server/http/clientIp';
 import { oauthError } from './errors';
 
 /**
- * Best-effort client IP for per-IP rate-limit keys. Behind Traefik the real
- * client is the first `X-Forwarded-For` hop; falls back to `X-Real-IP`.
+ * Best-effort client IP for per-IP rate-limit keys. Delegates to the shared
+ * trusted-proxy helper (Cloudflare -> Traefik) so the OAuth routes bucket by the
+ * same real client address as every other per-IP limit.
  */
 export function clientIp(req: Request): string {
-  const xff = req.headers.get('x-forwarded-for');
-  if (xff) return xff.split(',')[0]!.trim() || 'unknown';
-  return req.headers.get('x-real-ip')?.trim() || 'unknown';
+  return resolveClientIp(req);
 }
 
 /**

@@ -2,6 +2,13 @@ import { NextResponse } from "next/server";
 import { stackServerApp } from "@/lib/auth/stack";
 import { creditService } from "@/lib/services/creditService";
 import { createPortalSession } from "@/lib/stripe/checkout";
+import { UnauthenticatedError, ValidationError } from "@/server/errors/AppError";
+import { errorResponse } from "@/server/errors/envelope";
+import { enforceRateLimit } from "@/server/ratelimit";
+
+// Opening the Stripe portal is money-adjacent and hits Stripe; cap tightly.
+const PORTAL_LIMIT = 5;
+const PORTAL_WINDOW_SECONDS = 60;
 
 /**
  * POST /api/billing/portal - Open the Stripe Customer Portal.
@@ -11,16 +18,15 @@ import { createPortalSession } from "@/lib/stripe/checkout";
  * which downgrades the user back to the free tier (see stripeWebhook.ts).
  */
 export async function POST() {
+  const requestId = crypto.randomUUID();
   try {
     const user = await stackServerApp.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!user) throw new UnauthenticatedError();
+    await enforceRateLimit(`portal:${user.id}`, PORTAL_LIMIT, PORTAL_WINDOW_SECONDS);
 
     const record = await creditService.getOrCreate(user.id);
     if (!record.stripeCustomerId) {
-      return NextResponse.json(
-        { error: "No active subscription to manage" },
-        { status: 400 }
-      );
+      throw new ValidationError("No active subscription to manage");
     }
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
@@ -31,10 +37,6 @@ export async function POST() {
 
     return NextResponse.json({ url: session.url });
   } catch (error) {
-    console.error("Error creating billing portal session:", error);
-    return NextResponse.json(
-      { error: "Failed to open billing portal" },
-      { status: 500 }
-    );
+    return errorResponse(error, requestId);
   }
 }

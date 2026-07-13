@@ -10,8 +10,14 @@ import { stackServerApp } from '@/lib/auth/stack';
 import { mintApiKey, listApiKeys, revokeApiKey } from '@/server/auth/apiKeys';
 import { UnauthenticatedError, ValidationError } from '@/server/errors/AppError';
 import { errorResponse } from '@/server/errors/envelope';
+import { enforceRateLimit } from '@/server/ratelimit';
 
 export const runtime = 'nodejs';
+
+// Key mint/revoke are cheap but security-sensitive; cap per user to blunt
+// scripted abuse. Listing (GET) is unlimited.
+const KEYS_MUTATE_LIMIT = 10;
+const KEYS_MUTATE_WINDOW_SECONDS = 60;
 
 /** GET /api/keys — list the caller's API keys (metadata only, no secrets). */
 export async function GET() {
@@ -31,6 +37,7 @@ export async function POST(request: NextRequest) {
   try {
     const user = await stackServerApp.getUser();
     if (!user) throw new UnauthenticatedError();
+    await enforceRateLimit(`keys:${user.id}`, KEYS_MUTATE_LIMIT, KEYS_MUTATE_WINDOW_SECONDS);
 
     let name = 'default';
     try {
@@ -59,6 +66,7 @@ export async function DELETE(request: NextRequest) {
   try {
     const user = await stackServerApp.getUser();
     if (!user) throw new UnauthenticatedError();
+    await enforceRateLimit(`keys:${user.id}`, KEYS_MUTATE_LIMIT, KEYS_MUTATE_WINDOW_SECONDS);
 
     const id = new URL(request.url).searchParams.get('id');
     if (!id) throw new ValidationError('query param "id" is required');
