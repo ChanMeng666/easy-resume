@@ -227,11 +227,18 @@ carrying `Retry-After` + `X-RateLimit-*` headers; success responses also carry
 30/min · `v1refine:` `POST /api/v1/resumes/[id]/refine` 10/min ·
 `me:` `GET /api/v1/me` 60/min · `mcp:` per-user hosted-MCP tool budget 60/min
 (`src/server/mcp/tools.ts`) · `profilewrite:` profile writes incl. publish/unpublish
-20/min. Two surfaces key on **client IP** instead of userId (they run before or
-without a session): `pub:` public `/p/[slug]` reads 60/min
+20/min · `compile:` `POST /api/compile` 30/min (route is authenticated — session
+cookie or Bearer API key) · `keys:` `/api/keys` POST/DELETE 10/min ·
+`credits:` `GET /api/credits` 30/min · `checkout:` `POST /api/credits` 5/min ·
+`portal:` `POST /api/billing/portal` 5/min. Two surfaces key on **client IP**
+instead of userId (they run before or without a session): `pub:` public
+`/p/[slug]` reads 60/min
 (`src/server/profiles/publicAccess.ts`) and the OAuth `oauthreg:` (`/api/oauth/register`,
 10/min) / `oauthtoken:` (`/api/oauth/token`, 20/min) via `oauthRateLimit`
-(`src/server/oauth/http.ts`). Plus write limits on the
+(`src/server/oauth/http.ts`). Client IP resolution is centralized in
+`src/server/http/clientIp.ts` with trust order `CF-Connecting-IP` → **last**
+`X-Forwarded-For` hop (the one our trusted proxy set) → `X-Real-Ip`; never the
+first XFF entry, which is client-supplied. Plus write limits on the
 applications/profiles/threads/versions CRUD routes. (`/api/oauth/authorize` is
 session-gated + CSRF-protected rather than rate-limited.)
 
