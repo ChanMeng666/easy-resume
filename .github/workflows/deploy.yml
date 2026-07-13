@@ -5,6 +5,15 @@ on:
     branches: [master]
   workflow_dispatch:
 
+# Serialize deploys: two concurrent runs would race the rolling swap on the VPS
+# (both starting containers and retiring "all others"). Queued runs are
+# superseded — only the newest pending run survives, which is exactly right for
+# deploy-latest semantics. Never cancel an IN-PROGRESS run (a half-finished
+# swap must complete its health gate).
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
 env:
   REGISTRY: ghcr.io
   IMAGE: ghcr.io/chanmeng666/easy-resume/web
