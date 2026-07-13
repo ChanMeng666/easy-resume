@@ -392,6 +392,31 @@ session-gated + CSRF-protected rather than rate-limited.)
 - `downloadTypFile()`: Download .typ source file
 - `copyToClipboard()`: Copy Typst code to clipboard
 
+## Security Headers
+
+Site-wide security headers are set in **`next.config.ts`'s `headers()`** (NOT
+middleware — no per-request logic is needed and static headers attach before the
+body streams, so SSE on `/api/generate|refine|threads` is unaffected). Applied to
+`/:path*`, so they cover pages AND API routes.
+
+- **Always on** (safe in dev): `X-Content-Type-Options: nosniff`,
+  `Referrer-Policy: strict-origin-when-cross-origin`, `X-Frame-Options: DENY`,
+  `Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()`.
+- **Prod only** (gated on `isProd`, because HSTS on localhost is hostile and the
+  dev bundle needs `'unsafe-eval'` for react-refresh that the CSP omits):
+  `Strict-Transport-Security: max-age=15552000; includeSubDomains` (no preload)
+  and a `Content-Security-Policy` (built as a readable directive array).
+- **CSP third-party allowances** — when adding a new third-party origin the
+  browser must reach, add it here or it is blocked: `connect-src` includes
+  `https://api.stack-auth.com` (the Stack/Neon Auth browser SDK) + `blob:` (mobile
+  pdfjs fetches the compiled PDF blob); `frame-src`/`worker-src` include `blob:`
+  (desktop PDF iframe + pdfjs worker); `img-src`/`font-src` include `data:`.
+  Stripe needs **nothing** (checkout is a top-level redirect, no browser JS);
+  fonts are self-hosted (next/font), images are local — so no CDN/analytics
+  origins are in the policy.
+- **Exception**: `src/app/api/oauth/**` sets its own per-response headers on the
+  consent HTML (frame denial) — leave that alone; the duplication is harmless.
+
 ## UI Components
 
 ### Design System: Phantom
