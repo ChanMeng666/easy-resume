@@ -14,7 +14,7 @@ import { VitexClient, type JobRecord, type RefineScope } from './client.js';
 import { readInput, readFeedback, UsageError } from './args.js';
 import { emit, humanJobHandle, humanJobRecord, reportError } from './format.js';
 
-const VERSION = '0.2.0';
+const VERSION = '0.2.1';
 const DEFAULT_API_URL = 'https://www.vitex.org.nz';
 
 // Union of every flag across all commands. parseArgs (strict) rejects any flag

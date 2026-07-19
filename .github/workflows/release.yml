@@ -1,0 +1,143 @@
+name: Release CLI (npm + MCP Registry via OIDC)
+
+# Publishes the in-repo `vitex-cli` npm package via npm **trusted publishing**
+# (OIDC — no stored npm token, no 2FA prompt) and then syncs the MCP server
+# manifest (server.json) to the official MCP Registry over the same OIDC identity.
+#
+# Trigger is `cli-v*` tags (e.g. cli-v0.2.1), NOT a bare `v*`: this repo also
+# deploys a web app, so a plain `v*` namespace could collide with a future
+# product/release tag. Keep the CLI on its own `cli-v*` namespace.
+#
+# One-time human setup (per package, a 2FA action — the agent cannot do it):
+#   npmjs.com -> vitex-cli -> Settings -> Trusted Publisher -> GitHub Actions:
+#     Organization or user: ChanMeng666   (GitHub owner casing, exact)
+#     Repository:           easy-resume
+#     Workflow filename:    release.yml    (filename only, not a path)
+#     Environment:          (leave empty)
+#     Allowed actions:      check "Allow npm publish"
+# Renaming this file breaks publishing until that registration is redone.
+
+on:
+  push:
+    tags:
+      - 'cli-v*'
+  workflow_dispatch:
+
+permissions:
+  id-token: write # the OIDC exchange (npm trusted publishing + MCP Registry login)
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest # cloud-hosted runners only; self-hosted is unsupported for OIDC
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          # REQUIRED for the OIDC token exchange: writes the .npmrc plumbing the
+          # trusted-publishing handshake rides on. Omitting it looks like an auth
+          # failure at publish time.
+          registry-url: 'https://registry.npmjs.org'
+          cache: npm
+          cache-dependency-path: cli/package-lock.json
+
+      - name: Install dependencies (cli)
+        working-directory: cli
+        run: npm ci
+
+      # Pin npm to 11.x AFTER `npm ci`. 11.5.1 is the trusted-publishing minimum;
+      # npm@latest (12) flips allowScripts off by default and silently blocks
+      # dependency install scripts. Upgrading *after* npm ci means deps already
+      # resolved under the runner's permissive bundled npm.
+      - name: Pin npm for trusted publishing
+        run: |
+          npm install -g npm@^11.5.1
+          npm --version
+
+      - name: Build (cli)
+        working-directory: cli
+        run: npm run build
+
+      - name: Test (cli)
+        working-directory: cli
+        run: npm test
+
+      # Idempotency guard (npm): skip the publish if this version is already on
+      # the registry, so re-running a partially-failed release is safe.
+      - name: Check npm registry for existing version
+        id: npmcheck
+        working-directory: cli
+        run: |
+          v=$(node -p "require('./package.json').version")
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          on_reg=$(npm view "vitex-cli@$v" version 2>/dev/null || true)
+          if [ "$on_reg" = "$v" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "vitex-cli@$v is already on npm — skipping npm publish."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Custom `if:` MUST include success() — a bare custom condition drops
+      # GitHub's implicit "previous steps succeeded" check, so a failed build/test
+      # above would otherwise not stop this publish.
+      - name: Publish to npm (trusted publishing + provenance)
+        if: ${{ success() && steps.npmcheck.outputs.exists != 'true' }}
+        working-directory: cli
+        run: npm publish --provenance --access public
+
+      # ---- MCP Registry sync (secondary registry) ----
+      # Guarded by the MCP Registry's OWN state (not "did npm publish run this
+      # run"), so an npm-ok / registry-failed partial run still re-syncs on a
+      # re-run instead of skipping forever. The published server version is
+      # server.json.version, which tracks the cli version.
+      - name: Check MCP Registry for existing version
+        id: mcpcheck
+        run: |
+          name=$(node -p "require('./server.json').name")
+          v=$(node -p "require('./server.json').version")
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          exists=$(curl -fsS "https://registry.modelcontextprotocol.io/v0/servers?search=$name" 2>/dev/null \
+            | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{const j=JSON.parse(s);const hit=(j.servers||[]).some(x=>x.name==='$name'&&x.version==='$v');process.stdout.write(hit?'true':'false')}catch{process.stdout.write('false')}})" \
+            || echo false)
+          echo "exists=$exists" >> "$GITHUB_OUTPUT"
+          echo "MCP Registry has $name@$v: $exists"
+
+      - name: Install mcp-publisher
+        if: ${{ success() && steps.mcpcheck.outputs.exists != 'true' }}
+        # Pinned to a known release (registry is in preview; a pin keeps the
+        # binary/registry contract deterministic). Bump this tag deliberately.
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/download/v1.8.0/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
+
+      # Non-fatal: a first-time namespace publish may need extra setup, so a
+      # registry rejection logs clearly and surfaces in the summary but does NOT
+      # fail the release (npm publish already succeeded and is the money path).
+      - name: Publish server.json to MCP Registry
+        id: mcppublish
+        if: ${{ success() && steps.mcpcheck.outputs.exists != 'true' }}
+        continue-on-error: true
+        run: |
+          ./mcp-publisher login github-oidc
+          ./mcp-publisher publish
+          echo "Published ${{ steps.mcpcheck.outputs.name }}@${{ steps.mcpcheck.outputs.version }} to the MCP Registry."
+
+      # Single, explicit summary line for whichever MCP-Registry outcome occurred.
+      - name: Summarize MCP Registry result
+        if: ${{ always() }}
+        run: |
+          case "${{ steps.mcppublish.outcome }}" in
+            success)
+              echo "MCP Registry: published ${{ steps.mcpcheck.outputs.name }}@${{ steps.mcpcheck.outputs.version }}." | tee -a "$GITHUB_STEP_SUMMARY" ;;
+            failure)
+              echo "::warning::MCP Registry publish failed (non-fatal). npm publish is unaffected. A first-time namespace publish may need manual setup; re-run this workflow after resolving." \
+                | tee -a "$GITHUB_STEP_SUMMARY" ;;
+            *)
+              echo "MCP Registry: ${{ steps.mcpcheck.outputs.name }}@${{ steps.mcpcheck.outputs.version }} already published — sync skipped." | tee -a "$GITHUB_STEP_SUMMARY" ;;
+          esac
