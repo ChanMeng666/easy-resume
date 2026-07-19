@@ -248,7 +248,14 @@ export async function runJob(
     // succeeded status/result/title/charged/pdfUrl/profileId AND uploads the PDF
     // to R2. Best-effort — a failure here never marks a succeeded+charged job
     // failed; the stale-job sweeper / a later poll reconciles a stuck row.
-    await finalizeSucceededJob({ jobId, input: job.input, result, logger: log });
+    await finalizeSucceededJob({
+      jobId,
+      input: job.input,
+      result,
+      logger: log,
+      parentJobId: refine ? job.parentJobId : null,
+      userId: job.userId,
+    });
 
     log.info('job.succeeded', { charged: result.usage.charged, mode: refine ? 'refine' : 'generate' });
   } catch (err) {

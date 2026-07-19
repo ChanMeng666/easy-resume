@@ -413,6 +413,35 @@ export const oauthCodes = pgTable("oauth_codes", {
   expiresIdx: index("idx_oauth_codes_expires").on(table.expiresAt),
 }));
 
+/**
+ * Server-side product analytics events (privacy-respecting funnel telemetry).
+ *
+ * The measurement-framework prerequisite: a single append-only event log written
+ * exclusively server-side — no third-party SDK, no browser analytics script, no
+ * new external origin (the CSP deliberately has none). Every write is best-effort
+ * and off the money path (see `src/server/analytics/track.ts`), so a telemetry
+ * failure can never affect generation or billing.
+ *
+ * `userId` is nullable (anonymous events); `props` is a small, typed JSON bag of
+ * event-specific fields (never raw resume/JD text — those stay off analytics).
+ */
+export const analyticsEvents = pgTable("analytics_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id"), // nullable: some events are anonymous
+  event: text("event").notNull(), // e.g. generation_succeeded, signup, credit_purchase
+  props: jsonb("props").$type<Record<string, unknown>>().notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  // Backs funnel queries: "events of type X over a time window".
+  eventCreatedIdx: index("idx_analytics_events_event_created").on(table.event, table.createdAt),
+  // Backs per-user rollups (e.g. first-ever success = activation).
+  userIdIdx: index("idx_analytics_events_user").on(table.userId),
+}));
+
+// Analytics event types
+export type AnalyticsEvent = typeof analyticsEvents.$inferSelect;
+export type NewAnalyticsEvent = typeof analyticsEvents.$inferInsert;
+
 // OAuth types
 export type OAuthClient = typeof oauthClients.$inferSelect;
 export type NewOAuthClient = typeof oauthClients.$inferInsert;

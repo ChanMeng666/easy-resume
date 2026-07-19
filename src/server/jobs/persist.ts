@@ -17,6 +17,7 @@ import { generateCoverLetterTypst } from '@/lib/typst/cover-letter';
 import { getTemplateById, renderTemplate } from '@/templates/registry';
 import { DEFAULT_TOKENS, type DesignTokens } from '@/lib/design/tokens';
 import { NotFoundError, ValidationError } from '@/server/errors/AppError';
+import { trackEvent } from '@/server/analytics/track';
 import type { ResumeData } from '@/lib/validation/schema';
 import type { runGenerationPipeline } from '@/server/core/pipeline';
 import type { Caller, GenerateInput } from '@/server/core/pipeline.types';
@@ -257,8 +258,16 @@ export async function finalizeSucceededJob(args: {
   input: GenerateInput;
   result: PipelineResult;
   logger: Logger;
+  /**
+   * The parent job id when this is a REFINE (present on the refine transports),
+   * otherwise null/undefined for a first-class generation. Drives the analytics
+   * event name only (generation_succeeded vs refine_succeeded) — no other effect.
+   */
+  parentJobId?: string | null;
+  /** Owner of the job — recorded on the analytics event. */
+  userId?: string;
 }): Promise<boolean> {
-  const { jobId, input, result, logger } = args;
+  const { jobId, input, result, logger, parentJobId } = args;
   try {
     const { db } = await import('@/lib/db/client');
     await db
@@ -274,6 +283,15 @@ export async function finalizeSucceededJob(args: {
       })
       .where(eq(generationJobs.id, jobId));
     await storeResumePdf(jobId, result.pdf, logger);
+    // Funnel telemetry (best-effort, never throws): one emit site covers BOTH the
+    // web SSE path and the v1 runner. A user's first-ever generation_succeeded is
+    // the activation query (no separate activation event needed).
+    const isRefine = Boolean(parentJobId);
+    await trackEvent({
+      userId: args.userId,
+      event: isRefine ? 'refine_succeeded' : 'generation_succeeded',
+      props: { jobId, charged: result.usage.charged, ...(isRefine ? { parentJobId } : {}) },
+    });
     return true;
   } catch (err) {
     logger.error('job.finalize_failed', { jobId }, err);
