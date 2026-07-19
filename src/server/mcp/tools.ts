@@ -382,6 +382,12 @@ export function registerVitexTools(server: McpServer, deps: McpToolDeps = defaul
       title: 'Get account identity & credit balance',
       description: `Return the authenticated account: userId, credit balance, and tier. Read-only — never spends credits. Check credits before generating: a successfully compiled PDF costs 1 credit (refinements and failures are free).`,
       inputSchema: {},
+      annotations: {
+        title: 'Get account identity & credit balance',
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
     },
     (_args, extra) => run(extra, (userId) => handlers.getAccount(userId))
   );
@@ -390,6 +396,12 @@ export function registerVitexTools(server: McpServer, deps: McpToolDeps = defaul
     'generate_resume',
     {
       title: 'Generate a tailored resume',
+      annotations: {
+        title: 'Generate a tailored resume',
+        readOnlyHint: false,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
       description: `Compile a tailored, ATS-optimized resume PDF and cover letter from a job description plus a background (inline or a saved profile_id). Blocks until the job finishes and returns the final job incl. atsScore; if it is still running after ~90s it returns { id, status: 'running' } — call get_resume to keep polling. ${BILLING_NOTE}`,
       inputSchema: {
         jobDescription: z.string().min(1).describe('The target job description text'),
@@ -405,6 +417,12 @@ export function registerVitexTools(server: McpServer, deps: McpToolDeps = defaul
     'refine_resume',
     {
       title: 'Refine a resume',
+      annotations: {
+        title: 'Refine a resume',
+        readOnlyHint: false,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
       description: `Refine a succeeded resume with natural-language feedback. Creates a new version in the parent's chain and blocks until it finishes (call get_resume if it is still running after ~90s). Refinement is free. ${BILLING_NOTE}`,
       inputSchema: {
         id: z.string().min(1).describe('The parent (succeeded) job id'),
@@ -419,6 +437,12 @@ export function registerVitexTools(server: McpServer, deps: McpToolDeps = defaul
     'get_resume',
     {
       title: 'Get a resume job',
+      annotations: {
+        title: 'Get a resume job',
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
       description: `Fetch a generation/refine job by id (status, result, atsScore, error). Read-only. ${BILLING_NOTE}`,
       inputSchema: { id: z.string().min(1).describe('The job id') },
     },
@@ -429,6 +453,12 @@ export function registerVitexTools(server: McpServer, deps: McpToolDeps = defaul
     'download_pdf',
     {
       title: 'Get a resume PDF link',
+      annotations: {
+        title: 'Get a resume PDF link',
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
       description: `Return the hosted URL of a succeeded job's compiled PDF. Read-only. ${BILLING_NOTE}`,
       inputSchema: { id: z.string().min(1).describe('The succeeded job id') },
     },
@@ -439,6 +469,12 @@ export function registerVitexTools(server: McpServer, deps: McpToolDeps = defaul
     'list_profiles',
     {
       title: 'List candidate profiles',
+      annotations: {
+        title: 'List candidate profiles',
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
       description: `List your saved candidate backgrounds (reusable across job descriptions). Free.`,
       inputSchema: {},
     },
@@ -449,6 +485,12 @@ export function registerVitexTools(server: McpServer, deps: McpToolDeps = defaul
     'create_profile',
     {
       title: 'Create a candidate profile',
+      annotations: {
+        title: 'Create a candidate profile',
+        readOnlyHint: false,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
       description: `Save a reusable candidate background (parsed server-side). Reuse it via profile_id in generate_resume. Free.`,
       inputSchema: {
         raw_background: z.string().min(1).describe('Candidate background as free text'),
@@ -463,6 +505,12 @@ export function registerVitexTools(server: McpServer, deps: McpToolDeps = defaul
     'publish_profile',
     {
       title: 'Publish a candidate profile',
+      annotations: {
+        title: 'Publish a candidate profile',
+        readOnlyHint: false,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
       description: `Publish a profile to a stable public career endpoint (/p/<slug>); returns the URL. Never exposes email/phone/photo. Free.`,
       inputSchema: { id: z.string().min(1).describe('The profile id to publish') },
     },
@@ -473,6 +521,12 @@ export function registerVitexTools(server: McpServer, deps: McpToolDeps = defaul
     'unpublish_profile',
     {
       title: 'Unpublish a candidate profile',
+      annotations: {
+        title: 'Unpublish a candidate profile',
+        readOnlyHint: false,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
       description: `Close a published profile's public endpoint (the slug is kept so republishing restores the same URL). Free.`,
       inputSchema: { id: z.string().min(1).describe('The profile id to unpublish') },
     },

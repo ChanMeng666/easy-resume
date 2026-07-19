@@ -116,8 +116,13 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Bottom Section: one copyright line (the maker credit lives here) */}
+        {/* Bottom Section: legal link + one copyright line (the maker credit lives here) */}
         <div className="border-t border-white/10 pt-8 text-center">
+          <div className="mb-4">
+            <Link href="/privacy" className={linkClass}>
+              Privacy
+            </Link>
+          </div>
           <p className="text-sm text-white/60">
             © {new Date().getFullYear()} Vitex by{' '}
             <a
