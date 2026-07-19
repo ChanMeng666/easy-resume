@@ -15,7 +15,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { VitexClient, ApiError, type JobRecord } from './client.js';
 
-const VERSION = '0.2.0';
+const VERSION = '0.2.1';
 
 interface McpConfig {
   baseUrl: string;

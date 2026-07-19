@@ -146,10 +146,19 @@ final result in one call. Every tool reads `VITEX_API_KEY` from the environment.
 
 ## Changelog
 
+See [CHANGELOG.md](./CHANGELOG.md). Recent:
+
+- **0.2.1** — MCP tool annotations on all 9 tools + `mcpName` for the official MCP
+  Registry (no functional changes).
 - **0.2.0** — `whoami` now uses the dedicated `GET /api/v1/me` endpoint (shows your
   credit balance + tier, not just a key check); new `get_account` MCP tool so
   agents can check credits before generating.
 - **0.1.0** — Initial release.
+
+## Releasing
+
+Maintainers: pushing a `cli-v*` tag publishes to npm via OIDC trusted publishing.
+See [RELEASING.md](./RELEASING.md).
 
 ## License
 

@@ -3,7 +3,7 @@
   "name": "io.github.ChanMeng666/vitex",
   "description": "Career as Code — generate tailored, ATS-optimized resume PDFs and cover letters from a job description over MCP. Same 9 tools via a local stdio server (vitex-cli) or the hosted OAuth-protected remote endpoint.",
   "title": "Vitex — AI Resume Generator",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "websiteUrl": "https://www.vitex.org.nz",
   "repository": {
     "url": "https://github.com/ChanMeng666/easy-resume",
@@ -14,7 +14,7 @@
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "vitex-cli",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "runtimeHint": "npx",
       "transport": {
         "type": "stdio"
