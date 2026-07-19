@@ -31,5 +31,17 @@ export async function getCaller(req: Request): Promise<Caller | null> {
 
   // Cookie session (web UI). Behavior identical to the prior routes.
   const user = await stackServerApp.getUser();
-  return user ? { userId: user.id, via: 'session' } : null;
+  if (!user) return null;
+
+  // INVARIANT: anonymous/restricted sessions must NEVER become a Caller.
+  // Billing and the free-credit grant both key on `Caller.userId`, so an
+  // anonymous (or not-yet-onboarded restricted) Stack user resolving to a
+  // Caller would let a non-real account reach the paid pipeline / receive
+  // free credits. The current SDK already returns null from `getUser()` for
+  // anonymous sessions; this rejection makes that safety an explicit, tested
+  // invariant so a future SDK upgrade can't silently regress it. Rejection is
+  // the same outcome as unauthenticated (null).
+  if (user.isAnonymous || user.isRestricted) return null;
+
+  return { userId: user.id, via: 'session' };
 }
