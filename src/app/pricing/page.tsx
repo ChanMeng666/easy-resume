@@ -41,7 +41,6 @@ const plans = [
       'ATS optimization reports',
       'Cover letter generation',
       'Application tracking',
-      'Priority AI responses',
     ],
     cta: 'Start Pro',
     ctaVariant: 'default' as const,
@@ -58,8 +57,7 @@ const plans = [
       'Unlimited tailoring',
       'Unlimited cover letters',
       'Unlimited ATS reports',
-      'Bulk application support',
-      'Priority support',
+      'Unlimited AI refinements',
     ],
     cta: 'Go Unlimited',
     ctaVariant: 'secondary' as const,
@@ -70,15 +68,6 @@ const plans = [
 const creditPacks = [
   { credits: 5, price: '$15', priceType: 'credits_5' },
 ];
-
-// Features that are on the roadmap but NOT yet shipped. We keep them listed (the
-// direction is real) but label them honestly so the pricing page never
-// over-promises a capability the product doesn't have today.
-const COMING_SOON_FEATURES = new Set<string>([
-  'Priority AI responses',
-  'Bulk application support',
-  'Priority support',
-]);
 
 /**
  * Pricing page content with the Phantom design system.
@@ -191,26 +180,11 @@ function PricingContent() {
                 </Button>
 
                 <ul className="space-y-3 list-disc pl-5">
-                  {plan.features.map((feature) => {
-                    const soon = COMING_SOON_FEATURES.has(feature);
-                    return (
-                      <li
-                        key={feature}
-                        className={`text-sm ${
-                          soon
-                            ? 'marker:text-fog text-muted-foreground'
-                            : 'marker:text-periwinkle'
-                        }`}
-                      >
-                        {feature}
-                        {soon && (
-                          <Badge variant="default" className="ml-2 align-middle">
-                            Coming soon
-                          </Badge>
-                        )}
-                      </li>
-                    );
-                  })}
+                  {plan.features.map((feature) => (
+                    <li key={feature} className="text-sm marker:text-periwinkle">
+                      {feature}
+                    </li>
+                  ))}
                 </ul>
               </div>
             </FadeIn>
