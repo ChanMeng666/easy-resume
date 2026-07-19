@@ -46,6 +46,17 @@ export const creditService = {
         amount: 3,
         description: "Welcome bonus - 3 free credits",
       });
+      // Best-effort funnel telemetry: this fires exactly once per user (gated on
+      // winning the atomic insert), so it doubles as the "new user first appears"
+      // (first_seen) signal, with UTM attribution when captured. Dynamically
+      // imported so this service's module graph stays free of next/headers; fully
+      // swallowed so telemetry can never affect signup.
+      try {
+        const { trackSignup } = await import("@/server/analytics/signup");
+        await trackSignup(userId);
+      } catch {
+        // Never let telemetry affect the signup path.
+      }
       return created;
     }
 

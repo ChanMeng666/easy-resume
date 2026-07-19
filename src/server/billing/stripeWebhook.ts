@@ -10,6 +10,7 @@
 import 'server-only';
 import type Stripe from 'stripe';
 import { createLogger } from '@/server/log/logger';
+import { trackEvent } from '@/server/analytics/track';
 
 const log = createLogger({ scope: 'stripe-webhook' });
 
@@ -62,6 +63,8 @@ export async function applyStripeEvent(event: Stripe.Event, sink: StripeEventSin
           'Purchased 5 credits',
           session.payment_intent as string
         );
+        // Funnel telemetry (best-effort): a paid credit grant landed.
+        await trackEvent({ userId, event: 'credit_purchase', props: { kind: 'credits_5', credits: CREDIT_PACK_SIZE, stripeEventType: event.type } });
       } else if (priceType === 'pro_monthly') {
         await sink.updateSubscription(
           userId,
@@ -70,6 +73,7 @@ export async function applyStripeEvent(event: Stripe.Event, sink: StripeEventSin
           session.subscription as string
         );
         await sink.addCredits(userId, PRO_MONTHLY_CREDITS, 'Pro subscription - 20 monthly credits');
+        await trackEvent({ userId, event: 'credit_purchase', props: { kind: 'pro_monthly', credits: PRO_MONTHLY_CREDITS, stripeEventType: event.type } });
       } else if (priceType === 'unlimited_monthly') {
         await sink.updateSubscription(
           userId,
@@ -89,6 +93,7 @@ export async function applyStripeEvent(event: Stripe.Event, sink: StripeEventSin
         const record = await sink.getByStripeCustomerId(customerId);
         if (record && record.subscriptionTier === 'pro') {
           await sink.addCredits(record.userId, PRO_MONTHLY_CREDITS, 'Pro subscription - monthly renewal');
+          await trackEvent({ userId: record.userId, event: 'credit_purchase', props: { kind: 'pro_renewal', credits: PRO_MONTHLY_CREDITS, stripeEventType: event.type } });
         }
       }
       break;

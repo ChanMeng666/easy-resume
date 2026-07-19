@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type Stripe from 'stripe';
+
+// Mock the analytics emit so the money-path logic stays hermetic (no DB import)
+// and the credit_purchase emit can be asserted directly.
+vi.mock('@/server/analytics/track', () => ({ trackEvent: vi.fn() }));
+import { trackEvent } from '@/server/analytics/track';
+
 import {
   applyStripeEvent,
   PRO_MONTHLY_CREDITS,
@@ -130,6 +136,42 @@ describe('applyStripeEvent — checkout', () => {
     await applyStripeEvent(checkoutEvent({}), sink);
     expect(sink.addCredits).not.toHaveBeenCalled();
     expect(sink.updateSubscription).not.toHaveBeenCalled();
+  });
+});
+
+describe('applyStripeEvent — credit_purchase telemetry', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('emits credit_purchase on a credits_5 grant', async () => {
+    await applyStripeEvent(checkoutEvent({ userId: 'user_1', priceType: 'credits_5' }), makeSink());
+    expect(trackEvent).toHaveBeenCalledWith({
+      userId: 'user_1',
+      event: 'credit_purchase',
+      props: { kind: 'credits_5', credits: CREDIT_PACK_SIZE, stripeEventType: 'checkout.session.completed' },
+    });
+  });
+
+  it('emits credit_purchase on a pro_monthly grant', async () => {
+    await applyStripeEvent(checkoutEvent({ userId: 'user_1', priceType: 'pro_monthly' }), makeSink());
+    expect(trackEvent).toHaveBeenCalledWith({
+      userId: 'user_1',
+      event: 'credit_purchase',
+      props: { kind: 'pro_monthly', credits: PRO_MONTHLY_CREDITS, stripeEventType: 'checkout.session.completed' },
+    });
+  });
+
+  it('emits credit_purchase on a pro monthly renewal', async () => {
+    await applyStripeEvent(invoiceEvent('subscription_cycle'), makeSink({ userId: 'user_1', subscriptionTier: 'pro' }));
+    expect(trackEvent).toHaveBeenCalledWith({
+      userId: 'user_1',
+      event: 'credit_purchase',
+      props: { kind: 'pro_renewal', credits: PRO_MONTHLY_CREDITS, stripeEventType: 'invoice.payment_succeeded' },
+    });
+  });
+
+  it('does not emit credit_purchase for an unlimited subscription (no credit grant)', async () => {
+    await applyStripeEvent(checkoutEvent({ userId: 'user_1', priceType: 'unlimited_monthly' }), makeSink());
+    expect(trackEvent).not.toHaveBeenCalled();
   });
 });
 

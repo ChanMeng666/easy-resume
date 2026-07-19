@@ -389,6 +389,24 @@ async function migrate() {
   await sql`CREATE INDEX IF NOT EXISTS idx_oauth_codes_expires ON oauth_codes(expires_at)`;
   console.log("Created oauth_clients / oauth_codes tables");
 
+  // Server-side product analytics: an append-only funnel event log. Written only
+  // server-side, best-effort, off the money path (src/server/analytics/track.ts).
+  // user_id is nullable (anonymous events); props is a small typed JSON bag —
+  // never raw resume/JD text. Two indexes back funnel queries (by event+time)
+  // and per-user rollups (activation = first-ever success).
+  await sql`
+    CREATE TABLE IF NOT EXISTS analytics_events (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id TEXT,
+      event TEXT NOT NULL,
+      props JSONB NOT NULL DEFAULT '{}',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_analytics_events_event_created ON analytics_events(event, created_at)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_analytics_events_user ON analytics_events(user_id)`;
+  console.log("Created analytics_events table");
+
   console.log("Migration complete!");
 }
 

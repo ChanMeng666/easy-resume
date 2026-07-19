@@ -11,6 +11,7 @@ import { mintApiKey, listApiKeys, revokeApiKey } from '@/server/auth/apiKeys';
 import { UnauthenticatedError, ValidationError } from '@/server/errors/AppError';
 import { errorResponse } from '@/server/errors/envelope';
 import { enforceRateLimit } from '@/server/ratelimit';
+import { trackEvent } from '@/server/analytics/track';
 
 export const runtime = 'nodejs';
 
@@ -54,6 +55,8 @@ export async function POST(request: NextRequest) {
     }
 
     const minted = await mintApiKey(user.id, name);
+    // Funnel telemetry (best-effort): minting a key signals agent-channel adoption.
+    await trackEvent({ userId: user.id, event: 'api_key_created', props: {} });
     return NextResponse.json(minted, { status: 201 });
   } catch (error) {
     return errorResponse(error, requestId);

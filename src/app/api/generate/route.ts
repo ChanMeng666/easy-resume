@@ -224,7 +224,7 @@ export async function POST(request: NextRequest) {
       // Finalize the reserved row to `succeeded` + store the PDF. The `saved`
       // event (only on a successful write) lets the client deep-link
       // /editor?job=<id> and survive a refresh.
-      const finalized = await finalizeSucceededJob({ jobId, input, result, logger: log });
+      const finalized = await finalizeSucceededJob({ jobId, input, result, logger: log, userId: caller.userId });
       if (finalized) safeSend({ type: 'saved', jobId });
       safeSend({ type: 'done' });
       controller.close();
