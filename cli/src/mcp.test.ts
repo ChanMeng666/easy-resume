@@ -39,4 +39,27 @@ describe('vitex mcp server', () => {
     expect(tool!.description).toMatch(/never spends credits/i);
     expect(tool!.description).toMatch(/1 credit/i);
   });
+
+  it('annotates every tool with a title and the correct read-only hint', async () => {
+    const READ_ONLY = new Set(['get_account', 'get_resume', 'download_pdf', 'list_profiles']);
+    const WRITE = new Set([
+      'generate_resume',
+      'refine_resume',
+      'create_profile',
+      'publish_profile',
+      'unpublish_profile',
+    ]);
+    for (const tool of await listTools()) {
+      const ann = tool.annotations;
+      expect(ann, `${tool.name} is missing annotations`).toBeDefined();
+      // Every tool carries a human-readable title and acts only on Vitex's own
+      // backend (never an open world) and never deletes data.
+      expect(typeof ann!.title).toBe('string');
+      expect(ann!.title!.length).toBeGreaterThan(0);
+      expect(ann!.openWorldHint).toBe(false);
+      expect(ann!.destructiveHint).toBe(false);
+      if (READ_ONLY.has(tool.name)) expect(ann!.readOnlyHint).toBe(true);
+      if (WRITE.has(tool.name)) expect(ann!.readOnlyHint).toBe(false);
+    }
+  });
 });

@@ -1,0 +1,44 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.ChanMeng666/vitex",
+  "description": "Career as Code — generate tailored, ATS-optimized resume PDFs and cover letters from a job description over MCP. Same 9 tools via a local stdio server (vitex-cli) or the hosted OAuth-protected remote endpoint.",
+  "title": "Vitex — AI Resume Generator",
+  "version": "0.2.0",
+  "websiteUrl": "https://www.vitex.org.nz",
+  "repository": {
+    "url": "https://github.com/ChanMeng666/easy-resume",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "vitex-cli",
+      "version": "0.2.0",
+      "runtimeHint": "npx",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp"
+        }
+      ],
+      "environmentVariables": [
+        {
+          "name": "VITEX_API_KEY",
+          "description": "A Vitex API key (vitex_<prefix>_<secret>). Mint one at https://www.vitex.org.nz/dashboard.",
+          "isRequired": true,
+          "isSecret": true
+        }
+      ]
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://www.vitex.org.nz/api/mcp"
+    }
+  ]
+}

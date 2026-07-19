@@ -56,6 +56,12 @@ export function createServer(config: McpConfig): McpServer {
       description:
         `Return the authenticated account: userId, credit balance, and tier. Read-only — never spends credits. Check credits before generating: a successfully compiled PDF costs 1 credit (refinements and failures are free).`,
       inputSchema: {},
+      annotations: {
+        title: 'Get account identity & credit balance',
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
     },
     async (): Promise<ToolResult> => {
       try {
@@ -70,6 +76,12 @@ export function createServer(config: McpConfig): McpServer {
     'generate_resume',
     {
       title: 'Generate a tailored resume',
+      annotations: {
+        title: 'Generate a tailored resume',
+        readOnlyHint: false,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
       description:
         `Compile a tailored, ATS-optimized resume PDF and cover letter from a job description plus a background (inline or a saved profile_id). Blocks until the job finishes and returns the final job incl. atsScore. ${BILLING_NOTE}`,
       inputSchema: {
@@ -97,6 +109,12 @@ export function createServer(config: McpConfig): McpServer {
     'refine_resume',
     {
       title: 'Refine a resume',
+      annotations: {
+        title: 'Refine a resume',
+        readOnlyHint: false,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
       description:
         `Refine a succeeded resume with natural-language feedback. Creates a new version in the parent's chain and blocks until it finishes. ${BILLING_NOTE} (Refinement is free.)`,
       inputSchema: {
@@ -120,6 +138,12 @@ export function createServer(config: McpConfig): McpServer {
     'get_resume',
     {
       title: 'Get a resume job',
+      annotations: {
+        title: 'Get a resume job',
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
       description: `Fetch a generation/refine job by id (status, result, atsScore, error). ${BILLING_NOTE}`,
       inputSchema: { id: z.string().min(1).describe('The job id') },
     },
@@ -136,6 +160,12 @@ export function createServer(config: McpConfig): McpServer {
     'download_pdf',
     {
       title: 'Download a resume PDF',
+      annotations: {
+        title: 'Download a resume PDF',
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
       description:
         `Download a succeeded job's compiled PDF to a temp file and return its path. ${BILLING_NOTE}`,
       inputSchema: { id: z.string().min(1).describe('The succeeded job id') },
@@ -159,6 +189,12 @@ export function createServer(config: McpConfig): McpServer {
     'list_profiles',
     {
       title: 'List candidate profiles',
+      annotations: {
+        title: 'List candidate profiles',
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
       description: `List your saved candidate backgrounds (reusable across job descriptions). ${BILLING_NOTE} (Profiles are free.)`,
       inputSchema: {},
     },
@@ -175,6 +211,12 @@ export function createServer(config: McpConfig): McpServer {
     'create_profile',
     {
       title: 'Create a candidate profile',
+      annotations: {
+        title: 'Create a candidate profile',
+        readOnlyHint: false,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
       description:
         `Save a reusable candidate background (parsed server-side). Reuse it via profile_id in generate_resume. ${BILLING_NOTE} (Creating a profile is free.)`,
       inputSchema: {
@@ -196,6 +238,12 @@ export function createServer(config: McpConfig): McpServer {
     'publish_profile',
     {
       title: 'Publish a candidate profile',
+      annotations: {
+        title: 'Publish a candidate profile',
+        readOnlyHint: false,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
       description:
         `Publish a profile to a stable public career endpoint (/p/<slug>); returns the URL. Never exposes email/phone/photo. ${BILLING_NOTE} (Free.)`,
       inputSchema: { id: z.string().min(1).describe('The profile id to publish') },
@@ -213,6 +261,12 @@ export function createServer(config: McpConfig): McpServer {
     'unpublish_profile',
     {
       title: 'Unpublish a candidate profile',
+      annotations: {
+        title: 'Unpublish a candidate profile',
+        readOnlyHint: false,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
       description: `Close a published profile's public endpoint (the slug is kept so republishing restores the same URL). ${BILLING_NOTE} (Free.)`,
       inputSchema: { id: z.string().min(1).describe('The profile id to unpublish') },
     },
