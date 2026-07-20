@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.30",
-    "@ai-sdk/react": "^3.0.99",
+    "@ai-sdk/react": "^4.0.34",
     "@aws-sdk/client-s3": "^3.1086.0",
     "@fortawesome/fontawesome-free": "^6.7.2",
     "@hookform/resolvers": "^5.4.0",
