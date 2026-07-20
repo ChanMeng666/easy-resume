@@ -2,7 +2,7 @@
 # Multi-stage build with Next.js standalone output
 
 # --- Stage 1: Install dependencies ---
-FROM node:22-bookworm-slim AS deps
+FROM node:25-bookworm-slim AS deps
 
 WORKDIR /app
 
@@ -11,7 +11,7 @@ COPY package*.json ./
 RUN npm ci --legacy-peer-deps
 
 # --- Stage 2: Build the application ---
-FROM node:22-bookworm-slim AS builder
+FROM node:25-bookworm-slim AS builder
 
 WORKDIR /app
 
@@ -62,7 +62,7 @@ RUN --mount=type=secret,id=DATABASE_URL \
     npm run build
 
 # --- Stage 3: Production runner ---
-FROM node:22-bookworm-slim AS runner
+FROM node:25-bookworm-slim AS runner
 
 WORKDIR /app
 
