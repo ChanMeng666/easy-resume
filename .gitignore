@@ -49,4 +49,6 @@ next-env.d.ts
 *:Zone.Identifier
 .env*.local
 .claude/settings.local.json
+# Claude Code worktrees hold a full copy of the source tree; never commit them.
+.claude/worktrees/
 

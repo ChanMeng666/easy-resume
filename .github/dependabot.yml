@@ -1,42 +1,130 @@
-# Dependabot — weekly dependency updates.
-# Minor + patch bumps are grouped into a single PR per ecosystem to cut review
-# noise; majors still open individually so breaking changes get scrutiny.
+# Dependabot — monthly dependency updates, grouped non-majors, config-level
+# ignores for majors that need a deliberate human upgrade pass.
+#
+# Operating contract (2026-07 retune, see issue #103):
+#   - Cadence is monthly (was weekly). Every ecosystem below groups ALL of its
+#     non-major (minor + patch) updates into a single PR via
+#     `groups.minor-and-patch` (`patterns: ["*"]` + `update-types: [minor,
+#     patch]`) — previously only the two npm entries had a group at all, which
+#     is exactly why `actions/setup-node` and the Dockerfile's `node` base
+#     image were each opening their own separate PR.
+#   - Majors for the packages listed under each ecosystem's `ignore` block
+#     NEVER open a PR. They are deliberately deferred and tracked for manual
+#     review in issue #103, not dismissed one version at a time.
+#   - DO NOT use the `@dependabot ignore this major version` PR comment
+#     anymore. That form only silences the exact version number it names — the
+#     following month Dependabot simply proposes the next-highest major and
+#     reopens the PR. That is precisely what caused the 2026-07 wave of 9 PRs:
+#     ignoring node 26 / typescript 7 / @types/node 26 one version at a time
+#     just produced new PRs proposing node 25 / TS 6.0.3 / @types/node 25 the
+#     week after. With the config-level `ignore` entries below, majors for
+#     these packages are suppressed for good — closing an unwanted PR is
+#     enough; no per-version comment is needed.
+#   - This file governs routine version-bump PRs only. GitHub's native
+#     Dependabot *security* alerts/updates run independently of this config
+#     and are unaffected — a vulnerable dependency (including any listed
+#     under `ignore` here) still gets flagged and a fix PR opened immediately.
 version: 2
 updates:
   # Root Next.js app
   - package-ecosystem: npm
     directory: "/"
     schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
+      interval: monthly
+    open-pull-requests-limit: 3
     groups:
       minor-and-patch:
+        patterns:
+          - "*"
         update-types:
           - minor
           - patch
+    ignore:
+      # Framework/runtime majors — breaking changes across the whole app; review deliberately.
+      - dependency-name: "next"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/react-dom"
+        update-types: ["version-update:semver-major"]
+      # Billing — a Stripe SDK major can change money-path behavior.
+      - dependency-name: "stripe"
+        update-types: ["version-update:semver-major"]
+      # Toolchain majors — a TS language-service major ripples across the whole codebase.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+      # AI SDK majors — provider/tool-call API surface changes affect the whole agent pipeline.
+      - dependency-name: "ai"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@ai-sdk/*"
+        update-types: ["version-update:semver-major"]
+      # Icon set majors can rename/remove icons used across the Phantom UI.
+      - dependency-name: "lucide-react"
+        update-types: ["version-update:semver-major"]
+      # FontAwesome majors can change the bundled webfonts/icon names the Typst generator relies on.
+      - dependency-name: "@fortawesome/fontawesome-free"
+        update-types: ["version-update:semver-major"]
 
   # The separately published vitex-cli package (its own lockfile)
   - package-ecosystem: npm
     directory: "/cli"
     schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
+      interval: monthly
+    open-pull-requests-limit: 3
     groups:
       minor-and-patch:
+        patterns:
+          - "*"
         update-types:
           - minor
           - patch
+    ignore:
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+      # MCP SDK major could change the stdio server's tool-registration API.
+      - dependency-name: "@modelcontextprotocol/sdk"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "zod"
+        update-types: ["version-update:semver-major"]
 
   # GitHub Actions used by the workflows
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
+      interval: monthly
+    open-pull-requests-limit: 3
+    groups:
+      minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+    # No config-level ignore here: action majors are cheap to review and safe
+    # to keep flowing individually, so they still open their own PR.
 
   # Base images referenced in the Dockerfile
   - package-ecosystem: docker
     directory: "/"
     schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
+      interval: monthly
+    open-pull-requests-limit: 3
+    groups:
+      minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+    ignore:
+      # Node major bumps affect the whole Docker build/runtime; review deliberately.
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
