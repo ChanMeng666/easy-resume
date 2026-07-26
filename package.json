@@ -39,7 +39,7 @@
     "lucide-react": "^0.544.0",
     "mcp-handler": "^1.1.0",
     "nanoid": "^5.1.6",
-    "next": "^15.1.12",
+    "next": "^15.5.22",
     "pdfjs-dist": "^6.1.200",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
@@ -50,6 +50,12 @@
     "use-debounce": "^10.1.1",
     "zod": "^4.4.3"
   },
+  "// overrides": "Security floors for TRANSITIVE deps that have no direct entry above. Each exists solely to clear a high-severity advisory the dependency tree would otherwise pin below the fix; drop an entry once the parent package ships a version that resolves it on its own. `postcss: $postcss` forwards the devDependency range below (npm rejects a literal override that conflicts with a direct dependency), which is what lifts next's own nested postcss pin off 8.4.31.",
+  "overrides": {
+    "sharp": "^0.35.3",
+    "postcss": "$postcss",
+    "fast-uri": "^3.1.4"
+  },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@types/node": "^20",
@@ -59,7 +65,7 @@
     "drizzle-kit": "^0.31.7",
     "eslint": "^9",
     "eslint-config-next": "15.1.9",
-    "postcss": "^8",
+    "postcss": "^8.5.19",
     "tailwindcss": "^3.4.1",
     "typescript": "^5",
     "vitest": "^4.1.10"
