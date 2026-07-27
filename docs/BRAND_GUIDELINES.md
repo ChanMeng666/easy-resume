@@ -475,9 +475,14 @@ These replace the deleted `.neo-*` utilities:
 
 ### 11.5 Out of Scope
 
-`src/templates/**` and `src/styles/{pdf,a4-layout}.css` style the **generated
-resume PDFs**, not the app UI. The Phantom system does not apply there — leave
-them untouched.
+`src/templates/**` styles the **generated resume PDFs** (Typst, server-side),
+not the app UI. The Phantom system does not apply there — leave it untouched.
+
+`src/styles/` no longer exists. `a4-layout.css` was dead pre-Typst code and was
+deleted; `pdf.css`'s live browser-**print** rules (`@page` / `@media print`, for
+Ctrl+P on pages like `/p/[slug]`) were inlined at the top of `globals.css`.
+Those print rules are also out of scope for Phantom, and are unrelated to the
+Typst-generated PDF.
 
 ---
 

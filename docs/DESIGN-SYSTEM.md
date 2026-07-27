@@ -189,5 +189,9 @@ blocks `rounded-3xl border border-white/10 bg-white/5`.
 - No `neo-*`, `proof-label`, `crop-frame`, `baseline-grid`, `vitex-grid` classes (deleted).
 - No `#6C3CE9`/`#00D4AA` (old brand colors) in UI code — logos in `public/logo/` are exempt.
 - No new colors outside this palette; no gradients or patterns.
-- `src/templates/**` and `src/styles/{pdf,a4-layout}.css` style the generated
-  resume PDFs — this system does NOT apply there. Leave them untouched.
+- `src/templates/**` styles the generated resume PDFs (Typst, server-side) —
+  this system does NOT apply there. Leave it untouched. (`src/styles/` no longer
+  exists: `a4-layout.css` was dead pre-Typst code and was deleted, and
+  `pdf.css`'s live `@page`/`@media print` rules — browser printing of pages like
+  `/p/[slug]`, unrelated to the Typst PDF — now live inline at the top of
+  `globals.css`, because Turbopack rejects `@import` after any other rule.)

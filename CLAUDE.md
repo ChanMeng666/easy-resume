@@ -4,7 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Vitex is a Typst-based resume generator built with Next.js 15, React 19, and TypeScript. The application generates professional Typst code from structured resume data and compiles PDFs locally using Typst. It uses a **custom two-column layout** built with Typst's grid system for maximum compatibility.
+Vitex is a Typst-based resume generator built with Next.js 16, React 19, and TypeScript 6. The application generates professional Typst code from structured resume data and compiles PDFs locally using Typst. It uses a **custom two-column layout** built with Typst's grid system for maximum compatibility.
+
+**Current stack** (verify with `package.json` before relying on any number here):
+Next 16.2 (Turbopack builds) · React 19.2 · TypeScript 6.0 · AI SDK `ai` 7 +
+`@ai-sdk/openai` 4 · lucide-react 1.x · Node 24 LTS in Docker · Stripe SDK 20 ·
+FontAwesome **6** (deliberately — see "Dependency & Toolchain Policy").
 
 **Brand**: Vitex (formerly Easy Resume) - "Your Career, Perfectly Composed"
 
@@ -47,7 +52,7 @@ build**, and the exported `.typ` source is zero lock-in. This is recorded in
 npm run dev          # Start Next.js dev server on http://localhost:3000
 npm run build        # Build production bundle
 npm run start        # Start production server
-npm run lint         # Run ESLint
+npm run lint         # `eslint .` (flat config) — NOT `next lint`, removed in Next 16
 
 # Testing
 npm test             # Run vitest once (unit tests for the backend core)
@@ -66,11 +71,18 @@ npx tsx scripts/migrate.ts   # Create/upgrade Neon tables; safe to re-run
 # See .github/workflows/deploy.yml and Dockerfile
 
 # Package management
-npm install          # Install all dependencies
-npx shadcn add <component>  # Add shadcn/ui components
+npm install --legacy-peer-deps   # REQUIRED flag at the repo root (see Dependency policy);
+                                 # cli/ installs with a plain `npm ci`
+npx shadcn add <component>       # Add shadcn/ui components
 ```
 
 **Verification gate** (run before claiming work complete): `npm test && npx tsc --noEmit && npm run lint && npm run build`.
+`npm run lint` currently exits 0 with **11 warnings** (10 × `react-hooks/set-state-in-effect`,
+1 pre-existing unused var) — that is the expected baseline, not a regression.
+Touching `cli/` adds `cd cli && npm run typecheck && npm test && npm run build`.
+Changing the Dockerfile, the Node version, or anything Typst/font-related needs a
+real `docker build` plus a compile inside the container — `npm run build` alone
+does not exercise the typst binary or `/app/fonts`.
 
 ## Backend Architecture (`src/server/`)
 
@@ -290,10 +302,10 @@ session-gated + CSRF-protected rather than rate-limited.)
 
 ## Testing
 
-- **Vitest** (`npm test`, ~390 tests across ~42 `src` suites). Config in
+- **Vitest** (`npm test`, ~454 tests across ~50 `src` suites). Config in
   `vitest.config.ts` aliases `@` → `src` and stubs `server-only` (so server
   modules import cleanly in Node). The `cli/` package has its own separate vitest
-  config/suite (run from `cli/`, its own CI job).
+  config/suite (run from `cli/`, its own CI job — 40 tests / 4 files).
 - Money-path is covered: `src/server/core/pipeline.test.ts` and
   `src/server/core/refine.test.ts` (billing gating: charge once on success, no
   charge on failure, fast-fail on no credits; refine's charge path is exercised
@@ -311,7 +323,22 @@ session-gated + CSRF-protected rather than rate-limited.)
   (the allowlist projection — asserts contact PII / raw text never leak),
   `src/server/oauth/*` (`pkce`, `store`, `redirect`, `exchange`), and
   `src/server/mcp/*` (`verifyToken`, `tools` with injected fakes).
+- **`src/lib/agent/sdkContract.test.ts`** guards the AI SDK call shape. It exists
+  because of a blind spot: all seven pipeline agents build their own model from
+  `models.ts` rather than taking one by injection, so the DI fakes in
+  `pipeline.test.ts` stub them out entirely and **no other test ever executes a
+  real `generateObject` call**. An SDK major could rename an option and the whole
+  suite would still pass, with the break surfacing only on a paid production
+  generation. This test drives the exact option shape (`model`/`maxRetries: 0`/
+  zod `schema`/`providerOptions`/`experimental_telemetry`/`prompt`) through
+  `ai/test`'s `MockLanguageModelV3`, so it costs no API calls. **Keep it in sync
+  with the agents** — it should be the first thing to fail on the next `ai` bump.
 - Prefer testing the **core with injected fakes** over hitting the DB/LLM.
+- **Verifying the live LLM path costs nothing.** A refine is free by design
+  (`REFINE_COST_CREDITS = 0`) yet runs the same `generateObject` → `models.ts`
+  path as a generation, so running one refine in the app is the cheap way to
+  prove the money path end-to-end after an AI SDK or model change — a full
+  generation costs a credit, a refine does not.
 
 ## Data-Driven Architecture
 
@@ -503,7 +530,18 @@ pattern.
 
 ### UI Library
 - **shadcn/ui**: Pre-built components in `src/components/ui/` restyled for Phantom
-- **Styling**: Tailwind CSS (light mode only, no dark mode)
+- **Styling**: Tailwind CSS (light mode only, no dark mode). Browser **print**
+  styles (`@page` + `@media print`, used when someone Ctrl+Ps a resume-shaped
+  page such as `/p/[slug]`) live inline in `globals.css` — do not re-introduce a
+  separate stylesheet via `@import`, Turbopack rejects `@import` after any rule.
+  This is unrelated to the generated PDF, which Typst produces server-side.
+- **Linting**: flat config (`eslint.config.mjs`), run as `eslint .` — **not**
+  `next lint`, which is removed in Next 16. Import the native
+  `eslint-config-next/core-web-vitals` + `/typescript` exports; do **not**
+  reintroduce `FlatCompat`, it crashes with "Converting circular structure to
+  JSON" on eslint-plugin-react-hooks (eslint/eslint#20237). One rule,
+  `react-hooks/set-state-in-effect`, is intentionally `warn` — see the inline
+  comment before changing it. Everything else stays at `error`.
 - **Layout primitives**: every route composes `PageShell` (width `content` 1200px | `narrow` 672px centered) + `PageHeader` (eyebrow/title/lede/actions) — see DESIGN-SYSTEM.md "Page anatomy"
 - **Icons**: Lucide React, POLICY-RESTRICTED (DESIGN-SYSTEM.md "Icons"): only state indicators (LoaderCircle/CircleAlert/CircleCheck) or icon-only controls with aria-label; never an icon beside a text label
 - **List rows**: `RowActions` (≤2 visible buttons + overflow menu, destructive last); copyable commands use `CopyBlock`
@@ -530,7 +568,8 @@ src/
 ├── app/
 │   ├── page.tsx              # Product entry point (JD + background → generate)
 │   ├── layout.tsx            # Root layout with metadata
-│   ├── globals.css           # Global styles and CSS variables
+│   ├── globals.css           # Global styles, CSS variables, AND the @page/@media print block
+│                             #   (src/styles/ was deleted; @import must precede all rules under Turbopack)
 │   ├── api/
 │   │   ├── generate/route.ts # SSE adapter for web UI → generation pipeline core (persists result)
 │   │   ├── refine/route.ts   # SSE adapter for web UI → refinement core (free; version chain)
@@ -613,6 +652,10 @@ cli/                          # `vitex-cli` — SEPARATELY published npm package
 scripts/migrate.ts            # Idempotent raw-SQL migrations (run with tsx)
 vitest.config.ts              # Vitest config (@ alias + server-only stub)
 test/stubs/server-only.ts     # server-only stub for tests
+global.d.ts                   # `declare module "*.css"` — required by TS 6 (TS2882 on
+                              #   side-effect asset imports); next-env.d.ts is regenerated
+                              #   on every build so it cannot hold this
+eslint.config.mjs             # Flat config, native eslint-config-next 16 imports (no FlatCompat)
 docs/api/v1.md                # Public v1 API reference (for agents; threads + applications documented)
 docs/connectors/{chatgpt,claude}.md  # Hosted-MCP connector setup guides
 docs/decisions/               # ADRs: 0001 money-path · 0002 refinement-first · 0003 adapters + hosted MCP
@@ -685,8 +728,12 @@ reaching LLMs.
 
 ### Agent Modules (`src/lib/agent/`)
 Models are **tiered** (`src/lib/agent/models.ts`): `extractModel` (default
-`gpt-4o-mini`) for read/score steps, `reasonModel` (default `gpt-4o`) for
-generation/quality-critical steps. Override via `AI_MODEL_EXTRACT` / `AI_MODEL_REASON`.
+`gpt-5.4-mini-2026-03-17`) for read/score steps, `reasonModel` (default
+`gpt-5.5-2026-04-23`) for generation/quality-critical steps. Override via
+`AI_MODEL_EXTRACT` / `AI_MODEL_REASON`. `models.ts` is the single source of
+truth for the defaults — this file and `.env.example` mirror it and can drift.
+`isReasoningModel()` detects `gpt-5*`/`o[0-9]*` ids and, for those, omits
+`temperature` and emits `providerOptions.openai.reasoningEffort` instead.
 All calls carry `experimental_telemetry` (`src/lib/agent/telemetry.ts`, gated by
 `AI_TELEMETRY_ENABLED`) for OpenTelemetry/Langfuse traces. **PII**: recording the
 raw prompt inputs/outputs (the resume + JD) on spans is OFF by default and only
@@ -910,8 +957,8 @@ NEXT_PUBLIC_APP_URL=
 # AI
 OPENAI_API_KEY=            # required for the generation pipeline
 JOB_CONCURRENCY=2          # optional: max concurrently executing v1 background jobs
-AI_MODEL_EXTRACT=gpt-4o-mini   # optional: cheap read/score tier
-AI_MODEL_REASON=gpt-4o         # optional: generation/quality tier
+AI_MODEL_EXTRACT=gpt-5.4-mini-2026-03-17   # optional: cheap read/score tier
+AI_MODEL_REASON=gpt-5.5-2026-04-23         # optional: generation/quality tier
 AI_TELEMETRY_ENABLED=false     # optional: emit OpenTelemetry spans (Langfuse)
 AI_TELEMETRY_RECORD_IO=false   # optional: record raw prompt I/O (resume+JD = PII) on spans; OFF by default
 LOG_LEVEL=info                 # optional: debug|info|warn|error
@@ -945,6 +992,87 @@ Cloudinary — see `src/server/storage/`.
 **Notable added dependency**: `mcp-handler` (wraps `@modelcontextprotocol/sdk`)
 powers the hosted remote MCP endpoint (`/api/mcp`, Streamable HTTP). The `cli/`
 package pulls `@modelcontextprotocol/sdk` + `zod` on its own (separate lockfile).
+
+## Dependency & Toolchain Policy
+
+**Issue #103 is the live backlog** for every deferred upgrade — check it before
+starting one. This section records the standing rules and the non-obvious
+constraints, which do NOT live in the code.
+
+### Lockfile discipline (learned the hard way)
+Dependency PRs must be **surgical**. Never delete `package-lock.json` and
+reinstall — start from the committed lockfile, let `npm install
+--legacy-peer-deps` apply only the intended delta, then check what actually
+moved:
+```bash
+git diff package-lock.json | grep -E '"(stripe|ai|react|react-dom|next)": "'
+```
+A from-scratch reinstall once floated **267 packages**, silently bumping `stripe`
+(which re-pins the SDK's accepted `apiVersion` literal and would have changed the
+API version used by live checkout calls) inside what was labelled a security
+patch. Review the lockfile diff's *size* on every dependency PR — a surprisingly
+large one is the tell.
+
+`--legacy-peer-deps` is **required** at the repo root (`@stackframe/stack` pins a
+react-18-era `lucide-react`), matching the Dockerfile and CI. `cli/` has clean
+peers and installs with a plain `npm ci`.
+
+### `overrides` in `package.json` — security floors, not preferences
+The `overrides` block exists solely to lift transitive deps above a
+high-severity advisory; each entry should be dropped once the parent resolves it
+upstream. See the `"// overrides"` documentation key next to it. Two npm gotchas
+that cost real time:
+- A **nested** override (`"next": { "postcss": ... }`) silently does nothing.
+- A top-level *literal* override colliding with a direct dependency fails with
+  `EOVERRIDE`. The working form is `"postcss": "$postcss"` (forwarding) plus a
+  tightened direct dependency — that indirection is what lifts next's own pinned
+  nested `postcss` copy.
+
+### Dependabot contract
+Monthly; every non-major update arrives as **one grouped PR per ecosystem**;
+majors for the packages listed under each `ignore` block in
+`.github/dependabot.yml` never open a PR at all.
+
+**Do not use `@dependabot ignore this major version`.** That comment silences one
+exact version number, so the next-highest major reopens the PR a week later —
+that mechanism is what produced a wave of 9 simultaneous PRs (node 26 ignored →
+node **25** proposed, which was already EOL; typescript 7 ignored → TS **6.0**
+proposed). Closing an unwanted PR is enough now. Add a config-level `ignore` if a
+package needs permanent manual handling, and record the reason in #103.
+
+GitHub's native Dependabot **security** alerts are not governed by that file and
+still fire.
+
+### Deliberate holds (do not "fix" these)
+- **FontAwesome stays on 6.** `@preview/fontawesome:0.6.2` does support FA7 now,
+  so the old "no FA7 Typst package" reason is dead — but
+  `@fortawesome/fontawesome-free@7` ships **only `.woff2`**, and Typst reads
+  OTF/TTF/TTC only. The Dockerfile copies that webfonts directory to
+  `/app/fonts`, so FA7 would leave Typst with zero loadable fonts. Typst *warns
+  rather than errors*, so CI would stay green while every generated resume lost
+  its icons.
+- **`stripe` stays on 20.3.1.** The 20.4.x minor re-pins the `apiVersion`
+  literal, which moves the API version used by `checkout.sessions.create` and
+  `billingPortal.sessions.create`. (The webhook is unaffected —
+  `constructEvent` only verifies the signature; inbound payload version is set
+  per-endpoint in the Stripe dashboard.) Needs a real checkout + portal run.
+- **Node stays on 24 (Active LTS).** Never take an odd-numbered line — 25 was
+  already EOL when Dependabot proposed it. Re-evaluate 26 after Oct 2026.
+- **AI SDK v7 is installed but the v6 call surface is still in use** — v7 keeps
+  it as deprecated aliases. Still on: `experimental_telemetry` (→ `telemetry`),
+  `system` (→ `instructions`), `generateObject` ×7 (→ `generateText` + `output`),
+  `stopWhen: stepCountIs` (→ `isStepCount`), `onStepFinish` (→ `onStepEnd`).
+  Migrating them rewrites the structured-output path across the whole pipeline —
+  its own PR, with a real end-to-end run.
+
+### CI secret scanning
+`.github/workflows/ci.yml`'s `secret-scan` runs a **pinned, checksum-verified
+gitleaks CLI (v8.30.1)**, not `gitleaks/gitleaks-action`. The action calls
+`GET /users/{owner}` to decide whether the owner needs a paid licence and **fails
+closed** when that call errors — a transient GitHub API 5xx once turned the
+"non-bypassable security gate" red on every open PR. The plain CLI needs no
+licence and makes no API calls. The pin matches `.pre-commit-config.yaml`'s
+`rev:` so CI and the local hook never drift.
 
 ## Migration Context
 
@@ -1148,6 +1276,41 @@ This project underwent multiple architectural transformations:
       OAuth consent pages, and Stack Auth theme re-themed; editor right rail
       rebuilt as a single divided card (boxes-in-boxes removed).
     - **Invariant preserved**: styling only — no pipeline/billing/handler changes.
+
+21. **Toolchain modernisation + dependency cleanup (current, PRs #119–#133)**:
+    Went from 9 open Dependabot PRs to 0. See "Dependency & Toolchain Policy"
+    above for the standing rules this round established, and issue #103 for
+    what is still deliberately deferred.
+    - **Two problems found that mattered more than the backlog itself**:
+      (a) CI's `secret-scan` was red on every PR and it was **not** a leak —
+      `gitleaks-action@v3` fails closed when its licence-check API call 5xxs;
+      (b) **4 unpatched high-severity advisories** in production deps (2× Next.js
+      SSRF, unauthenticated Server Function endpoint disclosure, sharp/libvips,
+      postcss, fast-uri) had turned `npm audit --omit=dev --audit-level=high` red
+      on master, hidden behind (a). Both surfaced *by* the Dependabot noise.
+    - **Upgraded**: Next 15.5 → **16** (Turbopack default), TypeScript 5.9 → **6**
+      (root + cli together), `ai` 6 → **7** paired with `@ai-sdk/openai` 3 → **4**,
+      lucide-react 0.544 → **1.x**, Node 22 → **24 Active LTS** (Docker ×3 stages +
+      5 workflow inputs + root `@types/node` 24), `actions/setup-node` v7,
+      eslint-config-next → 16.
+    - **Removed**: `@ai-sdk/react` (zero references — the chat UI is hand-rolled
+      `fetch` + SSE), `@eslint/eslintrc`/`FlatCompat`, and **634 lines of dead CSS**
+      (`src/styles/` is gone entirely — `a4-layout.css` was pre-Typst A4-renderer
+      leftovers with zero references; `pdf.css`'s live `@media print` rules were
+      inlined into `globals.css` at the same position to preserve cascade order,
+      because Turbopack enforces that `@import` must precede all other rules).
+    - **Added**: `global.d.ts` (declares `*.css` — TS 6 raises TS2882 on
+      side-effect asset imports, and Next regenerates `next-env.d.ts` so it can't
+      be edited), `src/lib/agent/sdkContract.test.ts`, and a retuned
+      `.github/dependabot.yml`.
+    - **Lint moved off `next lint`** (deprecated in 15.5, removed in 16) to
+      `eslint .` with a native flat config. eslint-config-next 16 additionally
+      turns on the React Compiler rule family; 6 of its errors were fixed
+      properly, and `react-hooks/set-state-in-effect` (10 sites) is deliberately
+      set to `warn` with the reasoning inline in `eslint.config.mjs`.
+    - **Invariant preserved**: no pipeline, billing, or handler logic changed.
+      The AI SDK v7 move was verified against a real LLM in production via a
+      **free** refine (see Testing).
 
 **Legacy reference**: `A4_RESUME_USAGE.md` documents the original HTML/CSS approach (not currently used)
 

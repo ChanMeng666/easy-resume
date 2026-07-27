@@ -25,7 +25,7 @@ export default defineConfig([
   ...nextTs,
   {
     // eslint-config-next@16 additionally turns on the React Compiler rule
-    // family as errors. `react-hooks/set-state-in-effect` fires 6 times in this
+    // family as errors. `react-hooks/set-state-in-effect` fires 10 times in this
     // codebase and every hit is the same shape: a mount-time, one-shot read of a
     // source that does not exist during SSR (sessionStorage, `window`, or a
     // fetch) followed by setState. Under the App Router that is the normal way
@@ -34,9 +34,13 @@ export default defineConfig([
     // generation flow — so it needs its own change with real browser
     // verification rather than riding along with a lint-infrastructure swap.
     //
+    // Note the React Compiler itself is NOT enabled here (no `reactCompiler` in
+    // next.config.ts, no babel-plugin-react-compiler), so these are
+    // forward-compatibility findings rather than current correctness bugs.
+    //
     // Downgraded to `warn` so the violations stay visible without masking real
     // failures from every other rule, all of which remain errors. Tracked in
-    // issue #103; remove this override once those six call sites are reworked.
+    // issue #103; remove this override once those call sites are reworked.
     rules: {
       "react-hooks/set-state-in-effect": "warn",
     },
