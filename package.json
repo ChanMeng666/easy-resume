@@ -38,7 +38,7 @@
     "lucide-react": "^1.27.0",
     "mcp-handler": "^1.1.0",
     "nanoid": "^5.1.6",
-    "next": "^15.5.22",
+    "next": "^16.2.12",
     "pdfjs-dist": "^6.1.200",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
