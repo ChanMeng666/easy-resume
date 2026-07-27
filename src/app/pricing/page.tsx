@@ -102,7 +102,7 @@ function PricingContent() {
 
       const data = await res.json().catch(() => ({}));
       if (data.url) {
-        window.location.href = data.url;
+        window.location.assign(data.url);
       } else {
         setError(data.error?.message || 'Could not start checkout. Please try again.');
       }

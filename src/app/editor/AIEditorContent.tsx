@@ -736,7 +736,7 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
     await navigator.clipboard.writeText(result.coverLetter);
     setCoverLetterCopied(true);
     setTimeout(() => setCoverLetterCopied(false), 2000);
-  }, [result?.coverLetter]);
+  }, [result]);
 
   /** Handle cover letter PDF download. */
   const handleDownloadCoverLetterPdf = useCallback(async () => {
@@ -752,14 +752,14 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
       document.body.removeChild(anchor);
       URL.revokeObjectURL(url);
     }
-  }, [result?.coverLetterTypst, filename]);
+  }, [result, filename]);
 
   /** Handle cover letter .typ download. */
   const handleDownloadCoverLetterTyp = useCallback(() => {
     if (result?.coverLetterTypst) {
       downloadTypFile(result.coverLetterTypst, `${filename}_cover_letter.typ`);
     }
-  }, [result?.coverLetterTypst, filename]);
+  }, [result, filename]);
 
   /** Handle copy cover letter Typst code. */
   const handleCopyCoverLetterCode = useCallback(async () => {
@@ -767,7 +767,7 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
     await copyToClipboard(result.coverLetterTypst);
     setCoverLetterCodeCopied(true);
     setTimeout(() => setCoverLetterCodeCopied(false), 2000);
-  }, [result?.coverLetterTypst]);
+  }, [result]);
 
   /**
    * Run a targeted refinement against the current persisted job (FREE — no
