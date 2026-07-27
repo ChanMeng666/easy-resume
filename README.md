@@ -5,7 +5,7 @@
 # Vitex<br/><h3>AI-Powered Resume Generation Platform</h3>
 
 Paste a job description, describe your background, and get a tailored, ATS-optimized resume PDF + cover letter in ~30 seconds.<br/>
-Built with Next.js 15, React 19, TypeScript, and Vercel AI SDK.
+Built with Next.js 16, React 19, TypeScript 6, and the Vercel AI SDK.
 
 [Live Demo][demo-link] · [Report Bug][github-issues-link] · [Request Feature][github-issues-link]
 
@@ -90,8 +90,8 @@ Vitex is built for **a person plus their AI assistant** on a **"one core, N thin
 
 | Layer | Technology |
 |-------|-----------|
-| Framework | Next.js 15, React 19, TypeScript |
-| AI | Vercel AI SDK v6 + OpenAI GPT-4o |
+| Framework | Next.js 16, React 19, TypeScript 6 |
+| AI | Vercel AI SDK v7 + OpenAI (tiered GPT-5 models) |
 | Resume Rendering | Typst (local binary, <100ms compilation) |
 | Design System | Phantom — soft, flat aubergine/lavender (Tailwind CSS + shadcn/ui) |
 | Database | Neon PostgreSQL + Drizzle ORM |
@@ -144,8 +144,8 @@ STRIPE_PRICE_UNLIMITED_MONTHLY=...
 NEXT_PUBLIC_APP_URL=http://localhost:3000   # prod: https://www.vitex.org.nz
 
 # Optional: model tiering + observability
-AI_MODEL_EXTRACT=gpt-4o-mini
-AI_MODEL_REASON=gpt-4o
+AI_MODEL_EXTRACT=gpt-5.4-mini-2026-03-17
+AI_MODEL_REASON=gpt-5.5-2026-04-23
 AI_TELEMETRY_ENABLED=false
 ```
 
@@ -212,7 +212,7 @@ Monolith Next.js App (Docker Container on VPS)
 |   |-- Neon PostgreSQL (Drizzle ORM) -- data, credits, rate limits, job queue
 |   |-- Neon Auth / Stack Auth (authentication)
 |   |-- Stripe (payments)
-|   |-- OpenAI (tiered: gpt-4o-mini extract / gpt-4o reason)
+|   |-- OpenAI (tiered: gpt-5.4-mini extract / gpt-5.5 reason)
 ```
 
 ## License

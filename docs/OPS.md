@@ -153,6 +153,16 @@ restore service.
   browser before merging** (`npm run build && npx next start`, then drive /,
   /pricing, /connect, /editor watching the console for violations).
 - Secrets: gitleaks CI gate + pre-commit; deploy secrets live in GitHub
-  Actions; BuildKit secret mounts keep them out of image layers.
-- Dependencies: Dependabot weekly (grouped) + `npm audit --omit=dev
-  --audit-level=high` blocking in CI.
+  Actions; BuildKit secret mounts keep them out of image layers. The CI gate
+  runs a **pinned, checksum-verified gitleaks CLI (v8.30.1)**, not
+  `gitleaks/gitleaks-action` — the action calls the GitHub API to decide whether
+  the owner needs a paid licence and **fails closed** on a 5xx, which once
+  reported `missing gitleaks license` on every open PR during an API blip. The
+  pin matches `.pre-commit-config.yaml`'s `rev:`, so CI and the local hook never
+  run different rule sets.
+- Dependencies: Dependabot **monthly**, one grouped PR per ecosystem for all
+  non-majors, with config-level `ignore` blocks so majors needing human judgement
+  never open a PR (see CLAUDE.md "Dependency & Toolchain Policy" and issue #103).
+  `npm audit --omit=dev --audit-level=high` is blocking in CI — treat it going
+  red as a real finding: in July 2026 it caught 4 unpatched high-severity
+  advisories (2× Next.js SSRF among them) that were live in production.
