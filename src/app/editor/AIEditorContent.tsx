@@ -41,21 +41,21 @@ import { StructuredEditor } from './StructuredEditor';
 import {
   // State indicators (spinner / success / error) and the two sanctioned
   // icon-only controls (X close, ChevronDown dropdown caret). Search, UserCheck,
-  // FileText, Printer, BarChart3, Mail and Wand2 are retained ONLY as the
+  // FileText, Printer, ChartColumn, Mail and WandSparkles are retained ONLY as the
   // per-step glyphs of the progress gallery below (a pending→active→completed
   // state-machine display) — their decorative on-label usages were removed.
-  Loader2,
-  CheckCircle2,
+  LoaderCircle,
+  CircleCheck,
   Search,
   UserCheck,
   FileText,
   Printer,
   Check,
-  AlertCircle,
-  BarChart3,
+  CircleAlert,
+  ChartColumn,
   Mail,
   X,
-  Wand2,
+  WandSparkles,
   ChevronDown,
 } from 'lucide-react';
 
@@ -98,9 +98,9 @@ interface CompareDetail {
 const PROGRESS_STEPS = [
   { label: 'Analyzing job description...', icon: Search },
   { label: 'Parsing your background...', icon: UserCheck },
-  { label: 'Analyzing match with job requirements...', icon: BarChart3 },
+  { label: 'Analyzing match with job requirements...', icon: ChartColumn },
   { label: 'Tailoring resume for the role...', icon: FileText },
-  { label: 'Scoring ATS compatibility...', icon: CheckCircle2 },
+  { label: 'Scoring ATS compatibility...', icon: CircleCheck },
   { label: 'Generating cover letter...', icon: Mail },
   { label: 'Generating resume document...', icon: FileText },
   { label: 'Compiling your PDF...', icon: Printer },
@@ -112,8 +112,8 @@ const PROGRESS_STEPS = [
  * matches what the backend actually reports.
  */
 const REFINE_PROGRESS_STEPS = [
-  { label: 'Applying your feedback...', icon: Wand2 },
-  { label: 'Re-scoring ATS compatibility...', icon: CheckCircle2 },
+  { label: 'Applying your feedback...', icon: WandSparkles },
+  { label: 'Re-scoring ATS compatibility...', icon: CircleCheck },
   { label: 'Regenerating your document...', icon: FileText },
   { label: 'Compiling your PDF...', icon: Printer },
 ] as const;
@@ -1097,7 +1097,7 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
       <main className="mx-auto max-w-2xl px-4 sm:px-6 pt-12 md:pt-16 pb-16">
         <div className="rounded-3xl border border-ash bg-white p-8 sm:p-10">
           <div className="mb-4 flex items-center gap-3">
-            <AlertCircle className="h-6 w-6 flex-shrink-0 text-rose-ink" />
+            <CircleAlert className="h-6 w-6 flex-shrink-0 text-rose-ink" />
             <h2 className="text-lg sm:text-xl tracking-tight text-aubergine">{headline}</h2>
           </div>
           <p className="mb-4 text-sm sm:text-base text-muted-foreground">{error.message}</p>
@@ -1218,9 +1218,9 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
                   >
                     <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center">
                       {isCompleted ? (
-                        <CheckCircle2 className="h-4 w-4 text-mint" />
+                        <CircleCheck className="h-4 w-4 text-mint" />
                       ) : isActive ? (
-                        <Loader2 className="h-4 w-4 animate-spin text-periwinkle" />
+                        <LoaderCircle className="h-4 w-4 animate-spin text-periwinkle" />
                       ) : (
                         <StepIcon className="h-4 w-4 text-fog" />
                       )}
@@ -1311,7 +1311,7 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
 
           {compareLoading ? (
             <div className="flex items-center justify-center py-10">
-              <Loader2 className="h-5 w-5 animate-spin text-periwinkle" />
+              <LoaderCircle className="h-5 w-5 animate-spin text-periwinkle" />
             </div>
           ) : compareData ? (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -1712,7 +1712,7 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
                           className="w-full justify-start"
                           onClick={handleEditWithAI}
                         >
-                          {savingVersion && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          {savingVersion && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
                           {savingVersion ? 'Saving edits…' : 'Edit with AI'}
                           <Badge variant="success" className="ml-auto">
                             Free
@@ -1785,7 +1785,7 @@ export function AIEditorContent({ jd = '', bg = '', jobId, profileId }: AIEditor
               onClick={handleSaveProfile}
               disabled={saveProfileState === 'saving' || saveProfileState === 'saved' || !effBg.trim()}
             >
-              {saveProfileState === 'saving' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {saveProfileState === 'saving' && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
               {saveProfileState === 'saved' && <Check className="mr-2 h-4 w-4" />}
               {saveProfileState === 'saved' ? 'Saved!' : 'Save profile'}
             </Button>

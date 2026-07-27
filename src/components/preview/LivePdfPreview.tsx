@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { PdfCanvasPreview } from './PdfCanvasPreview';
 import { usePdfCompilation } from '@/hooks/usePdfCompilation';
 import { downloadPdfFromUrl, openPdfInNewTab } from '@/lib/pdf/download';
-import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { LoaderCircle, CircleAlert, CircleCheck } from 'lucide-react';
 
 interface LivePdfPreviewProps {
   /** Typst code to compile */
@@ -119,7 +119,7 @@ export function LivePdfPreview({
           fillViewport ? 'lg:h-[calc(100vh-9.5rem)]' : ''
         }`}
       >
-        <Loader2 className="h-10 w-10 sm:h-12 sm:w-12 animate-spin text-periwinkle" />
+        <LoaderCircle className="h-10 w-10 sm:h-12 sm:w-12 animate-spin text-periwinkle" />
         <h3 className="mt-3 sm:mt-4 text-base sm:text-lg font-medium text-aubergine">
           Compiling...
         </h3>
@@ -142,7 +142,7 @@ export function LivePdfPreview({
           fillViewport ? 'lg:h-[calc(100vh-9.5rem)]' : ''
         }`}
       >
-        <AlertCircle className="h-10 w-10 sm:h-12 sm:w-12 text-rose-ink" />
+        <CircleAlert className="h-10 w-10 sm:h-12 sm:w-12 text-rose-ink" />
         <h3 className="mt-3 sm:mt-4 text-base sm:text-lg font-medium text-rose-ink">
           Compilation Failed
         </h3>
@@ -186,12 +186,12 @@ export function LivePdfPreview({
         <div className="flex items-center gap-2">
           {isCompiling ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin text-periwinkle" />
+              <LoaderCircle className="h-4 w-4 animate-spin text-periwinkle" />
               <span className="text-caption font-medium text-aubergine">Updating preview…</span>
             </>
           ) : (
             <>
-              <CheckCircle2 className="h-4 w-4 text-mint" />
+              <CircleCheck className="h-4 w-4 text-mint" />
               <span className="text-caption font-medium text-mint-ink">
                 resume.pdf · ready
                 {isCached && <span className="ml-2 text-muted-foreground">cached</span>}

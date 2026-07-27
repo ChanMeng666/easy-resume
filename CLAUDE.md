@@ -505,7 +505,7 @@ pattern.
 - **shadcn/ui**: Pre-built components in `src/components/ui/` restyled for Phantom
 - **Styling**: Tailwind CSS (light mode only, no dark mode)
 - **Layout primitives**: every route composes `PageShell` (width `content` 1200px | `narrow` 672px centered) + `PageHeader` (eyebrow/title/lede/actions) — see DESIGN-SYSTEM.md "Page anatomy"
-- **Icons**: Lucide React, POLICY-RESTRICTED (DESIGN-SYSTEM.md "Icons"): only state indicators (Loader2/AlertCircle/CheckCircle2) or icon-only controls with aria-label; never an icon beside a text label
+- **Icons**: Lucide React, POLICY-RESTRICTED (DESIGN-SYSTEM.md "Icons"): only state indicators (LoaderCircle/CircleAlert/CircleCheck) or icon-only controls with aria-label; never an icon beside a text label
 - **List rows**: `RowActions` (≤2 visible buttons + overflow menu, destructive last); copyable commands use `CopyBlock`
 - **Animation**: Framer Motion via the single `<FadeIn>` entrance pattern only (never for hover)
 

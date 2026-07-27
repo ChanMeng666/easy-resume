@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@stackframe/stack";
-import { AlertCircle, Check, X, Loader2 } from "lucide-react";
+import { CircleAlert, Check, X, LoaderCircle } from "lucide-react";
 import { Navbar } from "@/components/shared/Navbar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -253,7 +253,7 @@ function ProfilesContent() {
         <Navbar currentPath="/profiles" />
         <div className="page-shell mx-auto max-w-content px-4 sm:px-6">
           <div className="flex h-[60vh] items-center justify-center gap-3 text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <LoaderCircle className="h-4 w-4 animate-spin" />
             <span className="text-sm">Loading…</span>
           </div>
         </div>
@@ -283,7 +283,7 @@ function ProfilesContent() {
           {loadError ? (
             <div className="rounded-3xl border border-ash bg-card p-8">
               <div className="flex items-center gap-3 mb-3">
-                <AlertCircle className="h-5 w-5 text-rose-ink" />
+                <CircleAlert className="h-5 w-5 text-rose-ink" />
                 <p className="font-medium text-aubergine">Couldn&apos;t load your profiles</p>
               </div>
               <p className="text-sm text-muted-foreground mb-5">
@@ -337,7 +337,7 @@ function ProfilesContent() {
                             disabled={savingEdit || !editLabel.trim()}
                             aria-label="Save name"
                           >
-                            {savingEdit ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                            {savingEdit ? <LoaderCircle className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                           </Button>
                           <Button
                             size="sm"
@@ -490,12 +490,12 @@ function ProfilesContent() {
 
           {voiceLoading ? (
             <div className="flex items-center gap-2 py-8 justify-center text-muted-foreground">
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <LoaderCircle className="w-4 h-4 animate-spin" />
               <span className="text-sm">Loading…</span>
             </div>
           ) : voiceLoadError ? (
             <div className="flex items-center gap-2 py-6 text-rose-ink">
-              <AlertCircle className="w-4 h-4" />
+              <CircleAlert className="w-4 h-4" />
               <span className="text-sm">Couldn&apos;t load this voice sample.</span>
             </div>
           ) : (
@@ -526,7 +526,7 @@ function ProfilesContent() {
               onClick={() => voiceProfileId && handleSaveVoice(voiceProfileId, voiceText)}
               disabled={voiceSaving || voiceLoading || voiceLoadError}
             >
-              {voiceSaving && <Loader2 className="w-4 h-4 animate-spin" />}
+              {voiceSaving && <LoaderCircle className="w-4 h-4 animate-spin" />}
               Save
             </Button>
           </DialogFooter>

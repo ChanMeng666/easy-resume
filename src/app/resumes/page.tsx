@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@stackframe/stack";
 import { useDebounce } from "use-debounce";
-import { AlertCircle, Search, Loader2 } from "lucide-react";
+import { CircleAlert, Search, LoaderCircle } from "lucide-react";
 import { Navbar } from "@/components/shared/Navbar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -133,7 +133,7 @@ function ResumesContent() {
         <Navbar currentPath="/resumes" />
         <div className="page-shell mx-auto max-w-content px-4 sm:px-6">
           <div className="flex h-[60vh] items-center justify-center gap-3 text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <LoaderCircle className="h-4 w-4 animate-spin" />
             <span className="text-sm">Loading…</span>
           </div>
         </div>
@@ -183,7 +183,7 @@ function ResumesContent() {
           {loadError ? (
             <div className="rounded-3xl border border-ash bg-card p-8">
               <div className="flex items-center gap-3 mb-3">
-                <AlertCircle className="h-5 w-5 text-rose-ink" />
+                <CircleAlert className="h-5 w-5 text-rose-ink" />
                 <p className="font-medium text-aubergine">Couldn&apos;t load your resumes</p>
               </div>
               <p className="text-sm text-muted-foreground mb-5">
@@ -350,7 +350,7 @@ function ResumesContent() {
                   >
                     {loadingMore ? (
                       <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <LoaderCircle className="w-4 h-4 animate-spin" />
                         Loading…
                       </>
                     ) : (

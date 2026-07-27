@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useUser } from "@stackframe/stack";
 import Link from "next/link";
-import { CheckCircle2, AlertCircle } from "lucide-react";
+import { CircleCheck, CircleAlert } from "lucide-react";
 import { Navbar } from "@/components/shared/Navbar";
 import { PageShell } from "@/components/shared/PageShell";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -171,7 +171,7 @@ function DashboardContent() {
           {/* Payment success confirmation */}
           {showSuccess && (
             <div className="mb-6 flex items-start gap-3 bg-mint/15 text-mint-ink rounded-2xl p-4">
-              <CheckCircle2 className="h-5 w-5 flex-shrink-0 mt-0.5" />
+              <CircleCheck className="h-5 w-5 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
                 <p className="font-medium">Payment successful!</p>
                 <p className="text-sm">
@@ -201,7 +201,7 @@ function DashboardContent() {
           {loadError ? (
             <div className="bg-blush text-rose-ink rounded-3xl p-6">
               <div className="flex items-center gap-3 mb-3">
-                <AlertCircle className="h-5 w-5" />
+                <CircleAlert className="h-5 w-5" />
                 <p className="font-medium">Couldn&apos;t load your balance</p>
               </div>
               <p className="text-sm mb-4">

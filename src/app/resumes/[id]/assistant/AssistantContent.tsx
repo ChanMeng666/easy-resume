@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@stackframe/stack';
-import { AlertCircle, Loader2, Send, CheckCircle2 } from 'lucide-react';
+import { CircleAlert, LoaderCircle, Send, CircleCheck } from 'lucide-react';
 import { Navbar } from '@/components/shared/Navbar';
 import { FadeIn } from '@/components/shared/FadeIn';
 import { Button } from '@/components/ui/button';
@@ -398,7 +398,7 @@ export function AssistantContent({ jobId }: { jobId: string }) {
         {phase === 'error' ? (
           <div className="max-w-xl rounded-3xl border border-ash bg-white p-8">
             <div className="mb-2 flex items-center gap-3">
-              <AlertCircle className="h-5 w-5 text-rose-ink" />
+              <CircleAlert className="h-5 w-5 text-rose-ink" />
               <p className="font-medium text-rose-ink">{initError}</p>
             </div>
             <Button variant="outline" onClick={() => router.push('/resumes')} className="mt-2">
@@ -431,7 +431,7 @@ export function AssistantContent({ jobId }: { jobId: string }) {
               <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto p-6">
                 {phase === 'init' ? (
                   <div className="flex items-center gap-2 text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <LoaderCircle className="h-4 w-4 animate-spin" />
                     <span className="text-sm">Opening conversation…</span>
                   </div>
                 ) : entries.length === 0 ? (
@@ -479,7 +479,7 @@ export function AssistantContent({ jobId }: { jobId: string }) {
                 )}
                 {streaming && (
                   <div className="flex items-center gap-2 text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <LoaderCircle className="h-4 w-4 animate-spin" />
                     <span className="text-caption">Working…</span>
                   </div>
                 )}
@@ -488,14 +488,14 @@ export function AssistantContent({ jobId }: { jobId: string }) {
               {/* Errors + composer */}
               {turnError && (
                 <div className="flex items-center gap-2 border-t border-ash bg-blush/30 px-6 py-3">
-                  <AlertCircle className="h-4 w-4 flex-shrink-0 text-rose-ink" />
+                  <CircleAlert className="h-4 w-4 flex-shrink-0 text-rose-ink" />
                   <span className="text-caption text-rose-ink">{turnError}</span>
                 </div>
               )}
               {savedId && (
                 <div className="flex items-center justify-between gap-2 border-t border-ash bg-mint/15 px-6 py-3">
                   <span className="flex items-center gap-2 text-caption text-mint-ink">
-                    <CheckCircle2 className="h-4 w-4" />
+                    <CircleCheck className="h-4 w-4" />
                     Saved as a new version.
                   </span>
                   <button
@@ -534,7 +534,7 @@ export function AssistantContent({ jobId }: { jobId: string }) {
                       className="flex-shrink-0"
                       aria-label="Send message"
                     >
-                      {streaming ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                      {streaming ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                     </Button>
                   </div>
                 )}
@@ -570,7 +570,7 @@ export function AssistantContent({ jobId }: { jobId: string }) {
                   onClick={saveVersion}
                   disabled={!dirty || saving || !resumeData}
                 >
-                  {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {saving && <LoaderCircle className="h-4 w-4 animate-spin" />}
                   Save as new version · Free
                 </Button>
               </div>

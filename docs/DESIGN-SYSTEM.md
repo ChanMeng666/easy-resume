@@ -100,10 +100,10 @@ Every route is built from the same three layers, in order:
 
 Icons are functional, not decorative. An icon may appear ONLY as:
 
-- **(a) a state indicator** — `Loader2` (loading), `AlertCircle` (error),
-  `CheckCircle2` (success) — placed where the state occurs; or
+- **(a) a state indicator** — `LoaderCircle` (loading), `CircleAlert` (error),
+  `CircleCheck` (success) — placed where the state occurs; or
 - **(b) an icon-only control** with an `aria-label`, where space genuinely
-  forbids a text label — e.g. `X` (close), `Menu`, `MoreHorizontal` (overflow),
+  forbids a text label — e.g. `X` (close), `Menu`, `Ellipsis` (overflow),
   `Send` (chat composer), and the PdfViewer zoom toolbar
   (`ZoomIn/ZoomOut/RotateCw/Maximize2/Download`).
 

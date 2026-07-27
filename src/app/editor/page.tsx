@@ -7,7 +7,7 @@ import { Navbar } from '@/components/shared/Navbar';
 import { Footer } from '@/components/shared/Footer';
 import { Button } from '@/components/ui/button';
 import { useElementScrollDirection } from '@/lib/hooks/useScrollDirection';
-import { Loader2 } from 'lucide-react';
+import { LoaderCircle } from 'lucide-react';
 import { AIEditorContent } from './AIEditorContent';
 
 /**
@@ -62,7 +62,7 @@ function AIEditorPageContent() {
         ) : inputs === null ? (
           <div className="mx-auto max-w-content px-4 sm:px-6 pt-16 pb-20">
             <div className="flex flex-col items-center justify-center gap-3 py-24">
-              <Loader2 className="h-6 w-6 animate-spin text-periwinkle" />
+              <LoaderCircle className="h-6 w-6 animate-spin text-periwinkle" />
               <p className="text-sm text-muted-foreground">Loading editor…</p>
             </div>
           </div>
@@ -107,7 +107,7 @@ export default function AIEditorPage() {
             <Navbar currentPath="/editor" position="sticky" />
             <div className="mx-auto max-w-content px-4 sm:px-6 pt-16 pb-20">
               <div className="flex flex-col items-center justify-center gap-3 py-24">
-                <Loader2 className="h-6 w-6 animate-spin text-periwinkle" />
+                <LoaderCircle className="h-6 w-6 animate-spin text-periwinkle" />
                 <p className="text-sm text-muted-foreground">Loading editor…</p>
               </div>
             </div>

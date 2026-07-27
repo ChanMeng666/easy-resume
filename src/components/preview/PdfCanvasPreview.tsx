@@ -8,7 +8,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { LoaderCircle } from 'lucide-react';
 
 interface PdfCanvasPreviewProps {
   /** Blob URL of the compiled PDF */
@@ -107,7 +107,7 @@ export function PdfCanvasPreview({ url, className }: PdfCanvasPreviewProps) {
     <div className={className}>
       {status === 'loading' && (
         <div className="flex h-40 items-center justify-center">
-          <Loader2 className="h-6 w-6 animate-spin text-periwinkle" />
+          <LoaderCircle className="h-6 w-6 animate-spin text-periwinkle" />
         </div>
       )}
       {status === 'error' && (
