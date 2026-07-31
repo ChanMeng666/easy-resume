@@ -285,3 +285,22 @@ export const RESOLVED_EFFORTS = {
   reason: REASON.effort,
   chat: CHAT.effort,
 } as const;
+
+/**
+ * What each tier actually resolved to, as `<model id>@<effort>`.
+ *
+ * Logged once at server startup (src/instrumentation.ts) because otherwise there
+ * is NO way to tell from outside which models a running deployment is using. The
+ * env overrides exist precisely so a model can be swapped or rolled back without
+ * a code change — but an override that silently fails to apply looks exactly like
+ * one that worked, which is the same shape as the `minimal` incident: correct on
+ * inspection, wrong at runtime, and quiet either way.
+ *
+ * Safe to log: model ids and effort levels are configuration, never secrets and
+ * never user data.
+ */
+export const TIER_FINGERPRINTS = {
+  extract: EXTRACT.fingerprint,
+  reason: REASON.fingerprint,
+  chat: CHAT.fingerprint,
+} as const;
