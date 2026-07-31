@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { MockLanguageModelV3, convertArrayToReadableStream } from 'ai/test';
-import { runEditTurn } from './editAgent';
+import { runEditTurn, defaultEditAgentDeps } from './editAgent';
+import { chatModel, reasonModel } from '@/lib/agent/models';
 import type { EditEvent } from './editAgent.types';
 import type { ResumeData } from '@/lib/validation/schema';
 
@@ -305,6 +306,31 @@ describe('runEditTurn', () => {
     await expect(
       runEditTurn(baseArgs('edit something'), { model, render: (d) => `T:${d.basics.summary}` })
     ).rejects.toThrow(/provider exploded/i);
+  });
+
+  it('sends an explicit reasoning effort instead of inheriting the provider default', async () => {
+    // With no providerOptions the request carries no reasoning field at all and
+    // OpenAI picks the effort tier — see openaiProviderContract.test.ts. An edit
+    // turn must always state its own.
+    const model = scriptedModel([textStep('ok')]);
+    await runEditTurn(baseArgs('hello'), { model, render: (d) => `T:${d.basics.summary}` });
+
+    const openaiOptions = model.doStreamCalls[0].providerOptions?.openai;
+    expect(openaiOptions).toMatchObject({ reasoningEffort: expect.any(String) });
+  });
+});
+
+describe('defaultEditAgentDeps', () => {
+  it('runs the edit loop on the CHAT tier, not the pipeline REASON tier', async () => {
+    // Interactive turns are latency-sensitive and free; the heavy pipeline tier
+    // is the wrong default here.
+    expect(defaultEditAgentDeps().model).toBe(chatModel);
+    expect(defaultEditAgentDeps().model).not.toBe(reasonModel);
+  });
+
+  it('still lets a caller override the model', async () => {
+    const model = scriptedModel([textStep('ok')]);
+    expect(defaultEditAgentDeps({ model }).model).toBe(model);
   });
 });
 

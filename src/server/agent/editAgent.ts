@@ -11,11 +11,18 @@
  * Bounds: `stopWhen: stepCountIs(maxSteps)` caps the loop; `maxRetries: 0` leaves
  * retry policy to the caller (no SDK×caller compounding). Tool inputs are
  * zod-validated + sanitized + render-bounded inside editTools.
+ *
+ * Runs on the CHAT tier (src/lib/agent/models.ts) rather than the REASON tier the
+ * pipeline uses: an edit turn is short, interactive, and its latency is felt
+ * directly by a waiting user. Sending reasoning effort explicitly matters — with
+ * no `providerOptions` the provider emits no `reasoning` field at all and the
+ * call silently runs at OpenAI's own default effort, which is neither the cheapest
+ * nor a choice we made.
  */
 
 import 'server-only';
 import { streamText, stepCountIs, type ModelMessage } from 'ai';
-import { reasonModel, WRITING_TEMPERATURE } from '@/lib/agent/models';
+import { chatModel, chatSampling, chatReasoning, WRITING_TEMPERATURE } from '@/lib/agent/models';
 import { aiTelemetry } from '@/lib/agent/telemetry';
 import { PROMPT_VERSIONS } from '@/lib/agent/prompt-registry';
 import { generateTypstCode } from '@/lib/typst/generator';
@@ -59,7 +66,7 @@ export function defaultEditRender(
 
 /** Default DI for production: real model + deterministic renderers. */
 export function defaultEditAgentDeps(overrides?: Partial<EditAgentDeps>): EditAgentDeps {
-  return { model: reasonModel, render: defaultEditRender, renderCoverLetter: generateCoverLetterTypst, ...overrides };
+  return { model: chatModel, render: defaultEditRender, renderCoverLetter: generateCoverLetterTypst, ...overrides };
 }
 
 /**
@@ -117,7 +124,11 @@ export async function runEditTurn(args: RunEditTurnArgs, deps: EditAgentDeps): P
     stopWhen: stepCountIs(maxSteps),
     // The caller owns retry policy; never let the SDK add its own (compounding) retries.
     maxRetries: 0,
-    temperature: WRITING_TEMPERATURE,
+    // Temperature is only sent when the chat-tier model would actually honor it
+    // (a reasoning model has it stripped); effort is always sent explicitly so the
+    // turn never falls back to the provider's default tier.
+    ...chatSampling(WRITING_TEMPERATURE),
+    providerOptions: { openai: { ...chatReasoning() } },
     abortSignal: signal,
     experimental_telemetry: aiTelemetry('edit-agent', { promptVersion: PROMPT_VERSIONS['edit-agent'] }),
     onError: ({ error }) => {

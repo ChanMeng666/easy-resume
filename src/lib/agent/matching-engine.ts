@@ -54,7 +54,10 @@ export async function analyzeMatch(
     maxRetries: 0,
     schema: matchAnalysisSchema,
     ...reasonSampling(EXTRACT_TEMPERATURE),
-    providerOptions: { openai: { ...reasonReasoning() } },
+    // strictJsonSchema: false — matchAnalysisSchema uses numeric min/max bounds,
+    // which OpenAI's strict structured-output mode rejects. Aligns this call with
+    // the six other generateObject sites.
+    providerOptions: { openai: { strictJsonSchema: false, ...reasonReasoning() } },
     experimental_telemetry: aiTelemetry("analyze-match", { promptVersion: PROMPT_VERSIONS["analyze-match"] }),
     prompt: `Analyze how well this resume matches the job description.
 

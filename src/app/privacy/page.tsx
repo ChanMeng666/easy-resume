@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 };
 
 /** Last substantive update to this policy. */
-const EFFECTIVE_DATE = '19 July 2026';
+const EFFECTIVE_DATE = '31 July 2026';
 
 /** Where privacy questions and deletion requests go. */
 const CONTACT_EMAIL = 'chanmeng.dev@gmail.com';
@@ -119,9 +119,24 @@ const SECTIONS: Section[] = [
         <ul className="mt-3 space-y-3">
           <li>
             <span className="text-obsidian">OpenAI</span> — to generate and refine
-            resume and cover-letter content, your background and the job-description
-            text are sent to the OpenAI API. Recording of raw prompt inputs/outputs
-            on our AI telemetry spans is off by default.
+            resume and cover-letter content, your background text, the job
+            description, and the resume and cover letter produced from them are
+            sent to the OpenAI API.{' '}
+            <span className="text-obsidian">
+              Vitex takes part in OpenAI&apos;s data-sharing program, so what we
+              send to OpenAI and what OpenAI sends back is shared with OpenAI and
+              used to improve and train their models.
+            </span>{' '}
+            That content includes your resume text and the personal details in it
+            — your name, email address, phone number, employment and education
+            history. We enrolled in that program by choice, and we will not dress
+            it up as something you get value from: the free token allowance that
+            comes with it does not apply to the models Vitex currently runs, so
+            your data is not making this service cheaper for you. If you do not
+            want your career information used for model training, do not put it
+            into Vitex.
+            Separately, and unrelated to the above, recording of raw prompt
+            inputs/outputs on our own AI telemetry spans is off by default.
           </li>
           <li>
             <span className="text-obsidian">Stripe</span> — payment processing. Card
@@ -141,7 +156,11 @@ const SECTIONS: Section[] = [
           </li>
         </ul>
         <p className="mt-3">
-          We do not sell your data or share it for advertising.
+          We do not sell your data and we do not share it for advertising. We do
+          share the content that goes through the generation pipeline with OpenAI
+          for model training, as described above. That is the one way your content
+          leaves Vitex for a purpose other than serving you, and we state it here
+          so the sentence before it is not read as more than it says.
         </p>
       </>
     ),

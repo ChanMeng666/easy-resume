@@ -144,8 +144,9 @@ STRIPE_PRICE_UNLIMITED_MONTHLY=...
 NEXT_PUBLIC_APP_URL=http://localhost:3000   # prod: https://www.vitex.org.nz
 
 # Optional: model tiering + observability
-AI_MODEL_EXTRACT=gpt-5.4-mini-2026-03-17
-AI_MODEL_REASON=gpt-5.5-2026-04-23
+AI_MODEL_EXTRACT=gpt-5.4-mini-2026-03-17   # JD parse
+AI_MODEL_REASON=gpt-5.5-2026-04-23         # generation / quality-critical steps
+AI_MODEL_CHAT=gpt-5.5-2026-04-23           # edit-agent tool loop (same as reason)
 AI_TELEMETRY_ENABLED=false
 ```
 
@@ -212,7 +213,7 @@ Monolith Next.js App (Docker Container on VPS)
 |   |-- Neon PostgreSQL (Drizzle ORM) -- data, credits, rate limits, job queue
 |   |-- Neon Auth / Stack Auth (authentication)
 |   |-- Stripe (payments)
-|   |-- OpenAI (tiered: gpt-5.4-mini extract / gpt-5.5 reason)
+|   |-- OpenAI (3 tiers: gpt-5.4-mini extract / gpt-5.5 reason / gpt-5.5 chat)
 ```
 
 ## License

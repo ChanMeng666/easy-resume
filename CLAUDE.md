@@ -339,6 +339,14 @@ session-gated + CSRF-protected rather than rate-limited.)
   path as a generation, so running one refine in the app is the cheap way to
   prove the money path end-to-end after an AI SDK or model change — a full
   generation costs a credit, a refine does not.
+- **⚠️ But a refine does NOT cover `parse_jd`, and therefore does not cover the
+  extract tier.** `runRefinementPipeline` reads `parsedJD` off the parent job's
+  persisted result; it only re-parses for legacy jobs stored before `parsedJD`
+  persistence, and the edit agent never touches that step either. A broken
+  extract-tier model id or reasoning effort is invisible to a refine — this is
+  exactly how a hard 400 on step 1 survived three weeks in production (ADR 0004,
+  "Incident 1"). To verify the extract tier you must run a **real generation** (one
+  credit) or call `parseJobDescription` directly against the live API.
 
 ## Data-Driven Architecture
 
@@ -727,13 +735,29 @@ stream it. User input is zod-validated and prompt-injection-sanitized before
 reaching LLMs.
 
 ### Agent Modules (`src/lib/agent/`)
-Models are **tiered** (`src/lib/agent/models.ts`): `extractModel` (default
-`gpt-5.4-mini-2026-03-17`) for read/score steps, `reasonModel` (default
-`gpt-5.5-2026-04-23`) for generation/quality-critical steps. Override via
-`AI_MODEL_EXTRACT` / `AI_MODEL_REASON`. `models.ts` is the single source of
-truth for the defaults — this file and `.env.example` mirror it and can drift.
+Models are **tiered** (`src/lib/agent/models.ts`) across **three** tiers:
+`extractModel` (default `gpt-5.4-mini-2026-03-17`) for read/structure steps (JD
+parse), `reasonModel` (default `gpt-5.5-2026-04-23`) for generation/quality-critical
+steps, and `chatModel` for the conversational edit agent's tool loop — the chat
+tier defaults to the **same model as reason** and exists to carry its own reasoning
+effort (and, later, its own model) without a code change. Override via
+`AI_MODEL_EXTRACT` / `AI_MODEL_REASON` /
+`AI_MODEL_CHAT`, with effort per tier via `AI_REASONING_EFFORT_{EXTRACT,REASON,
+CHAT}` (`none` / `low` / `low`). **Legal effort values are per-model and the API
+is strict** — an unsupported value is a hard 400, not a warning, and the SDK
+forwards it verbatim without validating. `minimal` is accepted by *no* model we
+run (it 400'd every generation for three weeks — see ADR 0004's "Incident 1") and
+`max` exists only on gpt-5.6, which we do not run. `models.ts` is the single
+source of truth for
+the defaults — this file and `.env.example` mirror it and can drift.
 `isReasoningModel()` detects `gpt-5*`/`o[0-9]*` ids and, for those, omits
 `temperature` and emits `providerOptions.openai.reasoningEffort` instead.
+Note the *why*: reasoning models do NOT 400 on a temperature — `@ai-sdk/openai`
+forwards `temperature` only when the effort is `none` **and** the model is
+gpt-5.1+, and otherwise strips it silently with a warning. Omitting it keeps the
+warning out of every call. The model ids are **dated snapshots on purpose**; the
+gpt-5.6 family was evaluated with a real A/B and **declined** — see
+[ADR 0004](docs/decisions/0004-model-tiering-gpt-5-6.md) before proposing a swap.
 All calls carry `experimental_telemetry` (`src/lib/agent/telemetry.ts`, gated by
 `AI_TELEMETRY_ENABLED`) for OpenTelemetry/Langfuse traces. **PII**: recording the
 raw prompt inputs/outputs (the resume + JD) on spans is OFF by default and only
@@ -745,7 +769,7 @@ timing/token/cost but not the candidate's text.
 - **matching-engine.ts**: deterministic skill overlap + LLM analysis → MatchAnalysis — **reason tier**
 - **resume-tailor.ts**: rewrites bullets, reorders skills, adjusts summary — **reason tier**
 - **ats-scorer.ts**: `scoreATSDeterministic` — pure keyword coverage (`keyword-coverage.ts`), **no LLM** (the old extract-tier LLM report was 100% discarded downstream and was removed)
-- **cover-letter.ts**: `generateText` → 3-4 paragraph cover letter — **reason tier**
+- **cover-letter.ts**: `generateObject` → 3-4 paragraph cover letter — **reason tier**
 - **resume-reviser.ts** / **cover-letter-reviser.ts**: minimal-diff revise agents used by the refine core — **reason tier**
 - **faithfulness-check.ts**: deterministic grounding gate (revision must not invent facts vs the original) — no LLM
 - **template-selector.ts**: rule-based industry/level → template ID (no LLM)
@@ -802,6 +826,9 @@ billing here; the sole charge site stays the post-compile call in
   input is zod-validated, sanitized, and render-bounded.
 - **Token streaming**: `streamText` with `onChunk` text deltas; `onError` is
   captured and rethrown so a mid-stream failure still rejects.
+- **Own model tier**: the loop runs on the **chat tier** (`AI_MODEL_CHAT`,
+  `AI_REASONING_EFFORT_CHAT`) — it is free for the user and rate-limited at
+  30 turns/min, so it is the repo's most cost-sensitive LLM surface.
 - **Context cost control**: the system prompt embeds a compact tool-editable
   projection (`buildResumeProjection`) not the full ResumeData, and history
   replay is windowed to the last 30 text turns (`tailHistoryWindow`) with an
@@ -957,8 +984,14 @@ NEXT_PUBLIC_APP_URL=
 # AI
 OPENAI_API_KEY=            # required for the generation pipeline
 JOB_CONCURRENCY=2          # optional: max concurrently executing v1 background jobs
-AI_MODEL_EXTRACT=gpt-5.4-mini-2026-03-17   # optional: cheap read/score tier
-AI_MODEL_REASON=gpt-5.5-2026-04-23         # optional: generation/quality tier
+AI_MODEL_EXTRACT=gpt-5.4-mini-2026-03-17  # optional: read/structure tier (JD parse)
+AI_MODEL_REASON=gpt-5.5-2026-04-23        # optional: generation/quality tier
+AI_MODEL_CHAT=gpt-5.5-2026-04-23          # optional: edit-agent tool loop (= reason)
+AI_REASONING_EFFORT_EXTRACT=none     # none|low|medium|high|xhigh (per-model!)
+AI_REASONING_EFFORT_REASON=low
+AI_REASONING_EFFORT_CHAT=low
+AI_TEMPERATURE_EXTRACT=0       # optional: inert on reasoning models (see models.ts)
+AI_TEMPERATURE_WRITING=0.5     # optional: inert on reasoning models (see models.ts)
 AI_TELEMETRY_ENABLED=false     # optional: emit OpenTelemetry spans (Langfuse)
 AI_TELEMETRY_RECORD_IO=false   # optional: record raw prompt I/O (resume+JD = PII) on spans; OFF by default
 LOG_LEVEL=info                 # optional: debug|info|warn|error
@@ -1311,6 +1344,54 @@ This project underwent multiple architectural transformations:
     - **Invariant preserved**: no pipeline, billing, or handler logic changed.
       The AI SDK v7 move was verified against a real LLM in production via a
       **free** refine (see Testing).
+
+22. **Evaluated GPT-5.6, declined it, and found two P0s doing so (current)**:
+    Full write-up in [ADR 0004](docs/decisions/0004-model-tiering-gpt-5-6.md).
+    - **The models did NOT change.** The pipeline stays on
+      `gpt-5.4-mini-2026-03-17` (extract) + `gpt-5.5-2026-04-23` (reason). A real
+      A/B over two fixtures rejected the swap: every gpt-5.6 arm compressed the
+      resume by about a third (**highlight bullets 17.3 → 11–12**), lost true
+      facts the candidate actually had (`mentoring` dropped in 4/4 terra runs),
+      and scored 5+ points lower on reference ATS. **Brevity is a family trait,
+      not a per-model defect** — `sol`, the most expensive 5.6, writes as short
+      as the cheapest, and a retention-hardened prompt did not move it. At equal
+      price (sol ≡ gpt-5.5) there is no upside to weigh, so the trade is strictly
+      negative. Moving *only* extract to luna was rejected too: 1.6% cost saving
+      against a user-visible ATS badge falling 50.0 → 36.5 from keyword-set
+      inflation alone (resume quality unchanged).
+    - **Kept the `chat` tier — effort fix only, no model change.** `AI_MODEL_CHAT`
+      defaults to the same model as reason; what changed is that the edit agent's
+      `streamText` loop now sends an explicit `reasoningEffort: 'low'` instead of
+      inheriting OpenAI's default `medium` (it passed **no** `providerOptions` at
+      all). That loop is free for the user and rate-limited at 30 turns/min.
+    - **P0 #1 — `reasoningEffort: 'minimal'` is a hard 400 on every model we run**,
+      and it was the extract tier's code default with no env override in
+      production, so `parse_jd` (step 1) had been failing on **every** generation
+      since `4711ad7` (2026-07-07). Fixed by dropping `minimal` from the
+      allowlist/type and defaulting extract to `none`. It went unnoticed because
+      the house verification trick (a free refine) structurally skips `parse_jd`.
+    - **P0 #2 — `analyzeMatch` was missing `strictJsonSchema: false`**, the only
+      one of the seven `generateObject` sites without it, while
+      `matchAnalysisSchema` carries numeric min/max bounds that strict mode
+      rejects. Aligned with the rest. Same shape as #1: an option required at
+      every call site, enforced only by copy-paste.
+    - **Data sharing stays ON, and its free-allowance rationale is now void.**
+      OpenAI's input/output sharing program carries a free daily token allowance,
+      but only for a model group (terra/luna/5-mini/5-nano/4.1-mini/4o-mini/o-series)
+      that excludes both models we run — so sharing subsidises nothing today, and
+      it must not be cited as support for a future migration. Enrolment remains on
+      by the operator's choice; candidate resume text + PII go to OpenAI for
+      training. `src/app/privacy/page.tsx` discloses this AND states that the
+      allowance does not apply to our models. Do not soften the disclosure, and do
+      not reintroduce the (false) "it keeps generation cheap" rationale.
+    - **Infrastructure kept** (model-independent, and the real yield of the
+      round): the three-tier `makeTier` factory; deploy-time injection of all
+      **eight** knobs (3 × `AI_MODEL_*`, 3 × `AI_REASONING_EFFORT_*`, 2 ×
+      `AI_TEMPERATURE_*`) from GitHub repository **variables**, so the next model
+      evaluation is a variable flip instead of a code change + redeploy; 43 new
+      tests (literal default-id assertions — a model-id typo is *not* a type
+      error — effort allowlist, provider contract, `.env.example` drift);
+      `jdParseCache` salted with the tier fingerprint `<id>@<effort>`.
 
 **Legacy reference**: `A4_RESUME_USAGE.md` documents the original HTML/CSS approach (not currently used)
 
