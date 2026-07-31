@@ -64,23 +64,50 @@ export const REASON_IS_REASONING = isReasoningModel(REASON_MODEL_ID);
 
 /**
  * Reasoning effort per tier (only sent to reasoning models). Lower = faster +
- * cheaper. The pipeline runs the reason tier across the heavy writing steps, so
- * a lower default keeps end-to-end latency in check while gpt-5.x at "low" still
- * far outwrites gpt-4o. Tune per-deployment:
- *  - AI_REASONING_EFFORT_EXTRACT (default "minimal": JD parse is pure extraction)
+ * cheaper. Tune per-deployment:
+ *  - AI_REASONING_EFFORT_EXTRACT (default "none": JD parse is pure extraction)
  *  - AI_REASONING_EFFORT_REASON  (default "low": quality writing, but not slow)
- * Accepted: none | minimal | low | medium | high | xhigh.
+ * Accepted: none | low | medium | high | xhigh.
+ *
+ * "minimal" IS NOT A LEGAL VALUE and was removed here. The Responses API rejects
+ * it outright — `400 Unsupported value: 'minimal' is not supported with the
+ * '<model>' model` — on every model this repo targets (gpt-5.4-mini, gpt-5.5,
+ * gpt-5.6-luna, gpt-5.6-terra); each reports its supported set as
+ * none/low/medium/high/xhigh (gpt-5.6 adds "max"). The provider passes the value
+ * through verbatim (@ai-sdk/openai dist/index.js:6578 `effort:
+ * resolvedReasoningEffort`) and neither normalizes nor validates it, so an
+ * unsupported value is a hard runtime 400, not a warning.
+ *
+ * That is not hypothetical: "minimal" was the EXTRACT default from 4711ad7
+ * (2026-07-07) and production sets no AI_* env vars, so every `parse_jd` — step 1
+ * of the generation pipeline — 400'd from that commit until this fix. It went
+ * unseen because the project's cheap money-path check is a free refine, and a
+ * refine reuses the parent job's persisted `parsedJD` instead of re-parsing.
+ *
+ * Effort support is PER-MODEL. "max" is valid only on the gpt-5.6 family and
+ * would 400 on gpt-5.4/5.5, so it is deliberately absent from this allowlist
+ * until the default models move to 5.6.
  */
-export type ReasoningEffort = 'none' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh';
+export type ReasoningEffort = 'none' | 'low' | 'medium' | 'high' | 'xhigh';
+
+/** Efforts every currently-targeted model accepts. Exported so tests can assert defaults stay inside it. */
+export const SUPPORTED_EFFORTS: readonly ReasoningEffort[] = ['none', 'low', 'medium', 'high', 'xhigh'];
 
 function envEffort(name: string, fallback: ReasoningEffort): ReasoningEffort {
   const raw = process.env[name]?.trim().toLowerCase();
-  const allowed: ReasoningEffort[] = ['none', 'minimal', 'low', 'medium', 'high', 'xhigh'];
-  return (allowed as string[]).includes(raw ?? '') ? (raw as ReasoningEffort) : fallback;
+  return (SUPPORTED_EFFORTS as readonly string[]).includes(raw ?? '') ? (raw as ReasoningEffort) : fallback;
 }
 
-const EXTRACT_EFFORT = envEffort('AI_REASONING_EFFORT_EXTRACT', 'minimal');
+/**
+ * "none" rather than a low-but-nonzero effort: JD parsing is extraction, not
+ * reasoning. It is also the only effort under which the provider actually sends
+ * `temperature` (it strips it otherwise — dist/index.js:6593), so this restores
+ * the EXTRACT_TEMPERATURE = 0 determinism the JD parse cache assumes.
+ */
+const EXTRACT_EFFORT = envEffort('AI_REASONING_EFFORT_EXTRACT', 'none');
 const REASON_EFFORT = envEffort('AI_REASONING_EFFORT_REASON', 'low');
+
+export const RESOLVED_EFFORTS = { extract: EXTRACT_EFFORT, reason: REASON_EFFORT } as const;
 
 /**
  * Build the sampling params for a call on the REASON-tier model: pass the given
