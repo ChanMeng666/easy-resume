@@ -27,7 +27,7 @@ export const parsedJDSchema = z.object({
 export type ParsedJD = z.infer<typeof parsedJDSchema>;
 
 /**
- * Parses raw job description text into structured data using GPT-4o.
+ * Parses raw job description text into structured data on the EXTRACT tier.
  * Extracts skills, keywords, requirements, and other critical information for ATS matching.
  */
 export async function parseJobDescription(rawText: string): Promise<ParsedJD> {

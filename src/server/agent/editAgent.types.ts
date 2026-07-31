@@ -36,7 +36,8 @@ export type EditEventSink = (event: EditEvent) => void;
 
 /** Injected dependencies — fakeable in tests (no network, no DB, no billing). */
 export interface EditAgentDeps {
-  /** The language model driving the tool loop (default: reasonModel). */
+  /** The language model driving the tool loop (default: chatModel — the CHAT
+   * tier, tuned for short interactive turns rather than pipeline writing). */
   model: LanguageModel;
   /**
    * Deterministic ResumeData → Typst renderer (default: template/base generator).

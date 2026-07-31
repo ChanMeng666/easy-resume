@@ -144,6 +144,28 @@ jobs:
           NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          # Model tiering knobs. These are repository *variables*, not secrets —
+          # a model id is not confidential and vars are readable/auditable in the
+          # Actions UI. Leaving any of them unset in GitHub is SAFE: the
+          # expression renders to an empty string, the script has `set -e` but
+          # NOT `set -u` (so an undefined shell var also expands to empty), and
+          # every reader in src/lib/agent/models.ts falls back on falsy input
+          # (`||` for model ids, `if (!raw)` for temperatures, an allowlist check
+          # for efforts). Empty therefore means "use the code default".
+          AI_MODEL_EXTRACT: ${{ vars.AI_MODEL_EXTRACT }}
+          AI_MODEL_REASON: ${{ vars.AI_MODEL_REASON }}
+          AI_MODEL_CHAT: ${{ vars.AI_MODEL_CHAT }}
+          AI_REASONING_EFFORT_EXTRACT: ${{ vars.AI_REASONING_EFFORT_EXTRACT }}
+          AI_REASONING_EFFORT_REASON: ${{ vars.AI_REASONING_EFFORT_REASON }}
+          AI_REASONING_EFFORT_CHAT: ${{ vars.AI_REASONING_EFFORT_CHAT }}
+          # Not decorative: @ai-sdk/openai forwards a temperature only when the
+          # tier's effort is `none` (on gpt-5.1+), and the extract tier runs at
+          # `none` — so AI_TEMPERATURE_EXTRACT actually reaches the API and is
+          # what makes JD parsing reproducible, which is the assumption the JD
+          # parse cache is built on. Same empty-string-is-safe rule as above
+          # (`envFloat` falls back on any falsy value).
+          AI_TEMPERATURE_EXTRACT: ${{ vars.AI_TEMPERATURE_EXTRACT }}
+          AI_TEMPERATURE_WRITING: ${{ vars.AI_TEMPERATURE_WRITING }}
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
           STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
           STRIPE_PRICE_CREDITS_5: ${{ secrets.STRIPE_PRICE_CREDITS_5 }}
@@ -161,7 +183,7 @@ jobs:
           username: root
           key: ${{ secrets.VPS_SSH_KEY }}
           command_timeout: 20m
-          envs: IMAGE_TAG,GH_TOKEN,GH_ACTOR,NEXT_PUBLIC_APP_URL,DATABASE_URL,OPENAI_API_KEY,STRIPE_SECRET_KEY,STRIPE_WEBHOOK_SECRET,STRIPE_PRICE_CREDITS_5,STRIPE_PRICE_PRO_MONTHLY,STRIPE_PRICE_UNLIMITED_MONTHLY,STACK_SECRET_SERVER_KEY,NEXT_PUBLIC_STACK_PROJECT_ID,NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY,R2_ACCOUNT_ID,R2_ACCESS_KEY_ID,R2_SECRET_ACCESS_KEY,R2_BUCKET
+          envs: IMAGE_TAG,GH_TOKEN,GH_ACTOR,NEXT_PUBLIC_APP_URL,DATABASE_URL,OPENAI_API_KEY,STRIPE_SECRET_KEY,STRIPE_WEBHOOK_SECRET,STRIPE_PRICE_CREDITS_5,STRIPE_PRICE_PRO_MONTHLY,STRIPE_PRICE_UNLIMITED_MONTHLY,STACK_SECRET_SERVER_KEY,NEXT_PUBLIC_STACK_PROJECT_ID,NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY,R2_ACCOUNT_ID,R2_ACCESS_KEY_ID,R2_SECRET_ACCESS_KEY,R2_BUCKET,AI_MODEL_EXTRACT,AI_MODEL_REASON,AI_MODEL_CHAT,AI_REASONING_EFFORT_EXTRACT,AI_REASONING_EFFORT_REASON,AI_REASONING_EFFORT_CHAT,AI_TEMPERATURE_EXTRACT,AI_TEMPERATURE_WRITING
           script: |
             set -e
 
@@ -197,6 +219,14 @@ jobs:
               -e NEXT_PUBLIC_APP_URL="${NEXT_PUBLIC_APP_URL}" \
               -e DATABASE_URL="${DATABASE_URL}" \
               -e OPENAI_API_KEY="${OPENAI_API_KEY}" \
+              -e AI_MODEL_EXTRACT="${AI_MODEL_EXTRACT}" \
+              -e AI_MODEL_REASON="${AI_MODEL_REASON}" \
+              -e AI_MODEL_CHAT="${AI_MODEL_CHAT}" \
+              -e AI_REASONING_EFFORT_EXTRACT="${AI_REASONING_EFFORT_EXTRACT}" \
+              -e AI_REASONING_EFFORT_REASON="${AI_REASONING_EFFORT_REASON}" \
+              -e AI_REASONING_EFFORT_CHAT="${AI_REASONING_EFFORT_CHAT}" \
+              -e AI_TEMPERATURE_EXTRACT="${AI_TEMPERATURE_EXTRACT}" \
+              -e AI_TEMPERATURE_WRITING="${AI_TEMPERATURE_WRITING}" \
               -e STRIPE_SECRET_KEY="${STRIPE_SECRET_KEY}" \
               -e STRIPE_WEBHOOK_SECRET="${STRIPE_WEBHOOK_SECRET}" \
               -e STRIPE_PRICE_CREDITS_5="${STRIPE_PRICE_CREDITS_5}" \
