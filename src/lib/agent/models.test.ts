@@ -170,6 +170,30 @@ describe('EXTRACT_TIER_FINGERPRINT', () => {
   });
 });
 
+describe('TIER_FINGERPRINTS', () => {
+  // This is what instrumentation.ts logs at boot. It is the only external signal
+  // of which models a deployment resolved to, so an env override that silently
+  // failed to apply would otherwise be indistinguishable from one that worked.
+  it('reports every tier as `<model id>@<effort>`', async () => {
+    const m = await loadModels();
+    expect(m.TIER_FINGERPRINTS).toEqual({
+      extract: 'gpt-5.4-mini-2026-03-17@none',
+      reason: 'gpt-5.5-2026-04-23@low',
+      chat: 'gpt-5.5-2026-04-23@low',
+    });
+  });
+
+  it('reflects an env override, so the boot log proves the override applied', async () => {
+    const m = await loadModels({
+      AI_MODEL_REASON: 'gpt-5.6-terra',
+      AI_REASONING_EFFORT_REASON: 'medium',
+    });
+    expect(m.TIER_FINGERPRINTS.reason).toBe('gpt-5.6-terra@medium');
+    // Untouched tiers must not move — a rollback has to be surgical.
+    expect(m.TIER_FINGERPRINTS.extract).toBe('gpt-5.4-mini-2026-03-17@none');
+  });
+});
+
 describe('env parsing', () => {
   it('normalizes a padded / uppercased effort', async () => {
     const m = await loadModels({ AI_REASONING_EFFORT_REASON: ' HIGH ' });

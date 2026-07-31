@@ -155,13 +155,26 @@ describe('golden set — prompt version registry', () => {
   });
 });
 
+/**
+ * These two cases shell out to the real `typst` binary, so they are the only
+ * tests here whose runtime depends on the machine rather than on our code. A
+ * cold compile — process spawn plus font loading — routinely exceeds vitest's
+ * 5s default under parallel load, which made them fail roughly 2 runs in 7 with
+ * a timeout rather than a compile error.
+ *
+ * The generous budget is deliberate: a flaky gate is worse than a slow one. A
+ * real regression here is a *failed compile*, which surfaces immediately and is
+ * unaffected by the timeout; only the scheduling noise is.
+ */
+const TYPST_COMPILE_TIMEOUT_MS = 30_000;
+
 // Skipped (not passed) when the binary is absent; when present, a compile
 // failure here is a genuine regression and fails the test.
 describe.skipIf(!TYPST_AVAILABLE)('golden set — Typst escaping compiles (P0-3 safety net)', () => {
   it('compiles a normal resume to a non-empty PDF', async () => {
     const { pdf } = await compileTypstToPdf(generateTypstCode(baseResume()));
     expect(pdf.byteLength).toBeGreaterThan(0);
-  });
+  }, TYPST_COMPILE_TIMEOUT_MS);
 
   it('compiles a resume full of Typst-hostile characters', async () => {
     const adversarial = baseResume();
@@ -172,5 +185,5 @@ describe.skipIf(!TYPST_AVAILABLE)('golden set — Typst escaping compiles (P0-3 
     adversarial.work[0].highlights = ['Saved $1M', 'Cut #defects 50%', 'Used <Generics>'];
     const { pdf } = await compileTypstToPdf(generateTypstCode(adversarial));
     expect(pdf.byteLength).toBeGreaterThan(0);
-  });
+  }, TYPST_COMPILE_TIMEOUT_MS);
 });
